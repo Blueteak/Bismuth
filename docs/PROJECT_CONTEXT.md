@@ -40,12 +40,12 @@ Out of scope for MVP:
 
 ## Recommended Milestones
 
-### Milestone 1: App Skeleton
+### Milestone 1: App Skeleton - Complete
 
-- Scaffold Vite + React + TypeScript.
-- Add R3F canvas, orbit controls, environment lighting, and basic layout.
-- Add Zustand-style state for seed, settings, and generation status.
-- Add placeholder procedural geometry.
+- [x] Scaffold Vite + React + TypeScript.
+- [x] Add R3F canvas, orbit controls, environment lighting, and basic layout.
+- [x] Add Zustand-style state for seed, settings, and generation status.
+- [x] Add placeholder procedural geometry.
 
 ### Milestone 2: Deterministic Generator
 
