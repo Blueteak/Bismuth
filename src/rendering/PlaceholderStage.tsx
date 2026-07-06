@@ -1,9 +1,10 @@
 import { ContactShadows, RoundedBox } from '@react-three/drei';
 import { useFrame } from '@react-three/fiber';
-import { useMemo, useRef } from 'react';
+import { useEffect, useMemo, useRef } from 'react';
 import type { Group } from 'three';
 import { Color, MeshPhysicalMaterial } from 'three';
 import { useAppStore } from '../state/appStore';
+import { createSurfaceDetailTexture } from './surfaceDetailTexture';
 
 const oxideStops = ['#4fc3ff', '#8f7bff', '#ef62c8', '#f3b44b', '#68df91'];
 
@@ -11,6 +12,10 @@ export function PlaceholderStage() {
   const groupRef = useRef<Group>(null);
   const isTurntableEnabled = useAppStore((state) => state.isTurntableEnabled);
   const settings = useAppStore((state) => state.settings);
+  const detailTexture = useMemo(
+    () => createSurfaceDetailTexture(settings.scratchDetailStrength),
+    [settings.scratchDetailStrength],
+  );
 
   const bismuthMaterial = useMemo(
     () =>
@@ -19,20 +24,27 @@ export function PlaceholderStage() {
         metalness: 1,
         roughness: settings.surfaceRoughness,
         clearcoat: 0.25,
-        clearcoatRoughness: 0.18,
+        clearcoatRoughness: 0.14 + settings.scratchDetailStrength * 0.22,
         iridescence: settings.oxideIntensity,
         iridescenceIOR: 1.8,
         iridescenceThicknessRange: [
           120,
           120 + settings.iridescenceThicknessRange * 720,
         ],
+        bumpMap: detailTexture,
+        bumpScale: settings.scratchDetailStrength * 0.028,
       }),
     [
+      detailTexture,
       settings.iridescenceThicknessRange,
       settings.oxideIntensity,
+      settings.scratchDetailStrength,
       settings.surfaceRoughness,
     ],
   );
+
+  useEffect(() => () => detailTexture?.dispose(), [detailTexture]);
+  useEffect(() => () => bismuthMaterial.dispose(), [bismuthMaterial]);
 
   useFrame((_, delta) => {
     if (groupRef.current && isTurntableEnabled) {

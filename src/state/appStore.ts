@@ -1,23 +1,17 @@
 import { create } from 'zustand';
+import type {
+  CrystalBlock,
+  CrystalModel,
+  GenerationEvent,
+  GenerationSettings,
+  GenerationStep,
+  QualityLevel,
+} from '../generation/types';
+import { startCrystalGeneration } from '../workers/crystalWorkerClient';
 
-export type QualityLevel = 'preview' | 'standard' | 'high';
+export type { QualityLevel };
 
-export interface CrystalSettings {
-  version: number;
-  seed: string;
-  nucleationCount: number;
-  initialSeedSize: number;
-  crystalScale: number;
-  symmetryBias: number;
-  coolingRate: number;
-  edgeGrowthBias: number;
-  faceFillRate: number;
-  terraceHeight: number;
-  hopperDepth: number;
-  branchingProbability: number;
-  impurity: number;
-  gravitySagBias: number;
-  oxidationExposure: number;
+export interface CrystalSettings extends GenerationSettings {
   oxideIntensity: number;
   iridescenceThicknessRange: number;
   surfaceRoughness: number;
@@ -26,11 +20,17 @@ export interface CrystalSettings {
   quality: QualityLevel;
 }
 
-export type GenerationStatus = 'idle' | 'preview-ready' | 'generating';
+export type GenerationStatus = 'idle' | 'preview-ready' | 'generating' | 'error';
 
 interface AppState {
   settings: CrystalSettings;
   generationStatus: GenerationStatus;
+  generationProgress: number;
+  generationStep: GenerationStep | 'idle';
+  generationEvents: GenerationEvent[];
+  previewBlocks: CrystalBlock[];
+  crystalModel: CrystalModel | null;
+  generationError: string | null;
   isTurntableEnabled: boolean;
   setSetting: <K extends keyof CrystalSettings>(
     key: K,
@@ -44,17 +44,19 @@ interface AppState {
 export const defaultSettings: CrystalSettings = {
   version: 1,
   seed: 'BI-2026-0705',
-  nucleationCount: 1,
+  nucleationCount: 3,
+  nucleusStartDelay: 0.12,
+  nucleiVerticalSpread: 0.38,
   initialSeedSize: 0.42,
   crystalScale: 1,
-  symmetryBias: 0.72,
+  symmetryBias: 0.48,
   coolingRate: 0.58,
   edgeGrowthBias: 0.74,
   faceFillRate: 0.34,
   terraceHeight: 0.46,
   hopperDepth: 0.68,
-  branchingProbability: 0.18,
-  impurity: 0.24,
+  branchingProbability: 0.24,
+  impurity: 0.34,
   gravitySagBias: 0.12,
   oxidationExposure: 0.82,
   oxideIntensity: 0.76,
@@ -77,9 +79,15 @@ function makeSeed() {
   return `BI-${randomPart}`;
 }
 
-export const useAppStore = create<AppState>((set) => ({
+export const useAppStore = create<AppState>((set, get) => ({
   settings: defaultSettings,
-  generationStatus: 'preview-ready',
+  generationStatus: 'idle',
+  generationProgress: 0,
+  generationStep: 'idle',
+  generationEvents: [],
+  previewBlocks: [],
+  crystalModel: null,
+  generationError: null,
   isTurntableEnabled: true,
   setSetting: (key, value) =>
     set((state) => ({
@@ -95,12 +103,40 @@ export const useAppStore = create<AppState>((set) => ({
         seed: makeSeed(),
       },
     })),
-  regeneratePreview: () =>
-    set((state) => ({
-      generationStatus: 'preview-ready',
-      settings: {
-        ...state.settings,
-      },
-    })),
+  regeneratePreview: () => {
+    startCrystalGeneration(get().settings, {
+      onStart: () =>
+        set({
+          generationStatus: 'generating',
+          generationProgress: 0,
+          generationStep: 'seed',
+          generationEvents: [],
+          previewBlocks: [],
+          crystalModel: null,
+          generationError: null,
+        }),
+      onEvent: (event) =>
+        set((state) => ({
+          generationProgress: event.progress,
+          generationStep: event.step,
+          generationEvents: [...state.generationEvents, event],
+          previewBlocks: event.chunk?.blocks.length
+            ? [...state.previewBlocks, ...event.chunk.blocks]
+            : state.previewBlocks,
+        })),
+      onComplete: (model) =>
+        set({
+          generationStatus: 'preview-ready',
+          generationProgress: 1,
+          generationStep: 'complete',
+          crystalModel: model,
+        }),
+      onError: (message) =>
+        set({
+          generationStatus: 'error',
+          generationError: message,
+        }),
+    });
+  },
   setTurntableEnabled: (enabled) => set({ isTurntableEnabled: enabled }),
 }));

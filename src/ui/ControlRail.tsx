@@ -6,6 +6,8 @@ type NumericSetting = {
   key: keyof Pick<
     CrystalSettings,
     | 'nucleationCount'
+    | 'nucleusStartDelay'
+    | 'nucleiVerticalSpread'
     | 'initialSeedSize'
     | 'crystalScale'
     | 'symmetryBias'
@@ -18,6 +20,11 @@ type NumericSetting = {
     | 'impurity'
     | 'gravitySagBias'
     | 'oxidationExposure'
+    | 'oxideIntensity'
+    | 'iridescenceThicknessRange'
+    | 'surfaceRoughness'
+    | 'scratchDetailStrength'
+    | 'environmentIntensity'
   >;
   label: string;
   min: number;
@@ -27,6 +34,8 @@ type NumericSetting = {
 
 const structureSettings: NumericSetting[] = [
   { key: 'nucleationCount', label: 'Nuclei', min: 1, max: 8, step: 1 },
+  { key: 'nucleusStartDelay', label: 'Start delay', min: 0, max: 1, step: 0.01 },
+  { key: 'nucleiVerticalSpread', label: 'Vertical spread', min: 0, max: 1, step: 0.01 },
   { key: 'initialSeedSize', label: 'Seed size', min: 0, max: 1, step: 0.01 },
   { key: 'crystalScale', label: 'Scale', min: 0.5, max: 1.6, step: 0.01 },
   { key: 'symmetryBias', label: 'Symmetry', min: 0, max: 1, step: 0.01 },
@@ -42,6 +51,14 @@ const growthSettings: NumericSetting[] = [
   { key: 'impurity', label: 'Impurity', min: 0, max: 1, step: 0.01 },
   { key: 'gravitySagBias', label: 'Sag', min: 0, max: 1, step: 0.01 },
   { key: 'oxidationExposure', label: 'Oxidation', min: 0, max: 1, step: 0.01 },
+];
+
+const renderSettings: NumericSetting[] = [
+  { key: 'oxideIntensity', label: 'Oxide display', min: 0, max: 1, step: 0.01 },
+  { key: 'iridescenceThicknessRange', label: 'Film range', min: 0, max: 1, step: 0.01 },
+  { key: 'surfaceRoughness', label: 'Roughness', min: 0, max: 1, step: 0.01 },
+  { key: 'scratchDetailStrength', label: 'Scratches', min: 0, max: 1, step: 0.01 },
+  { key: 'environmentIntensity', label: 'Environment', min: 0, max: 1.5, step: 0.01 },
 ];
 
 export function ControlRail() {
@@ -85,6 +102,7 @@ export function ControlRail() {
 
       <SliderGroup title="Structure" settings={structureSettings} values={settings} />
       <SliderGroup title="Growth" settings={growthSettings} values={settings} />
+      <SliderGroup title="Render" settings={renderSettings} values={settings} />
     </aside>
   );
 }

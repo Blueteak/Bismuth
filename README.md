@@ -1,6 +1,12 @@
 # Bismuth
 
-An interactive 3D bismuth crystal generator.
+An interactive 3D bismuth crystal generator. The app runs fully in the
+browser, streams deterministic generation chunks from a Web Worker, and renders
+physically inspired hopper, terrace, collision, and oxide-color behavior in a
+React Three Fiber viewport. The current renderer uses instanced lattice blocks
+with oxide-driven vertex colors, a metallic physical material, procedural
+scratch/bump detail, and exposed render controls for oxide display, film range,
+roughness, scratch strength, and environment intensity.
 
 ## Development
 
@@ -27,6 +33,7 @@ npm.cmd run dev
 - `npm run test` runs Vitest.
 
 Vite may warn that the first JavaScript chunk is larger than 500 kB because
-three.js, React Three Fiber, and Drei are part of the initial viewport bundle.
-That is acceptable for the first app shell. Revisit code splitting when real
-generation, shader, export, or postprocessing modules are added.
+three.js, React Three Fiber, Drei, and the current viewport bundle are loaded
+up front. That is acceptable for the current MVP while generation remains
+client-side and interactive. Revisit code splitting when export, advanced
+shader, or postprocessing modules are added.

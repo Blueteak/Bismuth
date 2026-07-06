@@ -7,9 +7,12 @@ This document defines the initial physically inspired model for bismuth crystal 
 Bismuth display crystals are recognizable because of:
 
 - Hopper growth: edges grow faster than face centers.
-- Stepped terraces: repeated ledges create square or rectangular spiral-like forms.
+- Stepped terraces: repeated ledges create square or rectangular forms.
+- Screw-dislocation spiral steps: a persistent step source winds around a defect
+  and creates square spiral ledges on hopper faces.
 - Hollowed centers: face interiors can lag behind edge growth.
-- Branching clusters: multiple nuclei and collisions create compound forms.
+- Branching clusters: multiple nuclei co-grow, collide, and physically merge at
+  contact surfaces.
 - Oxide coloration: surface oxide thickness varies and creates thin-film interference colors.
 - Brittle metallic facets: large flat faces, sharp edges, and small imperfections.
 
@@ -24,10 +27,14 @@ Use a discrete lattice plus compact surface extraction. The generator must be in
 Create a seeded PRNG from the user seed and settings hash. Place one or more nuclei near the model center. Each nucleus has:
 
 - Position.
+- Start delay.
 - Primary orientation.
+- Vertical spread inside the growth volume.
 - Initial size.
 - Growth budget.
 - Local impurity offset.
+- One or more screw-dislocation spiral sources with handedness, phase, spacing,
+  and source offset.
 
 ### 2. Edge-Biased Hopper Growth
 
@@ -41,19 +48,41 @@ Represent each nucleus as a stack of stepped rectangular/rhomboid shells on a la
 
 This produces the defining hopper silhouette: developed edges with lagging centers.
 
-### 3. Terrace Formation
+### 3. Screw-Dislocation Terrace Formation
 
-Quantize vertical growth into `terraceHeight`. Add ledges/rings by shrinking or expanding each layer's footprint. Vary ledge width by seeded noise so the model avoids a perfect staircase.
+Quantize vertical growth into `terraceHeight`. Add ledges by shrinking or expanding
+each layer's footprint, but do not rely on random terrace noise for the defining
+spiral shape. Each nucleus should carry deterministic square-lattice spiral
+sources that approximate screw-dislocation growth:
+
+- The source acts as a persistent step that cannot disappear.
+- The step advances around the source in 90-degree turns on the square lattice.
+- Layer advance shifts the step phase so the ledge climbs as the crystal grows.
+- The center near the source remains more recessed, preserving hopper depth.
+- Secondary generic terrace bands can remain on outer faces, but hopper-center
+  terraces should be driven primarily by the dislocation step.
 
 Terraces should be visible in geometry. Fine scratches and microscopic unevenness should be delegated to normal maps or shader noise.
 
-### 4. Branches and Collisions
+### 4. Branches, Co-Growth, and Collisions
 
-When `branchingProbability` permits, spawn child nuclei from exposed corners or high-energy edges. Child crystals inherit the parent orientation with small rotations. When branches collide:
+When `branchingProbability` permits, spawn child nuclei from exposed corners or
+high-energy edges. Child crystals inherit the parent orientation with small
+rotations and perturbed spiral sources.
 
-- Stop overlapped growth.
-- Keep boundary facets if visible.
-- Optionally create seam-like recesses, but avoid expensive boolean operations in the MVP.
+Multiple nuclei should generate on a shared candidate timeline, not one after
+another. This lets similarly aged growth fronts interact. When nuclei collide:
+
+- Place contact cells so the crystals physically touch instead of leaving an
+  empty plane.
+- Register a deterministic stop boundary for both nuclei so future growth does
+  not pass through the contact surface.
+- Keep visible boundary facets where the surface remains exposed.
+- Avoid expensive boolean operations in the MVP.
+
+After growth, prune unsupported terminal cells. Free-floating or single-neighbor
+voxels, especially near the top of late-stage growth, are not physically
+plausible and should be removed.
 
 ### 5. Oxide Thickness
 
@@ -72,7 +101,8 @@ Store oxide thickness per facet or vertex. The renderer uses it for color shifti
 Start with one of these output modes:
 
 - Preview mode: instanced boxes or terraces for fast intermediate display.
-- Final standard mode: greedy meshed surfaces from lattice occupancy.
+- Final standard mode today: higher-resolution instanced lattice blocks.
+- Future final standard mode: greedy meshed surfaces from lattice occupancy.
 - Final high mode: bevel/selectively chamfer major exposed edges and add more terrace detail.
 
 Avoid generating dense geometry for details that can be represented by normal, roughness, or color variation.
@@ -99,9 +129,47 @@ The goal is not simply progress reporting. The user should see the crystal grow.
 - `hopperDepth`: Controls how hollow/recessed each face becomes.
 - `branchingProbability`: Controls child nuclei and cluster complexity.
 - `impurity`: Adds asymmetric noise, roughness, and oxidation variation.
-- `oxidationExposure`: Controls oxide thickness range and color intensity.
+- `oxidationExposure`: Controls generated oxide thickness range. Render-only
+  oxide display intensity controls how strongly that model data is shown.
 - `nucleationCount`: Controls number of initial crystals.
-- `crystalScale`: Overall output scale.
+- `nucleusStartDelay`: Controls how far apart the first growth pulses of separate nuclei can be.
+- `nucleiVerticalSpread`: Controls how much initial nuclei can be suspended above the base plane.
+- `initialSeedSize`: Controls starting nucleus radius before shells grow outward.
+- `crystalScale`: Overall lattice block size and radius boost.
+- `symmetryBias`: Higher values keep nuclei, footprints, and drift more regular;
+  lower values allow stronger asymmetry.
+- `gravitySagBias`: Shifts upper layers laterally/down-axis over height for a
+  subtle sagging growth bias.
+- `quality`: Selects preview, standard, or high generation budgets for layer
+  count, radius, chunk size, and minimum playback duration.
+
+Render-only settings live in app state rather than generation state:
+
+- `oxideIntensity`: Controls oxide color saturation and material iridescence strength.
+- `iridescenceThicknessRange`: Controls the material film-thickness range used by three.js.
+- `surfaceRoughness`: Controls material roughness.
+- `scratchDetailStrength`: Controls procedural scratch/bump texture strength.
+- `environmentIntensity`: Controls procedural environment lighting intensity.
+
+Changing render-only settings must not change the generated model hash or
+deterministic block layout.
+
+## Current Implementation Notes
+
+- The current generator precomputes candidate blocks for every nucleus, sorts
+  them by deterministic growth age, and resolves occupancy/collisions in that
+  shared order.
+- Standard quality uses a higher-resolution lattice than the initial prototype
+  while preserving the default triangle budget.
+- Collision boundaries are exclusive: contact cells may fill, but candidates
+  beyond the merged interface are rejected.
+- A support-pruning pass runs after collision resolution to remove unsupported
+  terminal voxels.
+- Spiral steps are implemented as square-lattice screw-dislocation influence
+  fields rather than true molecular simulation.
+- The renderer currently displays blocks as an instanced lattice with generated
+  oxide colors and procedural scratch/bump detail. Fine scratch detail is
+  render-time surface texture, not generated crystal geometry.
 
 ## Progress and Chunk Events
 
@@ -153,7 +221,8 @@ Generation can be richer and slower than a conventional loading step, but it mus
 - Store active frontier sets instead of scanning the full lattice each iteration.
 - Use compact integer coordinates during growth.
 - Convert to floats only when building render geometry.
-- Prefer greedy meshing over one cube mesh per occupied cell for final output.
+- Prefer instancing over one React component per occupied cell today; move to
+  greedy meshing when surface extraction becomes the primary final output.
 - Send transferable buffers from worker to main thread for packed mesh data.
 - Design long operations as resumable iterators or explicit job queues.
 - Keep individual worker slices short enough that cancellation and progress remain responsive.
@@ -169,6 +238,10 @@ Raw generation taking 5+ seconds is acceptable. The failure case is not long gen
 - Different seed produces different model hash.
 - Higher `edgeGrowthBias` increases exposed edge/terrace ratio.
 - Higher `faceFillRate` reduces average hopper recess depth.
+- Screw-dislocation sources produce visible square spiral step fronts.
+- Multi-nucleus growth creates face-adjacent contact cells rather than empty
+  collision planes.
+- Unsupported terminal voxels are removed from final output.
 - Triangle estimate stays under quality-level budget.
 - All emitted progress values are monotonic from 0 to 1.
 - Chunk event ordering is deterministic for identical seed/settings.

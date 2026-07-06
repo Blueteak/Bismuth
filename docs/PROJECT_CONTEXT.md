@@ -45,31 +45,36 @@ Out of scope for MVP:
 - [x] Scaffold Vite + React + TypeScript.
 - [x] Add R3F canvas, orbit controls, environment lighting, and basic layout.
 - [x] Add Zustand-style state for seed, settings, and generation status.
-- [x] Add placeholder procedural geometry.
+- [x] Add initial placeholder procedural geometry for the app skeleton.
 
 ### Milestone 2: Deterministic Generator
 
-- Add seeded PRNG.
-- Implement lattice nuclei and stepped hopper growth.
-- Run generation in a Web Worker.
-- Emit small generation chunks, progress events, and final `CrystalModel`.
-- Add a pacing layer so generation can be slowed down when raw compute completes too quickly.
-- Add Vitest tests for determinism and bounds.
+- [x] Add seeded PRNG.
+- [x] Implement lattice nuclei and stepped hopper growth.
+- [x] Run generation in a Web Worker.
+- [x] Emit small generation chunks, progress events, and final `CrystalModel`.
+- [x] Add a pacing layer so generation can be slowed down when raw compute completes too quickly.
+- [x] Add Vitest tests for determinism and bounds.
+- [x] Add co-growing nuclei, collision merging, support pruning, and
+  screw-dislocation-inspired spiral terraces.
 
 ### Milestone 3: Realtime Visualization
 
-- Stream generation chunks to the viewport at animation-frame cadence where possible.
-- Add timeline playback and scrub.
-- Convert final model into merged or instanced geometry.
-- Add quality levels.
+- [x] Stream generation chunks to the viewport.
+- [ ] Add timeline playback and scrub.
+- [x] Convert final model into instanced geometry.
+- [x] Add quality levels.
 
 ### Milestone 4: Bismuth Material
 
-- Implement metallic PBR material.
-- Add oxide thickness data per facet or vertex.
-- Add angle-dependent iridescence shader logic.
-- Generate procedural normal/roughness detail maps.
-- Add environment lighting and tone mapping.
+- [x] Implement metallic PBR material.
+- [x] Add oxide thickness data per block and exposed facet.
+- [x] Add material-level iridescence and oxide-driven vertex colors.
+- [x] Generate procedural scratch/bump detail for render-time surface texture.
+- [x] Add procedural environment lighting and tone mapping.
+- [ ] Replace the current art-directed oxide color mapping with a fuller
+  view-angle-aware thin-film shader when the material path moves beyond
+  `MeshPhysicalMaterial`.
 
 ### Milestone 5: Polish and Export
 
@@ -80,15 +85,18 @@ Out of scope for MVP:
 
 ## Core Data Contracts
 
-Settings should remain serializable and versioned:
+Generation settings should remain serializable and versioned:
 
 ```ts
-export interface CrystalSettings {
+export interface GenerationSettings {
   version: number;
   seed: string;
   nucleationCount: number;
+  nucleusStartDelay: number;
+  nucleiVerticalSpread: number;
   initialSeedSize: number;
   crystalScale: number;
+  symmetryBias: number;
   coolingRate: number;
   edgeGrowthBias: number;
   faceFillRate: number;
@@ -96,8 +104,22 @@ export interface CrystalSettings {
   hopperDepth: number;
   branchingProbability: number;
   impurity: number;
+  gravitySagBias: number;
   oxidationExposure: number;
   quality: 'preview' | 'standard' | 'high';
+}
+```
+
+App settings extend generation settings with render-only controls. These must
+not affect generation hashes or deterministic model output:
+
+```ts
+export interface CrystalSettings extends GenerationSettings {
+  oxideIntensity: number;
+  iridescenceThicknessRange: number;
+  surfaceRoughness: number;
+  scratchDetailStrength: number;
+  environmentIntensity: number;
 }
 ```
 
@@ -108,7 +130,7 @@ export interface CrystalModel {
   settingsHash: string;
   bounds: Bounds3;
   facets: CrystalFacet[];
-  blocks?: CrystalBlock[];
+  blocks: CrystalBlock[];
   mesh?: PackedMesh;
   oxideRange: [number, number];
   stats: {
@@ -147,8 +169,17 @@ export interface GenerationEvent {
 - Make the first screen the working generator, not a marketing page.
 - Prefer familiar controls over novel controls.
 - Keep settings grouped by job: seed, structure, growth/model data, render/view, timeline/playback, and performance/export.
-- Keep the main parameter rail focused on values that affect generated model data. View-only controls such as camera turntable playback should live with the viewport or timeline, not beside growth sliders.
-- Treat oxidation exposure as model data because it affects generated surface/facet metadata. Treat oxide display intensity, environment intensity, roughness display, and camera motion as rendering/view controls.
+- The current parameter rail includes Seed, Structure, Growth, and Render
+  sections. Keep model-data controls in Structure/Growth and render-only
+  controls in Render so it remains clear which changes require regeneration.
+- Treat oxidation exposure as model data because it affects generated
+  surface/facet metadata. Treat oxide display intensity, film range, surface
+  roughness, scratch detail strength, environment intensity, and camera motion
+  as rendering/view controls.
 - Make randomness inspectable: every generated result should have a seed and settings snapshot.
 - Make progressive generation a primary visual mode, with smooth incremental updates rather than occasional progress jumps.
+- Keep generated geometry physically plausible at the visual-model level:
+  nuclei co-grow, collision fronts merge without crossing, screw-dislocation
+  sources create square spiral terraces, and unsupported terminal voxels are
+  pruned.
 - Keep scientific claims modest and accurate.

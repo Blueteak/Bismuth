@@ -31,8 +31,19 @@ Initial material approach:
 - Set high metalness.
 - Use moderate roughness with generated roughness variation.
 - Use environment reflections.
-- Add angle-dependent oxide color shifting.
-- Use normal maps for fine steps, scratches, pitting, and tiny surface warps.
+- Use generated oxide thickness for art-directed color shifting.
+- Use procedural bump/detail maps for fine steps, scratches, pitting, and tiny surface warps.
+
+Current MVP material:
+
+- Uses `MeshPhysicalMaterial` with high metalness, configurable roughness,
+  iridescence, and clearcoat roughness.
+- Colors instanced blocks from generated oxide thickness and render-only oxide
+  intensity.
+- Generates a deterministic canvas bump texture from `scratchDetailStrength`
+  for scratch-like surface detail.
+- Uses procedural Drei environment lighting, local lights, ACES tone mapping,
+  and contact shadows.
 
 For color shifting, use generated oxide thickness plus view angle and normal:
 
@@ -47,7 +58,9 @@ This can begin as an art-directed palette lookup and later move toward a more ph
 Use different representations for different moments:
 
 - During generation: instanced blocks, shells, or partial surfaces. Prioritize frequent visible updates and the experience of watching the crystal form.
-- Final standard view: merged `BufferGeometry` with facet attributes for oxide and roughness.
+- Final standard view today: instanced lattice blocks carrying oxide-driven
+  vertex colors, with the model kept under the default triangle budget.
+- Future final standard view: merged `BufferGeometry` with facet attributes for oxide and roughness.
 - Final high view: more bevels/chamfers and higher-resolution normal/detail maps.
 
 Do not render thousands of individual React mesh components for final geometry. React should orchestrate scene-level objects, not every crystal step.
@@ -82,7 +95,8 @@ Controls should be grouped:
 
 - Seed: seed input, randomize, copy.
 - Structure and growth: physics-inspired model-data sliders.
-- Render/view: material/color/detail/camera controls.
+- Render/view: oxide display, film range, roughness, scratch detail,
+  environment, and camera controls.
 - Timeline: play, pause, scrub, current step.
 - Performance/export: quality, screenshot, glTF later.
 
@@ -122,8 +136,10 @@ Preview:
 Standard:
 
 - Default.
-- Greedy meshed geometry.
-- Procedural normal/roughness.
+- Higher-resolution lattice than preview.
+- Instanced geometry in the current MVP, with a path to greedy meshing later.
+- Procedural scratch/bump detail in the current MVP, with a path to richer
+  normal/roughness maps later.
 - Full material.
 
 High:

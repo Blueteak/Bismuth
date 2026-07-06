@@ -49,12 +49,17 @@ Use a staged growth pipeline:
 
 1. Initialize seeded PRNG and growth parameters.
 2. Place one or more nuclei on a discrete lattice.
-3. Grow stepped hopper shells with edge-biased deposition.
-4. Apply anisotropy, impurities, cooling-rate variation, branching, and terrace noise.
-5. Resolve overlaps and classify facets, edges, cavities, and oxide thickness.
-6. Build renderable geometry at the selected detail level.
-7. Emit small generation chunks throughout so the UI can display the crystal forming in realtime.
-8. Pace playback independently from raw compute speed when needed, so high-end machines do not skip past the generation experience.
+3. Grow nuclei on a shared deterministic timeline so multiple nuclei can
+   interact instead of growing one after another.
+4. Grow stepped hopper shells with edge-biased deposition.
+5. Apply anisotropy, impurities, cooling-rate variation, branching, and
+   screw-dislocation-inspired square spiral terrace sources.
+6. Resolve collisions by placing contact cells, preventing growth through the
+   merged interface, and pruning unsupported terminal voxels.
+7. Classify facets, edges, cavities, and oxide thickness.
+8. Build renderable geometry at the selected detail level.
+9. Emit small generation chunks throughout so the UI can display the crystal forming in realtime.
+10. Pace playback independently from raw compute speed when needed, so high-end machines do not skip past the generation experience.
 
 Prefer compact data over raw high-poly output. Generate the big silhouette and terraces as geometry, then use shader/detail maps for fine scratches, pitting, roughness variation, and oxide shimmer.
 
@@ -117,6 +122,8 @@ Seed and structure:
 
 - Seed value.
 - Nucleation count.
+- Nucleus start delay.
+- Nuclei vertical spread.
 - Initial seed size.
 - Crystal scale.
 - Symmetry bias.
@@ -144,12 +151,18 @@ Rendering:
 
 ## Scientific Notes
 
-Bismuth crystals commonly show hopper morphology: edges grow faster than face centers, producing hollowed or stepped forms. Their vivid colors come from thin-film interference in the oxide layer rather than intrinsic pigment. The generator should encode those ideas as visible rules.
+Bismuth crystals commonly show hopper morphology: edges grow faster than face
+centers, producing hollowed or stepped forms. Spiral terraces on crystal faces
+can arise from screw-dislocation step sources: a persistent step winds around a
+defect and advances as growth continues. Their vivid colors come from thin-film
+interference in the oxide layer rather than intrinsic pigment. The generator
+should encode those ideas as visible rules without claiming atom-level accuracy.
 
 Reference links for later research:
 
 - Bismuth overview and iridescent oxide notes: https://en.wikipedia.org/wiki/Bismuth
 - Hopper crystal morphology overview: https://en.wikipedia.org/wiki/Hopper_crystal
+- Screw-dislocation spiral growth discussion: https://arxiv.org/abs/1612.08924
 - three.js docs: https://threejs.org/docs/
 - React Three Fiber docs: https://r3f.docs.pmnd.rs/getting-started/introduction
 - Vite guide: https://vite.dev/guide/
@@ -171,7 +184,17 @@ Reference links for later research:
 Local development notes:
 
 - On Windows PowerShell, prefer `npm.cmd` when `npm` is blocked by execution policy.
-- If Vite/esbuild cannot resolve `vite.config.ts` because of a filesystem sandbox read restriction, rerun the same build/dev command with the appropriate approved escalation instead of changing project code.
+- In the Codex managed filesystem sandbox, Vite/esbuild and Vitest commonly
+  fail to read `vite.config.ts` with `Cannot read directory "../../..": Access
+  is denied`. For known Vite/Vitest commands, request the appropriate approved
+  escalation up front instead of first running the command in the sandbox and
+  then retrying after the expected failure. This applies to:
+  - `npm.cmd run build`
+  - `npm.cmd test -- --run`
+  - `npm.cmd run dev`
+- If one of those commands still fails with a config-read sandbox error, rerun
+  the same command with the appropriate approved escalation instead of changing
+  project code.
 - Keep `node_modules/`, `dist/`, Vite caches, logs, and local env files ignored.
 - Use Web Crypto or browser-only randomness only for user convenience actions such as randomizing a seed. Generation randomness must still flow through the seeded PRNG.
 - Do not rely on external HDR files or remote assets for the baseline scene unless the dependency is deliberate and documented.

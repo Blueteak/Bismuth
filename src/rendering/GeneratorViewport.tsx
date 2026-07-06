@@ -6,7 +6,7 @@ import {
 } from '@react-three/drei';
 import { Canvas } from '@react-three/fiber';
 import { ACESFilmicToneMapping, SRGBColorSpace } from 'three';
-import { PlaceholderStage } from './PlaceholderStage';
+import { CrystalStage } from './CrystalStage';
 import { useAppStore } from '../state/appStore';
 
 export function GeneratorViewport() {
@@ -29,7 +29,7 @@ export function GeneratorViewport() {
         }}
         shadows
       >
-        <PerspectiveCamera makeDefault position={[4.8, 3.2, 5.2]} fov={42} />
+        <PerspectiveCamera makeDefault position={[5.4, 3.8, 6.2]} fov={43} />
         <color attach="background" args={['#0f1215']} />
         <fog attach="fog" args={['#0f1215', 10, 22]} />
 
@@ -43,7 +43,7 @@ export function GeneratorViewport() {
         />
         <pointLight color="#75e0ff" intensity={0.9} position={[-4, 2.2, -3]} />
 
-        <PlaceholderStage />
+        <CrystalStage />
         <Environment environmentIntensity={environmentIntensity} resolution={256}>
           <Lightformer
             color="#f5feff"
@@ -70,7 +70,7 @@ export function GeneratorViewport() {
         <OrbitControls
           enableDamping
           dampingFactor={0.08}
-          minDistance={3.2}
+          minDistance={3.8}
           maxDistance={11}
           target={[0, 0.75, 0]}
         />
