@@ -183,10 +183,10 @@ Reference links for later research:
 
 Local development notes:
 
-- On Windows PowerShell, prefer `npm.cmd` when `npm` is blocked by execution policy.
-- In the Codex managed filesystem sandbox, Vite/esbuild and Vitest commonly
-  fail to read `vite.config.ts` with `Cannot read directory "../../..": Access
-  is denied`. For known Vite/Vitest commands, request the appropriate approved
+- On Windows PowerShell, use `npm.cmd` since `npm` is blocked by execution policy.
+- In the Codex managed filesystem sandbox, Vite/esbuild and Vitest will
+  fail to read `vite.config.ts` with `Access is denied`. 
+  For known Vite/Vitest commands, request the appropriate approved
   escalation up front instead of first running the command in the sandbox and
   then retrying after the expected failure. This applies to:
   - `npm.cmd run build`

@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { generateCrystal } from './generateCrystal';
 import { baseGenerationSettings } from './testSettings';
+import type { CrystalBlock } from './types';
 
 const horizontalDirections = [
   [1, 0],
@@ -66,6 +67,8 @@ describe('generateCrystal multi-nucleus growth', () => {
         expect(beyondNeighbor?.nucleusId).not.toBe(block.nucleusId);
       }
     }
+
+    expectNoInterleavedNucleiInContiguousRows(model.blocks);
   });
 
   it('merges colliding nuclei at face-adjacent contact cells', () => {
@@ -95,3 +98,67 @@ describe('generateCrystal multi-nucleus growth', () => {
     expect(contactCount).toBeGreaterThan(0);
   });
 });
+
+function expectNoInterleavedNucleiInContiguousRows(blocks: CrystalBlock[]) {
+  const xRows = new Map<string, Array<{ position: number; nucleusId: number }>>();
+  const zRows = new Map<string, Array<{ position: number; nucleusId: number }>>();
+
+  for (const block of blocks) {
+    const xRow = `${block.y},${block.z}`;
+    const zRow = `${block.y},${block.x}`;
+
+    const xCells = xRows.get(xRow) ?? [];
+    const zCells = zRows.get(zRow) ?? [];
+    xCells.push({ position: block.x, nucleusId: block.nucleusId });
+    zCells.push({ position: block.z, nucleusId: block.nucleusId });
+    xRows.set(xRow, xCells);
+    zRows.set(zRow, zCells);
+  }
+
+  for (const [row, cells] of xRows) {
+    expectNoInterleavedSegment(`x:${row}`, cells);
+  }
+
+  for (const [row, cells] of zRows) {
+    expectNoInterleavedSegment(`z:${row}`, cells);
+  }
+}
+
+function expectNoInterleavedSegment(
+  row: string,
+  cells: Array<{ position: number; nucleusId: number }>,
+) {
+  const sortedCells = [...cells].sort((a, b) => a.position - b.position || a.nucleusId - b.nucleusId);
+  let segment: Array<{ position: number; nucleusId: number }> = [];
+
+  for (const cell of sortedCells) {
+    const previousCell = segment[segment.length - 1];
+    if (previousCell && cell.position > previousCell.position + 1) {
+      assertNoRepeatedNucleusAfterBoundary(row, segment);
+      segment = [];
+    }
+
+    segment.push(cell);
+  }
+
+  assertNoRepeatedNucleusAfterBoundary(row, segment);
+}
+
+function assertNoRepeatedNucleusAfterBoundary(
+  row: string,
+  segment: Array<{ position: number; nucleusId: number }>,
+) {
+  const closedNuclei = new Set<number>();
+  let previousNucleusId: number | undefined;
+
+  for (const cell of segment) {
+    if (previousNucleusId !== undefined && previousNucleusId !== cell.nucleusId) {
+      closedNuclei.add(previousNucleusId);
+      if (closedNuclei.has(cell.nucleusId)) {
+        throw new Error(`Nucleus ${cell.nucleusId} reappears behind another nucleus in row ${row}`);
+      }
+    }
+
+    previousNucleusId = cell.nucleusId;
+  }
+}

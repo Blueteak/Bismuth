@@ -2,10 +2,15 @@ import { stepWeights, qualityPlan } from './constants';
 import { createNuclei } from './nuclei';
 import { planNucleusGrowth } from './growth';
 import {
+  createContactBarrierState,
   findDirectionalContacts,
+  hasSameNucleusGrowthSupport,
+  isBlockedByContactBarrier,
+  isOccludedByCompetingFront,
   isOccludedByResolvedContact,
   pruneDirectionalOvergrowth,
   pruneUnsupportedBlocks,
+  recordContactBarriers,
   resolveGrowthFrameAtContact,
   resolveOccupiedContact,
 } from './contacts';
@@ -28,6 +33,7 @@ export function generateCrystal(settings: GenerationSettings): GenerationResult 
   let occupied = new Map<string, CrystalBlock>();
   let eventProgress = 0;
   let blockId = 1;
+  const contactBarriers = createContactBarrierState();
 
   const nuclei = createNuclei(normalized, prng, plan.layers, plan.maxRadius);
   const nucleiById = new Map(nuclei.map((nucleus) => [nucleus.id, nucleus]));
@@ -88,6 +94,18 @@ export function generateCrystal(settings: GenerationSettings): GenerationResult 
       continue;
     }
 
+    if (isOccludedByCompetingFront(candidate, nucleus, nuclei, normalized)) {
+      continue;
+    }
+
+    if (isBlockedByContactBarrier(candidate, contactBarriers)) {
+      continue;
+    }
+
+    if (!hasSameNucleusGrowthSupport(candidate, occupied)) {
+      continue;
+    }
+
     const contacts = findDirectionalContacts(candidate, occupied);
     if (isOccludedByResolvedContact(candidate, contacts, occupied)) {
       continue;
@@ -108,6 +126,7 @@ export function generateCrystal(settings: GenerationSettings): GenerationResult 
     };
 
     occupied.set(key, block);
+    recordContactBarriers(block, contacts, contactBarriers);
     stagedBlocks.push(block);
   }
 
@@ -162,4 +181,3 @@ export function generateCrystal(settings: GenerationSettings): GenerationResult 
 
   return { model, events };
 }
-

@@ -1,12 +1,37 @@
 import { dotVector, getMisorientation, normalizeVector } from './math';
 import { cellKey } from './spatial';
-import type { CandidateBlock } from './internalTypes';
-import type { CrystalBlock, CrystalGrowthFrame } from './types';
+import type { CandidateBlock, NucleusPlan } from './internalTypes';
+import type { CrystalBlock, CrystalGrowthFrame, GenerationSettings } from './types';
 
-interface DirectionalContact {
+export interface DirectionalContact {
   block: CrystalBlock;
   offset: [number, number, number];
   misorientation: number;
+}
+
+export interface ContactBarrier {
+  otherNucleusId: number;
+  anchor: [number, number, number];
+  normal: [number, number, number];
+}
+
+export interface ContactBarrierState {
+  barriersByLayer: Map<string, ContactBarrier[]>;
+}
+
+const horizontalSupportOffsets = [
+  [1, 0],
+  [-1, 0],
+  [0, 1],
+  [0, -1],
+] as const;
+const contactBarrierLayerReach = 3;
+const contactBarrierClearance = 0.55;
+
+export function createContactBarrierState(): ContactBarrierState {
+  return {
+    barriersByLayer: new Map(),
+  };
 }
 
 export function findDirectionalContacts(
@@ -52,6 +77,136 @@ export function findDirectionalContacts(
   );
 
   return contacts;
+}
+
+// Approximate impingement as a weighted front boundary between active nuclei.
+export function isOccludedByCompetingFront(
+  candidate: CandidateBlock,
+  nucleus: NucleusPlan,
+  nuclei: readonly NucleusPlan[],
+  settings: GenerationSettings,
+) {
+  for (const competingNucleus of nuclei) {
+    if (competingNucleus.id === nucleus.id) {
+      continue;
+    }
+
+    if (!isWithinVerticalGrowthBand(candidate, competingNucleus, settings)) {
+      continue;
+    }
+
+    const pairX = competingNucleus.origin[0] - nucleus.origin[0];
+    const pairZ = competingNucleus.origin[2] - nucleus.origin[2];
+    const pairDistance = Math.hypot(pairX, pairZ);
+    if (pairDistance < 1) {
+      continue;
+    }
+
+    const axisX = pairX / pairDistance;
+    const axisZ = pairZ / pairDistance;
+    const candidateX = candidate.x - nucleus.origin[0];
+    const candidateZ = candidate.z - nucleus.origin[2];
+    const towardCompetitor = candidateX * axisX + candidateZ * axisZ;
+    if (towardCompetitor <= 0) {
+      continue;
+    }
+
+    const ownSpeed = estimateNucleusFrontSpeed(nucleus, settings);
+    const competitorSpeed = estimateNucleusFrontSpeed(competingNucleus, settings);
+    const speedBoundary = ownSpeed / Math.max(0.0001, ownSpeed + competitorSpeed);
+    const delayShift = (competingNucleus.startDelay - nucleus.startDelay) / Math.max(240, pairDistance * 54);
+    const boundaryFraction = clamp(speedBoundary + delayShift, 0.28, 0.72);
+    const boundaryDistance = pairDistance * boundaryFraction;
+    const contactAllowance = 1.05 + settings.faceFillRate * 0.55 + settings.impurity * 0.2;
+
+    if (towardCompetitor > boundaryDistance + contactAllowance) {
+      return true;
+    }
+  }
+
+  return false;
+}
+
+export function hasSameNucleusGrowthSupport(
+  candidate: CandidateBlock,
+  occupied: Map<string, CrystalBlock>,
+) {
+  if (candidate.stage === 'seed') {
+    return true;
+  }
+
+  const supportOffsets = [
+    [0, -1, 0],
+    [1, 0, 0],
+    [-1, 0, 0],
+    [0, 0, 1],
+    [0, 0, -1],
+    [1, -1, 0],
+    [-1, -1, 0],
+    [0, -1, 1],
+    [0, -1, -1],
+  ] as const;
+
+  for (const [offsetX, offsetY, offsetZ] of supportOffsets) {
+    const support = occupied.get(cellKey(candidate.x + offsetX, candidate.y + offsetY, candidate.z + offsetZ));
+    if (support?.nucleusId === candidate.nucleusId) {
+      return true;
+    }
+  }
+
+  return false;
+}
+
+export function isBlockedByContactBarrier(
+  candidate: CandidateBlock,
+  barriers: ContactBarrierState,
+) {
+  const layerBarriers = barriers.barriersByLayer.get(contactBarrierLayerKey(candidate.nucleusId, candidate.y));
+  if (!layerBarriers) {
+    return false;
+  }
+
+  for (const barrier of layerBarriers) {
+    const signedDistance =
+      (candidate.x - barrier.anchor[0]) * barrier.normal[0] +
+      (candidate.y - barrier.anchor[1]) * barrier.normal[1] +
+      (candidate.z - barrier.anchor[2]) * barrier.normal[2];
+
+    if (signedDistance > contactBarrierClearance) {
+      return true;
+    }
+  }
+
+  return false;
+}
+
+export function recordContactBarriers(
+  block: CrystalBlock,
+  contacts: DirectionalContact[],
+  barriers: ContactBarrierState,
+) {
+  for (const contact of contacts) {
+    if (contact.offset[1] !== 0) {
+      continue;
+    }
+
+    const normal = normalizeVector(contact.offset);
+    const anchor = [
+      block.x + contact.offset[0] * 0.5,
+      block.y,
+      block.z + contact.offset[2] * 0.5,
+    ] as [number, number, number];
+
+    addContactBarrier(block.nucleusId, contact.block.nucleusId, block.y, anchor, normal, barriers);
+    addContactBarrier(
+      contact.block.nucleusId,
+      block.nucleusId,
+      contact.block.y,
+      anchor,
+      [-normal[0], -normal[1], -normal[2]],
+      barriers,
+    );
+  }
 }
 
 export function resolveOccupiedContact(occupyingBlock: CrystalBlock, candidate: CandidateBlock) {
@@ -186,15 +341,9 @@ function getSameNucleusHorizontalSupport(
   candidate: CandidateBlock,
   occupied: Map<string, CrystalBlock>,
 ) {
-  const offsets = [
-    [1, 0],
-    [-1, 0],
-    [0, 1],
-    [0, -1],
-  ] as const;
   let support = 0;
 
-  for (const [offsetX, offsetZ] of offsets) {
+  for (const [offsetX, offsetZ] of horizontalSupportOffsets) {
     const neighbor = occupied.get(cellKey(candidate.x + offsetX, candidate.y, candidate.z + offsetZ));
     if (neighbor?.nucleusId === candidate.nucleusId) {
       support += 1;
@@ -303,15 +452,9 @@ function getMaxYByNucleus(blocks: CrystalBlock[]) {
 }
 
 function getSupportCounts(block: CrystalBlock, occupied: Map<string, CrystalBlock>) {
-  const horizontalOffsets = [
-    [1, 0],
-    [-1, 0],
-    [0, 1],
-    [0, -1],
-  ] as const;
   let horizontal = 0;
 
-  for (const [offsetX, offsetZ] of horizontalOffsets) {
+  for (const [offsetX, offsetZ] of horizontalSupportOffsets) {
     if (occupied.has(cellKey(block.x + offsetX, block.y, block.z + offsetZ))) {
       horizontal += 1;
     }
@@ -328,3 +471,59 @@ function getSupportCounts(block: CrystalBlock, occupied: Map<string, CrystalBloc
   };
 }
 
+function addContactBarrier(
+  nucleusId: number,
+  otherNucleusId: number,
+  y: number,
+  anchor: [number, number, number],
+  normal: [number, number, number],
+  barriers: ContactBarrierState,
+) {
+  for (let layer = y - contactBarrierLayerReach; layer <= y + contactBarrierLayerReach; layer += 1) {
+    const key = contactBarrierLayerKey(nucleusId, layer);
+    const layerBarriers = barriers.barriersByLayer.get(key) ?? [];
+    const alreadyTracked = layerBarriers.some(
+      (barrier) =>
+        barrier.otherNucleusId === otherNucleusId &&
+        barrier.anchor[0] === anchor[0] &&
+        barrier.anchor[1] === anchor[1] &&
+        barrier.anchor[2] === anchor[2] &&
+        barrier.normal[0] === normal[0] &&
+        barrier.normal[1] === normal[1] &&
+        barrier.normal[2] === normal[2],
+    );
+
+    if (!alreadyTracked) {
+      layerBarriers.push({ otherNucleusId, anchor, normal });
+      barriers.barriersByLayer.set(key, layerBarriers);
+    }
+  }
+}
+
+function contactBarrierLayerKey(nucleusId: number, y: number) {
+  return `${nucleusId}:${y}`;
+}
+
+function isWithinVerticalGrowthBand(
+  candidate: CandidateBlock,
+  nucleus: NucleusPlan,
+  settings: GenerationSettings,
+) {
+  const verticalPadding = Math.max(2, Math.round(2 + settings.nucleiVerticalSpread * 4));
+
+  return (
+    candidate.y >= nucleus.origin[1] - verticalPadding &&
+    candidate.y <= nucleus.origin[1] + nucleus.layers + verticalPadding
+  );
+}
+
+function estimateNucleusFrontSpeed(nucleus: NucleusPlan, settings: GenerationSettings) {
+  const horizontalReach = nucleus.maxRadius + settings.edgeGrowthBias * 2.8 + settings.crystalScale * 1.2;
+  const verticalCost = Math.max(1, nucleus.layers * (0.84 - settings.coolingRate * 0.12));
+
+  return Math.max(0.05, horizontalReach / verticalCost);
+}
+
+function clamp(value: number, min: number, max: number) {
+  return Math.min(max, Math.max(min, value));
+}
