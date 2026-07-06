@@ -32,6 +32,17 @@ npm.cmd run dev
 - `npm run preview` serves the production build locally.
 - `npm run test` runs Vitest.
 
+For production-style browser validation, run:
+
+```powershell
+npm.cmd run build
+npm.cmd run preview -- --port 4173
+```
+
+Then open `http://127.0.0.1:4173/`, click `Regenerate`, and confirm the
+preview block count streams from `0` through intermediate chunks to a completed
+model with a visible WebGL canvas and no browser console errors.
+
 Vite may warn that the first JavaScript chunk is larger than 500 kB because
 three.js, React Three Fiber, Drei, and the current viewport bundle are loaded
 up front. That is acceptable for the current MVP while generation remains

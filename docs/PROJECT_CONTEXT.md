@@ -81,7 +81,10 @@ Out of scope for MVP:
 - Add presets and shareable settings in URL.
 - Add screenshot export.
 - Add glTF export if geometry structure is stable.
-- Add Playwright screenshot/performance smoke tests.
+- Add Playwright screenshot/performance smoke tests. They should exercise a
+  production preview build, click `Regenerate`, assert that block counts stream
+  from `0` through intermediate values to completion, check for one visible
+  WebGL canvas, and fail on browser console errors.
 
 ## Core Data Contracts
 

@@ -44,6 +44,16 @@ export type CrystalBlockStage =
   | 'terrace'
   | 'branch';
 
+export interface CrystalGrowthFrame {
+  direction: [number, number, number];
+  edgeExposure: number;
+  hopperLag: number;
+  screwPhase: number;
+  screwStrength: number;
+  contactStress: number;
+  misorientation: number;
+}
+
 export interface CrystalBlock {
   id: number;
   nucleusId: number;
@@ -53,6 +63,7 @@ export interface CrystalBlock {
   size: number;
   stage: CrystalBlockStage;
   age: number;
+  growth: CrystalGrowthFrame;
   oxideThickness: number;
 }
 

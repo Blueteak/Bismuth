@@ -29,6 +29,7 @@ Create a seeded PRNG from the user seed and settings hash. Place one or more nuc
 - Position.
 - Start delay.
 - Primary orientation.
+- A growth direction field carried by each emitted voxel.
 - Vertical spread inside the growth volume.
 - Initial size.
 - Growth budget.
@@ -41,7 +42,8 @@ Create a seeded PRNG from the user seed and settings hash. Place one or more nuc
 Represent each nucleus as a stack of stepped rectangular/rhomboid shells on a lattice. For each growth iteration:
 
 - Find active frontier cells.
-- Score frontier cells by edge exposure, face-center distance, orientation, cooling rate, and impurity.
+- Score frontier cells by edge exposure, face-center lag, local growth direction,
+  orientation, cooling rate, and impurity.
 - Prefer cells along outer edges and corners.
 - Fill face centers more slowly according to `faceFillRate`.
 - Leave recessed centers when `hopperDepth` is high.
@@ -75,8 +77,11 @@ another. This lets similarly aged growth fronts interact. When nuclei collide:
 
 - Place contact cells so the crystals physically touch instead of leaving an
   empty plane.
-- Register a deterministic stop boundary for both nuclei so future growth does
-  not pass through the contact surface.
+- Compare the touching voxels' stored growth directions. If the directions
+  differ, resolve the new direction locally by reflecting incoming growth off
+  the contact plane and biasing it along the free tangent of the interface.
+- Track contact stress and misorientation on the voxel growth frame so later
+  pruning can remove cells that locally overgrew through a mismatched boundary.
 - Keep visible boundary facets where the surface remains exposed.
 - Avoid expensive boolean operations in the MVP.
 
@@ -156,17 +161,24 @@ deterministic block layout.
 
 ## Current Implementation Notes
 
+- `src/generation/generateCrystal.ts` is the public orchestration entry point.
+  Growth planning, nuclei setup, contact resolution, surface/oxide extraction,
+  timeline pacing, spatial helpers, and math helpers live in focused sibling
+  modules under `src/generation`.
 - The current generator precomputes candidate blocks for every nucleus, sorts
   them by deterministic growth age, and resolves occupancy/collisions in that
   shared order.
 - Standard quality uses a higher-resolution lattice than the initial prototype
   while preserving the default triangle budget.
-- Collision boundaries are exclusive: contact cells may fill, but candidates
-  beyond the merged interface are rejected.
+- Each block stores a growth frame with direction, edge exposure, hopper lag,
+  screw-dislocation phase/strength, contact stress, and misorientation.
+- Multi-nucleus interfaces are resolved with local direction reactions instead
+  of explicit per-nucleus collision planes.
 - A support-pruning pass runs after collision resolution to remove unsupported
   terminal voxels.
 - Spiral steps are implemented as square-lattice screw-dislocation influence
-  fields rather than true molecular simulation.
+  fields rather than true molecular simulation, and that field contributes to
+  the voxel growth direction.
 - The renderer currently displays blocks as an instanced lattice with generated
   oxide colors and procedural scratch/bump detail. Fine scratch detail is
   render-time surface texture, not generated crystal geometry.
@@ -241,9 +253,22 @@ Raw generation taking 5+ seconds is acceptable. The failure case is not long gen
 - Screw-dislocation sources produce visible square spiral step fronts.
 - Multi-nucleus growth creates face-adjacent contact cells rather than empty
   collision planes.
+- Contact voxels with mismatched directions record contact stress and updated
+  growth direction.
+- Every emitted block carries a finite, normalized growth direction plus bounded
+  hopper lag, edge exposure, screw strength, contact stress, and misorientation
+  values.
+- Local A-B-A pass-through patterns across mismatched nuclei are pruned without
+  relying on explicit per-nucleus collision planes.
 - Unsupported terminal voxels are removed from final output.
 - Triangle estimate stays under quality-level budget.
 - All emitted progress values are monotonic from 0 to 1.
 - Chunk event ordering is deterministic for identical seed/settings.
 - Pacing can slow down fast generation without changing final model output.
 - Cancellation stops worker output for stale jobs.
+
+For browser validation after generator changes, build and serve the production
+bundle, then use the app's `Regenerate` button. Confirm the preview count
+streams from `0` through visible intermediate block counts to a completed model,
+the WebGL canvas remains visible throughout, and the browser console has no
+errors or warnings.

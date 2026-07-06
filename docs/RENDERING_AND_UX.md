@@ -169,11 +169,26 @@ Use these stats to prevent silent performance regressions.
 For rendering or UI changes, verify:
 
 - Production build completes.
-- The local dev page loads with a WebGL canvas.
+- The production preview page loads with a WebGL canvas. A typical manual
+  command sequence is `npm.cmd run build` followed by
+  `npm.cmd run preview -- --port 4173`.
+- A screenshot of the viewport shows nonblank crystal geometry, not only the
+  UI shell or empty stage.
 - Browser console has no errors.
 - Desktop layout shows the viewport, parameter rail, top bar, and timeline.
 - Mobile/narrow layout keeps the canvas full-width and moves the parameter rail without overlap.
 - Interactive toggles, especially timeline and camera controls, update their visible or accessibility state.
+
+For generation-related visual QA in the browser, regenerate once from the
+production preview build and verify:
+
+- The visible block count starts at `0`, then advances through intermediate
+  chunks instead of jumping straight to the final state.
+- The final status returns to `Preview ready - complete`.
+- The final block and triangle counts are present and remain under the selected
+  quality budget.
+- The regenerated model still shows hopper recesses, stepped/square terraces,
+  and oxide color variation.
 
 ## Export Ideas
 

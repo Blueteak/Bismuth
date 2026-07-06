@@ -192,6 +192,9 @@ Local development notes:
   - `npm.cmd run build`
   - `npm.cmd test -- --run`
   - `npm.cmd run dev`
+- Use `npm.cmd run preview -- --port 4173` to validate the production build
+  in the browser after `npm.cmd run build`. If port `4173` is occupied, use a
+  nearby free port and note the URL.
 - If one of those commands still fails with a config-read sandbox error, rerun
   the same command with the appropriate approved escalation instead of changing
   project code.
@@ -204,13 +207,19 @@ Local development notes:
 For generator changes:
 
 - Determinism test passes.
+- Production build passes.
 - New settings are documented in code or project docs.
-- Progress/timeline output still works.
+- Progress/timeline output still works in the built app. In browser validation,
+  regenerate once and confirm block counts advance from `0` through visible
+  intermediate chunks to a completed model.
 - Triangle/draw-call impact is understood.
+- Browser console errors are checked after regeneration.
 
 For rendering changes:
 
 - Visual change is inspected in the browser.
+- Prefer validating against a production preview build, not only the Vite dev
+  server, when shader/material/worker output is involved.
 - FPS/performance impact is checked.
 - Mobile and desktop layout are checked if UI is affected.
 - R3F canvas sizing is checked after responsive changes. The canvas should fill its viewport container at desktop and mobile widths.
