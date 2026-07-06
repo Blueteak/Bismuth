@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { generateCrystal } from './generateCrystal';
+import { localCellKey } from './spatial';
 import { baseGenerationSettings } from './testSettings';
 
 describe('generateCrystal model invariants', () => {
@@ -18,28 +19,33 @@ describe('generateCrystal model invariants', () => {
 
   it('does not leave unsupported terminal voxels near the top of each nucleus', () => {
     const { model } = generateCrystal(baseGenerationSettings);
-    const occupied = new Set(model.blocks.map((block) => `${block.x},${block.y},${block.z}`));
-    const maxYByNucleus = new Map<number, number>();
+    const occupied = new Set(model.blocks.map((block) => localCellKey(block.nucleusId, block.local)));
+    const maxLayerByNucleus = new Map<number, number>();
 
     for (const block of model.blocks) {
-      maxYByNucleus.set(
+      maxLayerByNucleus.set(
         block.nucleusId,
-        Math.max(maxYByNucleus.get(block.nucleusId) ?? Number.NEGATIVE_INFINITY, block.y),
+        Math.max(maxLayerByNucleus.get(block.nucleusId) ?? Number.NEGATIVE_INFINITY, block.local[1]),
       );
     }
 
     for (const block of model.blocks) {
-      if (block.stage === 'seed' || block.y < (maxYByNucleus.get(block.nucleusId) ?? block.y) - 2) {
+      if (
+        block.stage === 'seed' ||
+        block.local[1] < (maxLayerByNucleus.get(block.nucleusId) ?? block.local[1]) - 2
+      ) {
         continue;
       }
 
       const horizontalNeighbors = [
-        `${block.x + 1},${block.y},${block.z}`,
-        `${block.x - 1},${block.y},${block.z}`,
-        `${block.x},${block.y},${block.z + 1}`,
-        `${block.x},${block.y},${block.z - 1}`,
+        localCellKey(block.nucleusId, [block.local[0] + 1, block.local[1], block.local[2]]),
+        localCellKey(block.nucleusId, [block.local[0] - 1, block.local[1], block.local[2]]),
+        localCellKey(block.nucleusId, [block.local[0], block.local[1], block.local[2] + 1]),
+        localCellKey(block.nucleusId, [block.local[0], block.local[1], block.local[2] - 1]),
       ].filter((key) => occupied.has(key)).length;
-      const hasAbove = occupied.has(`${block.x},${block.y + 1},${block.z}`);
+      const hasAbove = occupied.has(
+        localCellKey(block.nucleusId, [block.local[0], block.local[1] + 1, block.local[2]]),
+      );
 
       if (!hasAbove) {
         expect(horizontalNeighbors).toBeGreaterThanOrEqual(2);

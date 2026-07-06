@@ -18,7 +18,16 @@ import { assignOxide, buildFacets, getOxideRange } from './surface';
 import { applyDisplayTiming, chooseChunkStep, getChunkProgressDelta } from './timeline';
 import { createSeededPrng, hashString } from './prng';
 import { normalizeGenerationSettings, stableSettingsString } from './settings';
-import { cellKey, chunkBlocks, cloneBounds, createEmptyBounds, extendBounds } from './spatial';
+import {
+  addBlockToSpatialIndex,
+  chunkBlocks,
+  cloneBounds,
+  createEmptyBounds,
+  createSpatialIndex,
+  extendBounds,
+  getNearbyBlocks,
+  localCellKey,
+} from './spatial';
 import type { CandidateBlock } from './internalTypes';
 import type { CrystalBlock, GenerationEvent, GenerationResult, GenerationSettings, GenerationStep } from './types';
 
@@ -30,7 +39,8 @@ export function generateCrystal(settings: GenerationSettings): GenerationResult 
   const plan = qualityPlan[normalized.quality];
   const events: GenerationEvent[] = [];
   const blocks: CrystalBlock[] = [];
-  let occupied = new Map<string, CrystalBlock>();
+  const occupied = createSpatialIndex();
+  const localOccupied = new Map<string, CrystalBlock>();
   let eventProgress = 0;
   let blockId = 1;
   const contactBarriers = createContactBarrierState();
@@ -87,8 +97,11 @@ export function generateCrystal(settings: GenerationSettings): GenerationResult 
       continue;
     }
 
-    const key = cellKey(candidate.x, candidate.y, candidate.z);
-    const occupyingBlock = occupied.get(key);
+    const occupyingBlock = getNearbyBlocks(
+      occupied,
+      [candidate.x, candidate.y, candidate.z],
+      0.62,
+    ).sort((a, b) => a.id - b.id)[0];
     if (occupyingBlock) {
       resolveOccupiedContact(occupyingBlock, candidate);
       continue;
@@ -102,12 +115,12 @@ export function generateCrystal(settings: GenerationSettings): GenerationResult 
       continue;
     }
 
-    if (!hasSameNucleusGrowthSupport(candidate, occupied)) {
+    if (!hasSameNucleusGrowthSupport(candidate, localOccupied)) {
       continue;
     }
 
     const contacts = findDirectionalContacts(candidate, occupied);
-    if (isOccludedByResolvedContact(candidate, contacts, occupied)) {
+    if (isOccludedByResolvedContact(candidate, contacts, localOccupied)) {
       continue;
     }
     const growth = resolveGrowthFrameAtContact(candidate, contacts);
@@ -118,6 +131,8 @@ export function generateCrystal(settings: GenerationSettings): GenerationResult 
       x: candidate.x,
       y: candidate.y,
       z: candidate.z,
+      local: candidate.local,
+      basis: candidate.basis,
       size: candidate.size,
       stage: candidate.stage,
       age: Math.round(candidate.age + growth.contactStress * 42),
@@ -125,14 +140,14 @@ export function generateCrystal(settings: GenerationSettings): GenerationResult 
       oxideThickness: 0,
     };
 
-    occupied.set(key, block);
+    addBlockToSpatialIndex(occupied, block);
+    localOccupied.set(localCellKey(block.nucleusId, block.local), block);
     recordContactBarriers(block, contacts, contactBarriers);
     stagedBlocks.push(block);
   }
 
   stagedBlocks = pruneDirectionalOvergrowth(stagedBlocks);
   stagedBlocks = pruneUnsupportedBlocks(stagedBlocks);
-  occupied = new Map(stagedBlocks.map((block) => [cellKey(block.x, block.y, block.z), block]));
 
   for (const chunk of chunkBlocks(stagedBlocks, plan.chunkSize)) {
     for (const block of chunk) {
@@ -148,8 +163,7 @@ export function generateCrystal(settings: GenerationSettings): GenerationResult 
   assignOxide(blocks, normalized, prng);
   emit('oxidation', stepWeights.oxidation, 'Oxide thickness assigned');
 
-  const occupiedCells = new Set(occupied.keys());
-  const facets = buildFacets(blocks, occupiedCells);
+  const facets = buildFacets(blocks);
   emit('mesh-build', stepWeights['mesh-build'], 'Renderable block model built');
 
   const oxideRange = getOxideRange(blocks);

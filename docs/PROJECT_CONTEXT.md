@@ -97,6 +97,7 @@ export interface GenerationSettings {
   nucleationCount: number;
   nucleusStartDelay: number;
   nucleiVerticalSpread: number;
+  growthDirectionRandomness: number;
   initialSeedSize: number;
   crystalScale: number;
   symmetryBias: number;
@@ -185,4 +186,7 @@ export interface GenerationEvent {
   nuclei co-grow, collision fronts merge without crossing, screw-dislocation
   sources create square spiral terraces, and unsupported terminal voxels are
   pruned.
+- Let nuclei occupy and grow through 3D space with per-nucleus local growth
+  bases; avoid new generator rules that assume every voxel shares a world-up
+  axis unless the rule is explicitly about gravity.
 - Keep scientific claims modest and accurate.

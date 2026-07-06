@@ -47,6 +47,7 @@ export const defaultSettings: CrystalSettings = {
   nucleationCount: 3,
   nucleusStartDelay: 0.12,
   nucleiVerticalSpread: 0.38,
+  growthDirectionRandomness: 0.45,
   initialSeedSize: 0.42,
   crystalScale: 1,
   symmetryBias: 0.48,

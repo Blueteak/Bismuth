@@ -13,6 +13,8 @@ Bismuth display crystals are recognizable because of:
 - Hollowed centers: face interiors can lag behind edge growth.
 - Branching clusters: multiple nuclei co-grow, collide, and physically merge at
   contact surfaces.
+- Arbitrary crystal orientation: each nucleus can grow along its own local
+  direction instead of sharing one world-up axis.
 - Oxide coloration: surface oxide thickness varies and creates thin-film interference colors.
 - Brittle metallic facets: large flat faces, sharp edges, and small imperfections.
 
@@ -24,13 +26,14 @@ Use a discrete lattice plus compact surface extraction. The generator must be in
 
 ### 1. Seed Initialization
 
-Create a seeded PRNG from the user seed and settings hash. Place one or more nuclei near the model center. Each nucleus has:
+Create a seeded PRNG from the user seed and settings hash. Place one or more nuclei near the model center in 3D space. Each nucleus has:
 
 - Position.
 - Start delay.
 - Primary orientation.
+- A local basis whose `up` vector is the nucleus growth direction.
 - A growth direction field carried by each emitted voxel.
-- Vertical spread inside the growth volume.
+- Spatial spread inside the growth volume.
 - Initial size.
 - Growth budget.
 - Local impurity offset.
@@ -39,7 +42,7 @@ Create a seeded PRNG from the user seed and settings hash. Place one or more nuc
 
 ### 2. Edge-Biased Hopper Growth
 
-Represent each nucleus as a stack of stepped rectangular/rhomboid shells on a lattice. For each growth iteration:
+Represent each nucleus as a stack of stepped rectangular/rhomboid shells on a local lattice. Transform local cells through the nucleus basis before they become world-space blocks. For each growth iteration:
 
 - Find active frontier cells.
 - Score frontier cells by edge exposure, face-center lag, local growth direction,
@@ -52,8 +55,8 @@ This produces the defining hopper silhouette: developed edges with lagging cente
 
 ### 3. Screw-Dislocation Terrace Formation
 
-Quantize vertical growth into `terraceHeight`. Add ledges by shrinking or expanding
-each layer's footprint, but do not rely on random terrace noise for the defining
+Quantize local growth advance into `terraceHeight`. Add ledges by shrinking or expanding
+each layer's footprint along the nucleus growth direction, but do not rely on random terrace noise for the defining
 spiral shape. Each nucleus should carry deterministic square-lattice spiral
 sources that approximate screw-dislocation growth:
 
@@ -86,15 +89,15 @@ another. This lets similarly aged growth fronts interact. When nuclei collide:
 - Avoid expensive boolean operations in the MVP.
 
 After growth, prune unsupported terminal cells. Free-floating or single-neighbor
-voxels, especially near the top of late-stage growth, are not physically
-plausible and should be removed.
+voxels, especially near the local growth terminus of late-stage growth, are not
+physically plausible and should be removed.
 
 ### 5. Oxide Thickness
 
 Assign oxide thickness after geometry is known. Inputs:
 
 - `oxidationExposure`.
-- Height and outward normal.
+- Local growth layer and outward normal.
 - Local impurity/noise.
 - Face age from growth timeline.
 - Recessed areas, which may oxidize differently.
@@ -138,13 +141,16 @@ The goal is not simply progress reporting. The user should see the crystal grow.
   oxide display intensity controls how strongly that model data is shown.
 - `nucleationCount`: Controls number of initial crystals.
 - `nucleusStartDelay`: Controls how far apart the first growth pulses of separate nuclei can be.
-- `nucleiVerticalSpread`: Controls how much initial nuclei can be suspended above the base plane.
+- `nucleiVerticalSpread`: Legacy key for how far initial nuclei can spread in 3D space.
+- `growthDirectionRandomness`: Controls how strongly each nucleus growth
+  direction is randomized away from world up.
 - `initialSeedSize`: Controls starting nucleus radius before shells grow outward.
 - `crystalScale`: Overall lattice block size and radius boost.
 - `symmetryBias`: Higher values keep nuclei, footprints, and drift more regular;
   lower values allow stronger asymmetry.
 - `gravitySagBias`: Shifts upper layers laterally/down-axis over height for a
-  subtle sagging growth bias.
+  subtle sagging growth bias. Gravity remains the intentional world-space bias;
+  hopper layer growth itself is local to each nucleus.
 - `quality`: Selects preview, standard, or high generation budgets for layer
   count, radius, chunk size, and minimum playback duration.
 
@@ -168,6 +174,9 @@ deterministic block layout.
 - The current generator precomputes candidate blocks for every nucleus, sorts
   them by deterministic growth age, and resolves occupancy/collisions in that
   shared order.
+- Nuclei now carry a local basis. The generator keeps compact local lattice
+  coordinates for same-nucleus support and uses oriented world positions plus a
+  spatial hash for inter-nucleus collision/contact checks.
 - Standard quality uses a higher-resolution lattice than the initial prototype
   while preserving the default triangle budget.
 - Each block stores a growth frame with direction, edge exposure, hopper lag,
@@ -179,9 +188,9 @@ deterministic block layout.
 - Spiral steps are implemented as square-lattice screw-dislocation influence
   fields rather than true molecular simulation, and that field contributes to
   the voxel growth direction.
-- The renderer currently displays blocks as an instanced lattice with generated
-  oxide colors and procedural scratch/bump detail. Fine scratch detail is
-  render-time surface texture, not generated crystal geometry.
+- The renderer currently displays blocks as oriented instanced lattice cells
+  with generated oxide colors and procedural scratch/bump detail. Fine scratch
+  detail is render-time surface texture, not generated crystal geometry.
 
 ## Progress and Chunk Events
 
@@ -258,6 +267,8 @@ Raw generation taking 5+ seconds is acceptable. The failure case is not long gen
 - Every emitted block carries a finite, normalized growth direction plus bounded
   hopper lag, edge exposure, screw strength, contact stress, and misorientation
   values.
+- Blocks carry local lattice coordinates and a world basis so tests can verify
+  local support without assuming a universal growth axis.
 - Local A-B-A pass-through patterns across mismatched nuclei are pruned without
   relying on explicit per-nucleus collision planes.
 - Unsupported terminal voxels are removed from final output.

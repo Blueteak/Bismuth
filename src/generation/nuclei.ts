@@ -1,6 +1,13 @@
 import type { SeededPrng } from './prng';
 import type { GenerationSettings } from './types';
 import type { NucleusPlan, SpiralSource } from './internalTypes';
+import {
+  crossVector,
+  dotVector,
+  normalizeVector,
+  roundedVector,
+  transformLocalPoint,
+} from './math';
 
 export function createNuclei(
   settings: GenerationSettings,
@@ -13,23 +20,23 @@ export function createNuclei(
     5,
     Math.round(maxRadius * (1.25 + (1 - settings.symmetryBias) * 0.42) + settings.crystalScale),
   );
-  const verticalRange = Math.round(baseLayers * settings.nucleiVerticalSpread * 0.62);
+  const spatialRange = Math.round(baseLayers * settings.nucleiVerticalSpread * 0.62);
   const delayRange = Math.round(baseLayers * 74 * settings.nucleusStartDelay);
   const clusterRadiusScale = 1 / (1 + Math.max(0, settings.nucleationCount - 1) * 0.08);
 
   for (let index = 0; index < settings.nucleationCount; index += 1) {
     const ring = Math.floor(index / 4);
-    const axis = index % 4;
-    const angle =
-      axis * (Math.PI / 2) +
-      prng.signed((1 - settings.symmetryBias) * 0.95 + settings.impurity * 0.25);
+    const spawnDirection = getSpawnDirection(index, settings, prng);
     const radius =
       index === 0
         ? Math.round(settings.nucleiVerticalSpread * prng.next() * 2)
-        : spacing + ring * 2 + Math.round(prng.signed(settings.impurity * 2));
-    const x = Math.round(Math.cos(angle) * radius + prng.signed(settings.impurity * 1.5));
-    const z = Math.round(Math.sin(angle) * radius + prng.signed(settings.impurity * 1.5));
-    const y = Math.round(prng.next() * verticalRange);
+        : Math.round(spacing * (0.78 + settings.nucleiVerticalSpread * 0.56) + ring * 2);
+    const originJitter = 0.45 + settings.impurity * 1.5 + (1 - settings.symmetryBias) * 0.9;
+    const origin = roundedVector([
+      spawnDirection[0] * radius + prng.signed(originJitter),
+      spawnDirection[1] * radius + prng.signed(originJitter + spatialRange * 0.18),
+      spawnDirection[2] * radius + prng.signed(originJitter),
+    ]);
     const layers = Math.max(
       4,
       Math.round(baseLayers * (0.82 + settings.coolingRate * 0.35 + prng.signed(0.08))),
@@ -39,11 +46,18 @@ export function createNuclei(
     const nucleusMaxRadius = Math.round((maxRadius + radiusBoost) * clusterRadiusScale);
     const nucleusHandedness = prng.pickSign();
     const spiralPitch = 0.16 + prng.next() * 0.34 + settings.terraceHeight * 0.18;
+    const orientation = prng.nextInt(0, 3) as 0 | 1 | 2 | 3;
+    const growthDirection = getGrowthDirection([0, 1, 0], settings, prng);
+    const basis = createGrowthBasis(
+      growthDirection,
+      orientation * (Math.PI / 2) + prng.signed((1 - settings.symmetryBias) * 0.45 + settings.impurity * 0.18),
+    );
 
     nuclei.push({
       id: index + 1,
-      origin: [x, y, z],
-      orientation: prng.nextInt(0, 3) as 0 | 1 | 2 | 3,
+      origin,
+      orientation,
+      basis,
       layers,
       baseRadius,
       maxRadius: Math.max(baseRadius + 2, nucleusMaxRadius),
@@ -85,15 +99,23 @@ export function createNuclei(
     const directionX = prng.pickSign();
     const directionZ = prng.pickSign();
     const branchRadius = Math.max(3, Math.round(parent.maxRadius * 0.58));
+    const branchOrientation = ((parent.orientation + prng.nextInt(1, 3)) % 4) as 0 | 1 | 2 | 3;
+    const branchOrigin = transformLocalPoint(parent.origin, parent.basis, [
+      directionX * Math.round(parent.maxRadius * 0.82),
+      prng.nextInt(1, Math.max(3, Math.round(spatialRange * 0.5) + 2)),
+      directionZ * Math.round(parent.maxRadius * 0.82),
+    ]);
+    const branchDirection = getGrowthDirection(parent.basis.up, settings, prng);
+    const branchBasis = createGrowthBasis(
+      branchDirection,
+      branchOrientation * (Math.PI / 2) + prng.signed(settings.impurity * 0.32 + 0.12),
+    );
 
     nuclei.push({
       id: nuclei.length + 1,
-      origin: [
-        parent.origin[0] + directionX * Math.round(parent.maxRadius * 0.82),
-        parent.origin[1] + prng.nextInt(1, Math.max(3, Math.round(verticalRange * 0.5) + 2)),
-        parent.origin[2] + directionZ * Math.round(parent.maxRadius * 0.82),
-      ],
-      orientation: ((parent.orientation + prng.nextInt(1, 3)) % 4) as 0 | 1 | 2 | 3,
+      origin: branchOrigin,
+      orientation: branchOrientation,
+      basis: branchBasis,
       layers: Math.max(4, Math.round(parent.layers * (0.45 + prng.next() * 0.25))),
       baseRadius: Math.max(1, parent.baseRadius - 1),
       maxRadius: branchRadius,
@@ -129,6 +151,88 @@ export function createNuclei(
   }
 
   return nuclei;
+}
+
+function getSpawnDirection(
+  index: number,
+  settings: GenerationSettings,
+  prng: SeededPrng,
+) {
+  if (index === 0) {
+    return randomUnitVector(prng);
+  }
+
+  const axis = (index - 1) % 4;
+  const angle =
+    axis * (Math.PI / 2) +
+    prng.signed((1 - settings.symmetryBias) * 0.95 + settings.impurity * 0.25);
+  const planar = normalizeVector([
+    Math.cos(angle),
+    prng.signed(settings.nucleiVerticalSpread * 1.35 + settings.impurity * 0.45),
+    Math.sin(angle),
+  ]);
+  const random = randomUnitVector(prng);
+  const randomWeight = 0.28 + settings.nucleiVerticalSpread * 0.34 + (1 - settings.symmetryBias) * 0.24;
+
+  return normalizeVector([
+    planar[0] * (1 - randomWeight) + random[0] * randomWeight,
+    planar[1] * (1 - randomWeight) + random[1] * randomWeight,
+    planar[2] * (1 - randomWeight) + random[2] * randomWeight,
+  ]);
+}
+
+function getGrowthDirection(
+  baseDirection: [number, number, number],
+  settings: GenerationSettings,
+  prng: SeededPrng,
+) {
+  const random = randomUnitVector(prng);
+  const randomness = settings.growthDirectionRandomness;
+
+  return normalizeVector([
+    baseDirection[0] * (1 - randomness) + random[0] * randomness,
+    baseDirection[1] * (1 - randomness) + random[1] * randomness,
+    baseDirection[2] * (1 - randomness) + random[2] * randomness,
+  ]);
+}
+
+function createGrowthBasis(
+  upDirection: [number, number, number],
+  twist: number,
+) {
+  const up = normalizeVector(upDirection);
+  const reference =
+    Math.abs(dotVector(up, [0, 1, 0])) > 0.82
+      ? ([1, 0, 0] as [number, number, number])
+      : ([0, 1, 0] as [number, number, number]);
+  const seedRight = normalizeVector(crossVector(reference, up));
+  const seedForward = normalizeVector(crossVector(up, seedRight));
+  const cos = Math.cos(twist);
+  const sin = Math.sin(twist);
+  const right = normalizeVector([
+    seedRight[0] * cos + seedForward[0] * sin,
+    seedRight[1] * cos + seedForward[1] * sin,
+    seedRight[2] * cos + seedForward[2] * sin,
+  ]);
+  const forward = normalizeVector(crossVector(up, right));
+
+  return {
+    right,
+    up,
+    forward,
+  };
+}
+
+function randomUnitVector(prng: SeededPrng): [number, number, number] {
+  const y = prng.signed(1);
+  const angle = prng.next() * Math.PI * 2;
+  const radius = Math.sqrt(Math.max(0, 1 - y * y));
+
+  return normalizeVector([
+    Math.cos(angle) * radius,
+    y,
+    Math.sin(angle) * radius,
+  ]);
 }
 
 function createSpiralSources({
@@ -167,4 +271,3 @@ function createSpiralSources({
 
   return sources;
 }
-

@@ -1,4 +1,11 @@
-import { clamp01, normalizeVector, rotateCell } from './math';
+import {
+  clamp01,
+  normalizeVector,
+  rotateCell,
+  roundedVector,
+  transformLocalDirection,
+  transformLocalPoint,
+} from './math';
 import type { SeededPrng } from './prng';
 import type { CrystalBlockStage, CrystalGrowthFrame, GenerationSettings } from './types';
 import type { CandidateBlock, LayerExtents, NucleusPlan, SquareSpiralInfluence } from './internalTypes';
@@ -51,8 +58,7 @@ export function planNucleusGrowth({
           (0.7 + layerRatio * 0.52),
       ),
     );
-    const y = nucleus.origin[1] + layer;
-    const sagShift = Math.round(settings.gravitySagBias * layerRatio * layer * 0.18);
+    const sagShift = settings.gravitySagBias * layerRatio * layer * 0.18;
     const spiralOffset = getSpiralOffset(nucleus, layer, layerRatio, settings);
     const centerDrift = getHopperCenterDrift(nucleus, layer, layerRatio, settings);
     const extents = getLayerExtents(outer, nucleus, layer, layerRatio, settings);
@@ -60,8 +66,13 @@ export function planNucleusGrowth({
     for (let x = -extents.negX; x <= extents.posX; x += 1) {
       for (let z = -extents.negZ; z <= extents.posZ; z += 1) {
         const rotated = rotateCell(x, z, nucleus.orientation);
-        const worldX = nucleus.origin[0] + rotated[0] + spiralOffset[0];
-        const worldZ = nucleus.origin[2] + rotated[1] + sagShift + spiralOffset[1];
+        const local = [
+          rotated[0] + spiralOffset[0],
+          layer,
+          rotated[1] + spiralOffset[1],
+        ] as [number, number, number];
+        const world = transformLocalPoint(nucleus.origin, nucleus.basis, local);
+        const saggedWorld = roundedVector([world[0], world[1] - sagShift, world[2]]);
         const edgeDistance = getEdgeDistance(x, z, extents);
         const isEdge = edgeDistance < terraceWidth;
         const centerX = x - centerDrift[0];
@@ -146,9 +157,11 @@ export function planNucleusGrowth({
         blocks.push({
           plannedOrder: nextCandidateOrder(),
           nucleusId: nucleus.id,
-          x: worldX,
-          y,
-          z: worldZ,
+          x: saggedWorld[0],
+          y: saggedWorld[1],
+          z: saggedWorld[2],
+          local,
+          basis: nucleus.basis,
           size: Number((0.22 + settings.crystalScale * 0.08).toFixed(4)),
           stage,
           age:
@@ -244,24 +257,25 @@ export function getCandidateGrowthFrame({
   const screwStrength = clamp01(Math.max(spiralBand * 0.46, dislocationSpiral.band) * dislocationSpiral.strength);
   const outward = getOutwardDirection(x, z, extents);
   const spiralTangent = getScrewTangentDirection(x, z, nucleus.handedness);
-  const verticalLead = 0.08 + layerRatio * 0.16 + screwStrength * 0.12 - hopperLag * 0.08;
+  const layerAdvanceLead = 0.08 + layerRatio * 0.16 + screwStrength * 0.12 - hopperLag * 0.08;
   const localDirection = normalizeVector([
     outward[0] * (0.78 + edgeExposure * 0.42) +
       spiralTangent[0] * screwStrength * 0.58 +
       nucleus.lateralDrift[0] * 0.04,
-    verticalLead,
+    layerAdvanceLead,
     outward[2] * (0.78 + edgeExposure * 0.42) +
       spiralTangent[2] * screwStrength * 0.58 +
       nucleus.lateralDrift[1] * 0.04,
   ]);
   const rotated = rotateCell(localDirection[0], localDirection[2], nucleus.orientation);
+  const direction = transformLocalDirection(nucleus.basis, [
+    rotated[0],
+    localDirection[1],
+    rotated[1],
+  ]);
 
   return {
-    direction: [
-      Number(rotated[0].toFixed(4)),
-      Number(localDirection[1].toFixed(4)),
-      Number(rotated[1].toFixed(4)),
-    ],
+    direction,
     edgeExposure: Number(edgeExposure.toFixed(4)),
     hopperLag: Number(hopperLag.toFixed(4)),
     screwPhase: Number(dislocationSpiral.phase.toFixed(4)),

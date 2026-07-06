@@ -1,4 +1,4 @@
-import type { CrystalBlockStage, CrystalGrowthFrame } from './types';
+import type { CrystalBlock, CrystalBlockStage, CrystalGrowthFrame } from './types';
 
 export interface SpiralSource {
   offset: [number, number];
@@ -13,6 +13,7 @@ export interface NucleusPlan {
   id: number;
   origin: [number, number, number];
   orientation: 0 | 1 | 2 | 3;
+  basis: CrystalBlock['basis'];
   layers: number;
   baseRadius: number;
   maxRadius: number;
@@ -32,6 +33,8 @@ export interface CandidateBlock {
   x: number;
   y: number;
   z: number;
+  local: [number, number, number];
+  basis: CrystalBlock['basis'];
   size: number;
   stage: CrystalBlockStage;
   age: number;
@@ -52,4 +55,3 @@ export interface SquareSpiralInfluence {
   isStep: boolean;
   strength: number;
 }
-

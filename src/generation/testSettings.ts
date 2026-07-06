@@ -6,6 +6,7 @@ export const baseGenerationSettings: GenerationSettings = {
   nucleationCount: 2,
   nucleusStartDelay: 0.18,
   nucleiVerticalSpread: 0.28,
+  growthDirectionRandomness: 0.45,
   initialSeedSize: 0.42,
   crystalScale: 1,
   symmetryBias: 0.72,

@@ -58,8 +58,9 @@ This can begin as an art-directed palette lookup and later move toward a more ph
 Use different representations for different moments:
 
 - During generation: instanced blocks, shells, or partial surfaces. Prioritize frequent visible updates and the experience of watching the crystal form.
-- Final standard view today: instanced lattice blocks carrying oxide-driven
-  vertex colors, with the model kept under the default triangle budget.
+- Final standard view today: oriented instanced lattice blocks carrying
+  oxide-driven vertex colors, with the model kept under the default triangle
+  budget.
 - Future final standard view: merged `BufferGeometry` with facet attributes for oxide and roughness.
 - Final high view: more bevels/chamfers and higher-resolution normal/detail maps.
 

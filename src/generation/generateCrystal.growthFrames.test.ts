@@ -1,13 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { generateCrystal } from './generateCrystal';
+import { createSpatialIndex, getNearbyBlocks } from './spatial';
 import { baseGenerationSettings } from './testSettings';
-
-const horizontalDirections = [
-  [1, 0],
-  [-1, 0],
-  [0, 1],
-  [0, -1],
-] as const;
 
 describe('generateCrystal growth frames', () => {
   it('stores stable growth frames for hopper, screw, and contact behavior', () => {
@@ -20,9 +14,7 @@ describe('generateCrystal growth frames', () => {
       symmetryBias: 0.85,
       impurity: 0.08,
     });
-    const occupied = new Map(
-      model.blocks.map((block) => [`${block.x},${block.y},${block.z}`, block]),
-    );
+    const occupied = createSpatialIndex(model.blocks);
     let stressedContactCount = 0;
 
     for (const block of model.blocks) {
@@ -36,9 +28,9 @@ describe('generateCrystal growth frames', () => {
       expect(block.growth.screwStrength).toBeGreaterThanOrEqual(0);
       expect(block.growth.screwStrength).toBeLessThanOrEqual(1);
 
-      for (const [offsetX, offsetZ] of horizontalDirections) {
-        const neighbor = occupied.get(`${block.x + offsetX},${block.y},${block.z + offsetZ}`);
+      for (const neighbor of getNearbyBlocks(occupied, [block.x, block.y, block.z], 1.18)) {
         if (
+          neighbor.id !== block.id &&
           neighbor &&
           neighbor.nucleusId !== block.nucleusId &&
           (block.growth.contactStress > 0 || neighbor.growth.contactStress > 0)

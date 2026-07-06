@@ -8,6 +8,7 @@ type NumericSetting = {
     | 'nucleationCount'
     | 'nucleusStartDelay'
     | 'nucleiVerticalSpread'
+    | 'growthDirectionRandomness'
     | 'initialSeedSize'
     | 'crystalScale'
     | 'symmetryBias'
@@ -35,7 +36,8 @@ type NumericSetting = {
 const structureSettings: NumericSetting[] = [
   { key: 'nucleationCount', label: 'Nuclei', min: 1, max: 8, step: 1 },
   { key: 'nucleusStartDelay', label: 'Start delay', min: 0, max: 1, step: 0.01 },
-  { key: 'nucleiVerticalSpread', label: 'Vertical spread', min: 0, max: 1, step: 0.01 },
+  { key: 'nucleiVerticalSpread', label: 'Spatial spread', min: 0, max: 1, step: 0.01 },
+  { key: 'growthDirectionRandomness', label: 'Direction random', min: 0, max: 1, step: 0.01 },
   { key: 'initialSeedSize', label: 'Seed size', min: 0, max: 1, step: 0.01 },
   { key: 'crystalScale', label: 'Scale', min: 0.5, max: 1.6, step: 0.01 },
   { key: 'symmetryBias', label: 'Symmetry', min: 0, max: 1, step: 0.01 },

@@ -1,5 +1,5 @@
 import { dotVector, getMisorientation, normalizeVector } from './math';
-import { cellKey } from './spatial';
+import { createSpatialIndex, getNearbyBlocks, localCellKey } from './spatial';
 import type { CandidateBlock, NucleusPlan } from './internalTypes';
 import type { CrystalBlock, CrystalGrowthFrame, GenerationSettings } from './types';
 
@@ -7,6 +7,7 @@ export interface DirectionalContact {
   block: CrystalBlock;
   offset: [number, number, number];
   misorientation: number;
+  distance: number;
 }
 
 export interface ContactBarrier {
@@ -16,63 +17,56 @@ export interface ContactBarrier {
 }
 
 export interface ContactBarrierState {
-  barriersByLayer: Map<string, ContactBarrier[]>;
+  barriersByNucleus: Map<number, ContactBarrier[]>;
 }
 
-const horizontalSupportOffsets = [
-  [1, 0],
-  [-1, 0],
-  [0, 1],
-  [0, -1],
+const localHorizontalSupportOffsets = [
+  [1, 0, 0],
+  [-1, 0, 0],
+  [0, 0, 1],
+  [0, 0, -1],
 ] as const;
-const contactBarrierLayerReach = 3;
 const contactBarrierClearance = 0.55;
+const contactReach = 1.18;
 
 export function createContactBarrierState(): ContactBarrierState {
   return {
-    barriersByLayer: new Map(),
+    barriersByNucleus: new Map(),
   };
 }
 
 export function findDirectionalContacts(
   candidate: CandidateBlock,
-  occupied: Map<string, CrystalBlock>,
+  occupied: Map<string, CrystalBlock[]>,
 ) {
   const contacts: DirectionalContact[] = [];
-  const offsets: [number, number, number][] = [
-    [1, 0, 0],
-    [-1, 0, 0],
-    [0, 0, 1],
-    [0, 0, -1],
-    [1, 1, 0],
-    [-1, 1, 0],
-    [0, 1, 1],
-    [0, 1, -1],
-    [1, -1, 0],
-    [-1, -1, 0],
-    [0, -1, 1],
-    [0, -1, -1],
-  ];
 
-  for (const [offsetX, offsetY, offsetZ] of offsets) {
-    const block = occupied.get(
-      cellKey(candidate.x + offsetX, candidate.y + offsetY, candidate.z + offsetZ),
-    );
+  for (const block of getNearbyBlocks(occupied, [candidate.x, candidate.y, candidate.z], contactReach)) {
+    const offset = normalizeVector([
+      block.x - candidate.x,
+      block.y - candidate.y,
+      block.z - candidate.z,
+    ]);
 
-    if (!block || block.nucleusId === candidate.nucleusId) {
+    if (block.nucleusId === candidate.nucleusId) {
       continue;
     }
 
     const misorientation = getMisorientation(candidate.growth.direction, block.growth.direction);
     if (misorientation > 0.08) {
-      contacts.push({ block, offset: [offsetX, offsetY, offsetZ], misorientation });
+      contacts.push({
+        block,
+        offset,
+        misorientation,
+        distance: Math.hypot(block.x - candidate.x, block.y - candidate.y, block.z - candidate.z),
+      });
     }
   }
 
   contacts.sort(
     (a, b) =>
       b.misorientation - a.misorientation ||
-      Math.abs(a.offset[1]) - Math.abs(b.offset[1]) ||
+      a.distance - b.distance ||
       a.block.id - b.block.id,
   );
 
@@ -91,22 +85,23 @@ export function isOccludedByCompetingFront(
       continue;
     }
 
-    if (!isWithinVerticalGrowthBand(candidate, competingNucleus, settings)) {
-      continue;
-    }
-
-    const pairX = competingNucleus.origin[0] - nucleus.origin[0];
-    const pairZ = competingNucleus.origin[2] - nucleus.origin[2];
-    const pairDistance = Math.hypot(pairX, pairZ);
+    const pair = [
+      competingNucleus.origin[0] - nucleus.origin[0],
+      competingNucleus.origin[1] - nucleus.origin[1],
+      competingNucleus.origin[2] - nucleus.origin[2],
+    ] as [number, number, number];
+    const pairDistance = Math.hypot(pair[0], pair[1], pair[2]);
     if (pairDistance < 1) {
       continue;
     }
 
-    const axisX = pairX / pairDistance;
-    const axisZ = pairZ / pairDistance;
-    const candidateX = candidate.x - nucleus.origin[0];
-    const candidateZ = candidate.z - nucleus.origin[2];
-    const towardCompetitor = candidateX * axisX + candidateZ * axisZ;
+    const pairAxis = [pair[0] / pairDistance, pair[1] / pairDistance, pair[2] / pairDistance];
+    const candidateVector = [
+      candidate.x - nucleus.origin[0],
+      candidate.y - nucleus.origin[1],
+      candidate.z - nucleus.origin[2],
+    ];
+    const towardCompetitor = dotVector(candidateVector, pairAxis);
     if (towardCompetitor <= 0) {
       continue;
     }
@@ -148,7 +143,13 @@ export function hasSameNucleusGrowthSupport(
   ] as const;
 
   for (const [offsetX, offsetY, offsetZ] of supportOffsets) {
-    const support = occupied.get(cellKey(candidate.x + offsetX, candidate.y + offsetY, candidate.z + offsetZ));
+    const support = occupied.get(
+      localCellKey(candidate.nucleusId, [
+        candidate.local[0] + offsetX,
+        candidate.local[1] + offsetY,
+        candidate.local[2] + offsetZ,
+      ]),
+    );
     if (support?.nucleusId === candidate.nucleusId) {
       return true;
     }
@@ -161,12 +162,12 @@ export function isBlockedByContactBarrier(
   candidate: CandidateBlock,
   barriers: ContactBarrierState,
 ) {
-  const layerBarriers = barriers.barriersByLayer.get(contactBarrierLayerKey(candidate.nucleusId, candidate.y));
-  if (!layerBarriers) {
+  const nucleusBarriers = barriers.barriersByNucleus.get(candidate.nucleusId);
+  if (!nucleusBarriers) {
     return false;
   }
 
-  for (const barrier of layerBarriers) {
+  for (const barrier of nucleusBarriers) {
     const signedDistance =
       (candidate.x - barrier.anchor[0]) * barrier.normal[0] +
       (candidate.y - barrier.anchor[1]) * barrier.normal[1] +
@@ -186,22 +187,17 @@ export function recordContactBarriers(
   barriers: ContactBarrierState,
 ) {
   for (const contact of contacts) {
-    if (contact.offset[1] !== 0) {
-      continue;
-    }
-
     const normal = normalizeVector(contact.offset);
     const anchor = [
-      block.x + contact.offset[0] * 0.5,
-      block.y,
-      block.z + contact.offset[2] * 0.5,
+      (block.x + contact.block.x) * 0.5,
+      (block.y + contact.block.y) * 0.5,
+      (block.z + contact.block.z) * 0.5,
     ] as [number, number, number];
 
-    addContactBarrier(block.nucleusId, contact.block.nucleusId, block.y, anchor, normal, barriers);
+    addContactBarrier(block.nucleusId, contact.block.nucleusId, anchor, normal, barriers);
     addContactBarrier(
       contact.block.nucleusId,
       block.nucleusId,
-      contact.block.y,
       anchor,
       [-normal[0], -normal[1], -normal[2]],
       barriers,
@@ -254,10 +250,9 @@ export function isOccludedByResolvedContact(
   }
 
   const sameNucleusSupport = getSameNucleusHorizontalSupport(candidate, occupied);
-  const hasFaceContact = blockingContacts.some((contact) => contact.offset[1] === 0);
   const hasMultipleBlockingContacts = blockingContacts.length > 1;
 
-  return hasMultipleBlockingContacts || (!hasFaceContact && sameNucleusSupport < 2);
+  return hasMultipleBlockingContacts || sameNucleusSupport < 2;
 }
 
 export function resolveGrowthFrameAtContact(
@@ -343,8 +338,14 @@ function getSameNucleusHorizontalSupport(
 ) {
   let support = 0;
 
-  for (const [offsetX, offsetZ] of horizontalSupportOffsets) {
-    const neighbor = occupied.get(cellKey(candidate.x + offsetX, candidate.y, candidate.z + offsetZ));
+  for (const [offsetX, offsetY, offsetZ] of localHorizontalSupportOffsets) {
+    const neighbor = occupied.get(
+      localCellKey(candidate.nucleusId, [
+        candidate.local[0] + offsetX,
+        candidate.local[1] + offsetY,
+        candidate.local[2] + offsetZ,
+      ]),
+    );
     if (neighbor?.nucleusId === candidate.nucleusId) {
       support += 1;
     }
@@ -354,16 +355,10 @@ function getSameNucleusHorizontalSupport(
 }
 
 export function pruneDirectionalOvergrowth(blocks: CrystalBlock[]) {
-  const directions = [
-    [1, 0],
-    [-1, 0],
-    [0, 1],
-    [0, -1],
-  ] as const;
   let keptBlocks = blocks;
 
   for (let pass = 0; pass < 64; pass += 1) {
-    const occupied = new Map(keptBlocks.map((block) => [cellKey(block.x, block.y, block.z), block]));
+    const occupied = createSpatialIndex(keptBlocks);
     const removed = new Set<number>();
 
     for (const block of keptBlocks) {
@@ -371,20 +366,65 @@ export function pruneDirectionalOvergrowth(blocks: CrystalBlock[]) {
         continue;
       }
 
-      for (const [offsetX, offsetZ] of directions) {
-        const neighbor = occupied.get(cellKey(block.x + offsetX, block.y, block.z + offsetZ));
-        if (!neighbor || neighbor.nucleusId === block.nucleusId) {
-          continue;
-        }
+      const nearbyContacts = getNearbyBlocks(occupied, [block.x, block.y, block.z], contactReach).filter(
+        (neighbor) => neighbor.id !== block.id && neighbor.nucleusId !== block.nucleusId,
+      );
 
-        const beyondNeighbor = occupied.get(
-          cellKey(block.x + offsetX * 2, block.y, block.z + offsetZ * 2),
+      for (const neighbor of nearbyContacts) {
+        const normal = normalizeVector([
+          neighbor.x - block.x,
+          neighbor.y - block.y,
+          neighbor.z - block.z,
+        ]);
+        const neighborDistance = Math.hypot(
+          neighbor.x - block.x,
+          neighbor.y - block.y,
+          neighbor.z - block.z,
         );
-        if (!beyondNeighbor || beyondNeighbor.nucleusId !== block.nucleusId) {
+
+        if (neighborDistance < 0.0001) {
           continue;
         }
 
-        removed.add(beyondNeighbor.id);
+        const beyondCandidates = getNearbyBlocks(
+          occupied,
+          [
+            block.x + normal[0] * (neighborDistance + 1),
+            block.y + normal[1] * (neighborDistance + 1),
+            block.z + normal[2] * (neighborDistance + 1),
+          ],
+          1.05,
+        );
+
+        for (const beyondNeighbor of beyondCandidates) {
+          if (
+            beyondNeighbor.id === block.id ||
+            beyondNeighbor.nucleusId !== block.nucleusId ||
+            removed.has(beyondNeighbor.id)
+          ) {
+            continue;
+          }
+
+          const beyondVector = [
+            beyondNeighbor.x - block.x,
+            beyondNeighbor.y - block.y,
+            beyondNeighbor.z - block.z,
+          ];
+          const alongContactNormal = dotVector(beyondVector, normal);
+          const lateralDistance = Math.hypot(
+            beyondVector[0] - normal[0] * alongContactNormal,
+            beyondVector[1] - normal[1] * alongContactNormal,
+            beyondVector[2] - normal[2] * alongContactNormal,
+          );
+
+          if (
+            alongContactNormal > neighborDistance + 0.42 &&
+            alongContactNormal < neighborDistance + 1.7 &&
+            lateralDistance < 0.72
+          ) {
+            removed.add(beyondNeighbor.id);
+          }
+        }
       }
     }
 
@@ -402,8 +442,8 @@ export function pruneUnsupportedBlocks(blocks: CrystalBlock[]) {
   let keptBlocks = blocks;
 
   for (let pass = 0; pass < 96; pass += 1) {
-    const occupied = new Map(keptBlocks.map((block) => [cellKey(block.x, block.y, block.z), block]));
-    const maxYByNucleus = getMaxYByNucleus(keptBlocks);
+    const occupied = new Map(keptBlocks.map((block) => [localCellKey(block.nucleusId, block.local), block]));
+    const maxLayerByNucleus = getMaxLayerByNucleus(keptBlocks);
     const nextBlocks = keptBlocks.filter((block) => {
       if (block.stage === 'seed') {
         return true;
@@ -411,7 +451,8 @@ export function pruneUnsupportedBlocks(blocks: CrystalBlock[]) {
 
       const support = getSupportCounts(block, occupied);
       const isTerminalTop =
-        block.y >= (maxYByNucleus.get(block.nucleusId) ?? block.y) - 2 && support.above === 0;
+        block.local[1] >= (maxLayerByNucleus.get(block.nucleusId) ?? block.local[1]) - 2 &&
+        support.above === 0;
 
       if (support.total === 0) {
         return false;
@@ -438,30 +479,46 @@ export function pruneUnsupportedBlocks(blocks: CrystalBlock[]) {
   return keptBlocks;
 }
 
-function getMaxYByNucleus(blocks: CrystalBlock[]) {
-  const maxYByNucleus = new Map<number, number>();
+function getMaxLayerByNucleus(blocks: CrystalBlock[]) {
+  const maxLayerByNucleus = new Map<number, number>();
 
   for (const block of blocks) {
-    maxYByNucleus.set(
+    maxLayerByNucleus.set(
       block.nucleusId,
-      Math.max(maxYByNucleus.get(block.nucleusId) ?? Number.NEGATIVE_INFINITY, block.y),
+      Math.max(maxLayerByNucleus.get(block.nucleusId) ?? Number.NEGATIVE_INFINITY, block.local[1]),
     );
   }
 
-  return maxYByNucleus;
+  return maxLayerByNucleus;
 }
 
 function getSupportCounts(block: CrystalBlock, occupied: Map<string, CrystalBlock>) {
   let horizontal = 0;
 
-  for (const [offsetX, offsetZ] of horizontalSupportOffsets) {
-    if (occupied.has(cellKey(block.x + offsetX, block.y, block.z + offsetZ))) {
+  for (const [offsetX, offsetY, offsetZ] of localHorizontalSupportOffsets) {
+    if (
+      occupied.has(
+        localCellKey(block.nucleusId, [
+          block.local[0] + offsetX,
+          block.local[1] + offsetY,
+          block.local[2] + offsetZ,
+        ]),
+      )
+    ) {
       horizontal += 1;
     }
   }
 
-  const below = occupied.has(cellKey(block.x, block.y - 1, block.z)) ? 1 : 0;
-  const above = occupied.has(cellKey(block.x, block.y + 1, block.z)) ? 1 : 0;
+  const below = occupied.has(
+    localCellKey(block.nucleusId, [block.local[0], block.local[1] - 1, block.local[2]]),
+  )
+    ? 1
+    : 0;
+  const above = occupied.has(
+    localCellKey(block.nucleusId, [block.local[0], block.local[1] + 1, block.local[2]]),
+  )
+    ? 1
+    : 0;
 
   return {
     above,
@@ -474,54 +531,33 @@ function getSupportCounts(block: CrystalBlock, occupied: Map<string, CrystalBloc
 function addContactBarrier(
   nucleusId: number,
   otherNucleusId: number,
-  y: number,
   anchor: [number, number, number],
   normal: [number, number, number],
   barriers: ContactBarrierState,
 ) {
-  for (let layer = y - contactBarrierLayerReach; layer <= y + contactBarrierLayerReach; layer += 1) {
-    const key = contactBarrierLayerKey(nucleusId, layer);
-    const layerBarriers = barriers.barriersByLayer.get(key) ?? [];
-    const alreadyTracked = layerBarriers.some(
-      (barrier) =>
-        barrier.otherNucleusId === otherNucleusId &&
-        barrier.anchor[0] === anchor[0] &&
-        barrier.anchor[1] === anchor[1] &&
-        barrier.anchor[2] === anchor[2] &&
-        barrier.normal[0] === normal[0] &&
-        barrier.normal[1] === normal[1] &&
-        barrier.normal[2] === normal[2],
-    );
-
-    if (!alreadyTracked) {
-      layerBarriers.push({ otherNucleusId, anchor, normal });
-      barriers.barriersByLayer.set(key, layerBarriers);
-    }
-  }
-}
-
-function contactBarrierLayerKey(nucleusId: number, y: number) {
-  return `${nucleusId}:${y}`;
-}
-
-function isWithinVerticalGrowthBand(
-  candidate: CandidateBlock,
-  nucleus: NucleusPlan,
-  settings: GenerationSettings,
-) {
-  const verticalPadding = Math.max(2, Math.round(2 + settings.nucleiVerticalSpread * 4));
-
-  return (
-    candidate.y >= nucleus.origin[1] - verticalPadding &&
-    candidate.y <= nucleus.origin[1] + nucleus.layers + verticalPadding
+  const nucleusBarriers = barriers.barriersByNucleus.get(nucleusId) ?? [];
+  const alreadyTracked = nucleusBarriers.some(
+    (barrier) =>
+      barrier.otherNucleusId === otherNucleusId &&
+      barrier.anchor[0] === anchor[0] &&
+      barrier.anchor[1] === anchor[1] &&
+      barrier.anchor[2] === anchor[2] &&
+      barrier.normal[0] === normal[0] &&
+      barrier.normal[1] === normal[1] &&
+      barrier.normal[2] === normal[2],
   );
+
+  if (!alreadyTracked) {
+    nucleusBarriers.push({ otherNucleusId, anchor, normal });
+    barriers.barriersByNucleus.set(nucleusId, nucleusBarriers);
+  }
 }
 
 function estimateNucleusFrontSpeed(nucleus: NucleusPlan, settings: GenerationSettings) {
   const horizontalReach = nucleus.maxRadius + settings.edgeGrowthBias * 2.8 + settings.crystalScale * 1.2;
-  const verticalCost = Math.max(1, nucleus.layers * (0.84 - settings.coolingRate * 0.12));
+  const advanceCost = Math.max(1, nucleus.layers * (0.84 - settings.coolingRate * 0.12));
 
-  return Math.max(0.05, horizontalReach / verticalCost);
+  return Math.max(0.05, horizontalReach / advanceCost);
 }
 
 function clamp(value: number, min: number, max: number) {

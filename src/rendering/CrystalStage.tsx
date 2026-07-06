@@ -2,7 +2,15 @@ import { ContactShadows } from '@react-three/drei';
 import { useFrame } from '@react-three/fiber';
 import { useEffect, useLayoutEffect, useMemo, useRef } from 'react';
 import type { Group, InstancedMesh } from 'three';
-import { Color, DynamicDrawUsage, MeshPhysicalMaterial, Object3D } from 'three';
+import {
+  Color,
+  DynamicDrawUsage,
+  Matrix4,
+  MeshPhysicalMaterial,
+  Object3D,
+  Quaternion,
+  Vector3,
+} from 'three';
 import type { CrystalBlock } from '../generation/types';
 import { useAppStore } from '../state/appStore';
 import { createSurfaceDetailTexture } from './surfaceDetailTexture';
@@ -10,6 +18,11 @@ import { createSurfaceDetailTexture } from './surfaceDetailTexture';
 const latticeScale = 0.057;
 const tempObject = new Object3D();
 const tempColor = new Color();
+const tempMatrix = new Matrix4();
+const tempQuaternion = new Quaternion();
+const tempRight = new Vector3();
+const tempUp = new Vector3();
+const tempForward = new Vector3();
 
 export function CrystalStage() {
   const groupRef = useRef<Group>(null);
@@ -61,17 +74,23 @@ export function CrystalStage() {
     }
 
     mesh.instanceMatrix.setUsage(DynamicDrawUsage);
-    const center = getBlockCenter(blocks);
+    const placement = getBlockPlacement(blocks);
     const oxideRange = model?.oxideRange ?? getBlockOxideRange(blocks);
 
     for (let index = 0; index < blocks.length; index += 1) {
       const block = blocks[index];
       const size = latticeScale * (0.82 + block.size);
+      tempRight.fromArray(block.basis.right);
+      tempUp.fromArray(block.basis.up);
+      tempForward.fromArray(block.basis.forward);
+      tempMatrix.makeBasis(tempRight, tempUp, tempForward);
+      tempQuaternion.setFromRotationMatrix(tempMatrix);
       tempObject.position.set(
-        (block.x - center[0]) * latticeScale,
-        block.y * latticeScale + 0.26,
-        (block.z - center[2]) * latticeScale,
+        (block.x - placement.centerX) * latticeScale,
+        (block.y - placement.floorY) * latticeScale + 0.26,
+        (block.z - placement.centerZ) * latticeScale,
       );
+      tempObject.quaternion.copy(tempQuaternion);
       tempObject.scale.set(size, size, size);
       tempObject.updateMatrix();
       mesh.setMatrixAt(index, tempObject.matrix);
@@ -133,24 +152,30 @@ export function CrystalStage() {
   );
 }
 
-function getBlockCenter(blocks: CrystalBlock[]) {
+function getBlockPlacement(blocks: CrystalBlock[]) {
   if (blocks.length === 0) {
-    return [0, 0, 0] as const;
+    return { centerX: 0, centerZ: 0, floorY: 0 };
   }
 
   let minX = Number.POSITIVE_INFINITY;
   let maxX = Number.NEGATIVE_INFINITY;
+  let minY = Number.POSITIVE_INFINITY;
   let minZ = Number.POSITIVE_INFINITY;
   let maxZ = Number.NEGATIVE_INFINITY;
 
   for (const block of blocks) {
     minX = Math.min(minX, block.x);
     maxX = Math.max(maxX, block.x);
+    minY = Math.min(minY, block.y);
     minZ = Math.min(minZ, block.z);
     maxZ = Math.max(maxZ, block.z);
   }
 
-  return [(minX + maxX) / 2, 0, (minZ + maxZ) / 2] as const;
+  return {
+    centerX: (minX + maxX) / 2,
+    centerZ: (minZ + maxZ) / 2,
+    floorY: minY,
+  };
 }
 
 function getBlockOxideRange(blocks: CrystalBlock[]) {

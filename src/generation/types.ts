@@ -17,6 +17,7 @@ export interface GenerationSettings {
   nucleationCount: number;
   nucleusStartDelay: number;
   nucleiVerticalSpread: number;
+  growthDirectionRandomness: number;
   initialSeedSize: number;
   crystalScale: number;
   symmetryBias: number;
@@ -60,6 +61,12 @@ export interface CrystalBlock {
   x: number;
   y: number;
   z: number;
+  local: [number, number, number];
+  basis: {
+    right: [number, number, number];
+    up: [number, number, number];
+    forward: [number, number, number];
+  };
   size: number;
   stage: CrystalBlockStage;
   age: number;

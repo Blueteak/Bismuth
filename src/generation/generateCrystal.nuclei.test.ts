@@ -1,17 +1,11 @@
 import { describe, expect, it } from 'vitest';
 import { generateCrystal } from './generateCrystal';
+import { createSpatialIndex, getNearbyBlocks, localCellKey } from './spatial';
 import { baseGenerationSettings } from './testSettings';
 import type { CrystalBlock } from './types';
 
-const horizontalDirections = [
-  [1, 0],
-  [-1, 0],
-  [0, 1],
-  [0, -1],
-] as const;
-
 describe('generateCrystal multi-nucleus growth', () => {
-  it('co-grows multiple vertically distributed nuclei on one timeline', () => {
+  it('co-grows multiple spatially distributed nuclei on one timeline', () => {
     const { model } = generateCrystal({
       ...baseGenerationSettings,
       nucleationCount: 4,
@@ -21,22 +15,21 @@ describe('generateCrystal multi-nucleus growth', () => {
     });
 
     const firstGrowthNuclei = new Set(model.blocks.slice(0, 160).map((block) => block.nucleusId));
-    const minimumYByNucleus = new Map<number, number>();
+    const basisDirections = new Map<number, [number, number, number]>();
     const occupied = new Set<string>();
 
     for (const block of model.blocks) {
-      minimumYByNucleus.set(
-        block.nucleusId,
-        Math.min(minimumYByNucleus.get(block.nucleusId) ?? Number.POSITIVE_INFINITY, block.y),
-      );
+      basisDirections.set(block.nucleusId, block.basis.up);
 
-      const key = `${block.x},${block.y},${block.z}`;
+      const key = localCellKey(block.nucleusId, block.local);
       expect(occupied.has(key)).toBe(false);
       occupied.add(key);
     }
 
     expect(firstGrowthNuclei.size).toBeGreaterThan(1);
-    expect([...minimumYByNucleus.values()].some((y) => y > 0)).toBe(true);
+    expect(
+      [...basisDirections.values()].some((direction) => Math.hypot(direction[0], direction[2]) > 0.05),
+    ).toBe(true);
   });
 
   it('stops growth fronts instead of letting nuclei pass through each other', () => {
@@ -49,26 +42,7 @@ describe('generateCrystal multi-nucleus growth', () => {
       symmetryBias: 0.85,
       impurity: 0.08,
     });
-    const occupied = new Map(
-      model.blocks.map((block) => [`${block.x},${block.y},${block.z}`, block]),
-    );
-
-    for (const block of model.blocks) {
-      for (const [offsetX, offsetZ] of horizontalDirections) {
-        const neighbor = occupied.get(`${block.x + offsetX},${block.y},${block.z + offsetZ}`);
-        if (!neighbor || neighbor.nucleusId === block.nucleusId) {
-          continue;
-        }
-
-        const beyondNeighbor = occupied.get(
-          `${block.x + offsetX * 2},${block.y},${block.z + offsetZ * 2}`,
-        );
-
-        expect(beyondNeighbor?.nucleusId).not.toBe(block.nucleusId);
-      }
-    }
-
-    expectNoInterleavedNucleiInContiguousRows(model.blocks);
+    expectNoDirectionalPassThrough(model.blocks);
   });
 
   it('merges colliding nuclei at face-adjacent contact cells', () => {
@@ -81,15 +55,12 @@ describe('generateCrystal multi-nucleus growth', () => {
       symmetryBias: 0.85,
       impurity: 0.08,
     });
-    const occupied = new Map(
-      model.blocks.map((block) => [`${block.x},${block.y},${block.z}`, block]),
-    );
+    const occupied = createSpatialIndex(model.blocks);
     let contactCount = 0;
 
     for (const block of model.blocks) {
-      for (const [offsetX, offsetZ] of horizontalDirections) {
-        const neighbor = occupied.get(`${block.x + offsetX},${block.y},${block.z + offsetZ}`);
-        if (neighbor && neighbor.nucleusId !== block.nucleusId) {
+      for (const neighbor of getNearbyBlocks(occupied, [block.x, block.y, block.z], 1.18)) {
+        if (neighbor.id !== block.id && neighbor.nucleusId !== block.nucleusId) {
           contactCount += 1;
         }
       }
@@ -99,66 +70,55 @@ describe('generateCrystal multi-nucleus growth', () => {
   });
 });
 
-function expectNoInterleavedNucleiInContiguousRows(blocks: CrystalBlock[]) {
-  const xRows = new Map<string, Array<{ position: number; nucleusId: number }>>();
-  const zRows = new Map<string, Array<{ position: number; nucleusId: number }>>();
+function expectNoDirectionalPassThrough(blocks: CrystalBlock[]) {
+  const occupied = createSpatialIndex(blocks);
 
   for (const block of blocks) {
-    const xRow = `${block.y},${block.z}`;
-    const zRow = `${block.y},${block.x}`;
+    for (const neighbor of getNearbyBlocks(occupied, [block.x, block.y, block.z], 1.18)) {
+      if (neighbor.id === block.id || neighbor.nucleusId === block.nucleusId) {
+        continue;
+      }
 
-    const xCells = xRows.get(xRow) ?? [];
-    const zCells = zRows.get(zRow) ?? [];
-    xCells.push({ position: block.x, nucleusId: block.nucleusId });
-    zCells.push({ position: block.z, nucleusId: block.nucleusId });
-    xRows.set(xRow, xCells);
-    zRows.set(zRow, zCells);
-  }
+      const normal = normalize([
+        neighbor.x - block.x,
+        neighbor.y - block.y,
+        neighbor.z - block.z,
+      ]);
+      const neighborDistance = Math.hypot(
+        neighbor.x - block.x,
+        neighbor.y - block.y,
+        neighbor.z - block.z,
+      );
 
-  for (const [row, cells] of xRows) {
-    expectNoInterleavedSegment(`x:${row}`, cells);
-  }
+      for (const beyond of getNearbyBlocks(
+        occupied,
+        [
+          block.x + normal[0] * (neighborDistance + 1),
+          block.y + normal[1] * (neighborDistance + 1),
+          block.z + normal[2] * (neighborDistance + 1),
+        ],
+        1.05,
+      )) {
+        if (beyond.id === block.id || beyond.nucleusId !== block.nucleusId) {
+          continue;
+        }
 
-  for (const [row, cells] of zRows) {
-    expectNoInterleavedSegment(`z:${row}`, cells);
-  }
-}
+        const vector = [beyond.x - block.x, beyond.y - block.y, beyond.z - block.z];
+        const along = vector[0] * normal[0] + vector[1] * normal[1] + vector[2] * normal[2];
+        const lateral = Math.hypot(
+          vector[0] - normal[0] * along,
+          vector[1] - normal[1] * along,
+          vector[2] - normal[2] * along,
+        );
 
-function expectNoInterleavedSegment(
-  row: string,
-  cells: Array<{ position: number; nucleusId: number }>,
-) {
-  const sortedCells = [...cells].sort((a, b) => a.position - b.position || a.nucleusId - b.nucleusId);
-  let segment: Array<{ position: number; nucleusId: number }> = [];
-
-  for (const cell of sortedCells) {
-    const previousCell = segment[segment.length - 1];
-    if (previousCell && cell.position > previousCell.position + 1) {
-      assertNoRepeatedNucleusAfterBoundary(row, segment);
-      segment = [];
-    }
-
-    segment.push(cell);
-  }
-
-  assertNoRepeatedNucleusAfterBoundary(row, segment);
-}
-
-function assertNoRepeatedNucleusAfterBoundary(
-  row: string,
-  segment: Array<{ position: number; nucleusId: number }>,
-) {
-  const closedNuclei = new Set<number>();
-  let previousNucleusId: number | undefined;
-
-  for (const cell of segment) {
-    if (previousNucleusId !== undefined && previousNucleusId !== cell.nucleusId) {
-      closedNuclei.add(previousNucleusId);
-      if (closedNuclei.has(cell.nucleusId)) {
-        throw new Error(`Nucleus ${cell.nucleusId} reappears behind another nucleus in row ${row}`);
+        expect(along > neighborDistance + 0.42 && along < neighborDistance + 1.7 && lateral < 0.72).toBe(false);
       }
     }
-
-    previousNucleusId = cell.nucleusId;
   }
+}
+
+function normalize(vector: readonly number[]): [number, number, number] {
+  const length = Math.hypot(vector[0], vector[1], vector[2]);
+
+  return [vector[0] / length, vector[1] / length, vector[2] / length];
 }

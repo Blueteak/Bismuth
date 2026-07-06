@@ -1,16 +1,17 @@
+import { transformLocalDirection } from './math';
 import type { SeededPrng } from './prng';
 import type { CrystalBlock, CrystalFacet, GenerationSettings } from './types';
-import { cellKey } from './spatial';
+import { localCellKey } from './spatial';
 
 export function assignOxide(
   blocks: CrystalBlock[],
   settings: GenerationSettings,
   prng: SeededPrng,
 ) {
-  const maxY = blocks.reduce((max, block) => Math.max(max, block.y), 0);
+  const maxLayer = blocks.reduce((max, block) => Math.max(max, block.local[1]), 0);
 
   for (const block of blocks) {
-    const heightFactor = block.y / Math.max(1, maxY);
+    const heightFactor = block.local[1] / Math.max(1, maxLayer);
     const recessFactor = block.stage === 'face' ? 0.85 : block.stage === 'terrace' ? 1.05 : 1.18;
     const noise = prng.signed(settings.impurity * 38);
     block.oxideThickness = Number(
@@ -25,7 +26,7 @@ export function assignOxide(
   }
 }
 
-export function buildFacets(blocks: CrystalBlock[], occupied: Set<string>) {
+export function buildFacets(blocks: CrystalBlock[]) {
   const facets: CrystalFacet[] = [];
   const normals: [number, number, number][] = [
     [1, 0, 0],
@@ -35,26 +36,31 @@ export function buildFacets(blocks: CrystalBlock[], occupied: Set<string>) {
     [0, 0, 1],
     [0, 0, -1],
   ];
+  const occupied = new Set(blocks.map((block) => localCellKey(block.nucleusId, block.local)));
 
   for (const block of blocks) {
     for (const normal of normals) {
-      const neighborKey = cellKey(
-        block.x + normal[0],
-        block.y + normal[1],
-        block.z + normal[2],
+      const neighborKey = localCellKey(
+        block.nucleusId,
+        [
+          block.local[0] + normal[0],
+          block.local[1] + normal[1],
+          block.local[2] + normal[2],
+        ],
       );
       if (occupied.has(neighborKey)) {
         continue;
       }
 
+      const worldNormal = transformLocalDirection(block.basis, normal);
       facets.push({
         id: facets.length + 1,
         blockId: block.id,
-        normal,
+        normal: worldNormal,
         center: [
-          Number((block.x + normal[0] * 0.5).toFixed(4)),
-          Number((block.y + normal[1] * 0.5).toFixed(4)),
-          Number((block.z + normal[2] * 0.5).toFixed(4)),
+          Number((block.x + worldNormal[0] * 0.5).toFixed(4)),
+          Number((block.y + worldNormal[1] * 0.5).toFixed(4)),
+          Number((block.z + worldNormal[2] * 0.5).toFixed(4)),
         ],
         oxideThickness: block.oxideThickness,
         area: Number((block.size * block.size).toFixed(4)),
@@ -80,4 +86,3 @@ export function getOxideRange(blocks: CrystalBlock[]): [number, number] {
 
   return [Number(min.toFixed(3)), Number(max.toFixed(3))];
 }
-
