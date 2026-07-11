@@ -33,6 +33,10 @@ import {
   createWebGpuSession,
   type WebGpuDiagnostics,
 } from '../rendering/webgpu-capability';
+import {
+  runGpuSolverValidation,
+  type GpuSolverValidationResult,
+} from '../simulation/gpu-validation';
 
 const GRID_SIZE = 4;
 const VOXEL_COUNT = GRID_SIZE ** 3;
@@ -81,6 +85,7 @@ export interface GpuBenchmarkResult {
 export interface GpuProofResult {
   readonly diagnostics: WebGpuDiagnostics;
   readonly compute: ComputeProofResult;
+  readonly singleCrystal: GpuSolverValidationResult;
   readonly indirectDraw: IndirectDrawProofResult;
   readonly benchmark?: GpuBenchmarkResult;
   readonly uncapturedErrors: readonly string[];
@@ -467,6 +472,10 @@ export async function runGpuProof(
 
   try {
     const compute = await runComputeProof(session.renderer, pingPong);
+    const singleCrystal = await runGpuSolverValidation(
+      session.renderer,
+      session.device,
+    );
     const indirectDraw = await runIndirectProof(
       session.renderer,
       session.device,
@@ -479,6 +488,7 @@ export async function runGpuProof(
     return {
       diagnostics: session.diagnostics,
       compute,
+      singleCrystal,
       indirectDraw,
       ...(benchmark ? { benchmark } : {}),
       uncapturedErrors: [...session.errors],

@@ -23,6 +23,16 @@ async function startApplication(): Promise<void> {
     return;
   }
 
+  if (
+    import.meta.env.DEV &&
+    window.location.pathname === '/__dev/single-crystal'
+  ) {
+    const { mountSingleCrystalFixture } =
+      await import('./dev/single-crystal-fixture');
+    mountSingleCrystalFixture(applicationRoot);
+    return;
+  }
+
   if (import.meta.env.DEV) {
     console.info('[Bismuth] Milestone 0C foundation', getRuntimeSummary());
   }

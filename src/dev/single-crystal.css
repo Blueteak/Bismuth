@@ -1,0 +1,151 @@
+.single-crystal-shell {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  color: #f3f5f7;
+  background: radial-gradient(
+    circle at 48% 42%,
+    #121b22 0%,
+    #05080b 43%,
+    #000 75%
+  );
+}
+
+.single-crystal-canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.single-crystal-header,
+.single-crystal-diagnostics {
+  position: absolute;
+  z-index: 2;
+  border: 1px solid rgb(255 255 255 / 10%);
+  background: rgb(4 7 10 / 78%);
+  box-shadow: 0 1rem 3rem rgb(0 0 0 / 34%);
+  backdrop-filter: blur(18px);
+}
+
+.single-crystal-header {
+  top: 1.25rem;
+  left: 1.25rem;
+  width: min(31rem, calc(100% - 2.5rem));
+  padding: 1rem 1.15rem 1.05rem;
+}
+
+.single-crystal-header h1 {
+  margin: 0.25rem 0 0.45rem;
+  font-size: clamp(1.15rem, 2.2vw, 1.55rem);
+  font-weight: 540;
+  letter-spacing: -0.02em;
+}
+
+.single-crystal-header p,
+.single-crystal-diagnostics p {
+  margin: 0;
+  color: #9eabb5;
+  font-size: 0.78rem;
+  line-height: 1.5;
+}
+
+.single-crystal-header .eyebrow {
+  color: #7ed7e8;
+  font-size: 0.64rem;
+  font-weight: 700;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+}
+
+.single-crystal-progress {
+  height: 2px;
+  margin-top: 0.8rem;
+  overflow: hidden;
+  background: rgb(255 255 255 / 8%);
+}
+
+.single-crystal-progress span {
+  display: block;
+  width: var(--progress, 0%);
+  height: 100%;
+  background: linear-gradient(90deg, #4e97b1, #9de9dc);
+  transition: width 160ms ease-out;
+}
+
+.single-crystal-diagnostics {
+  right: 1.25rem;
+  bottom: 1.25rem;
+  width: min(37rem, calc(100% - 2.5rem));
+  padding: 0.85rem;
+}
+
+.single-crystal-slices {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.55rem;
+}
+
+.single-crystal-slice {
+  position: relative;
+  aspect-ratio: 1;
+  overflow: hidden;
+  border: 1px solid rgb(255 255 255 / 8%);
+  background: #020304;
+}
+
+.single-crystal-slice canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+  image-rendering: pixelated;
+}
+
+.single-crystal-slice span {
+  position: absolute;
+  top: 0.35rem;
+  left: 0.4rem;
+  padding: 0.16rem 0.28rem;
+  color: #d8e1e7;
+  background: rgb(0 0 0 / 58%);
+  font-size: 0.58rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+}
+
+.single-crystal-readout {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 0.65rem;
+  margin-top: 0.7rem;
+}
+
+.single-crystal-readout strong,
+.single-crystal-readout span {
+  display: block;
+}
+
+.single-crystal-readout strong {
+  color: #eef4f6;
+  font-size: 0.78rem;
+  font-variant-numeric: tabular-nums;
+  font-weight: 630;
+}
+
+.single-crystal-readout span {
+  margin-top: 0.1rem;
+  color: #75828d;
+  font-size: 0.58rem;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+}
+
+@media (max-width: 760px) {
+  .single-crystal-diagnostics {
+    display: none;
+  }
+
+  .single-crystal-readout {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}

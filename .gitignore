@@ -7,3 +7,5 @@ test-results/
 .npm-cache/
 *.log
 
+docs/evidence/
+

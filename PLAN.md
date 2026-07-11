@@ -8,7 +8,7 @@ The existing repository history and previous implementations are out of scope. T
 
 ## Current status and next task
 
-Milestones 0A, 0B, and 0C are complete as of 2026-07-11. The foundation stops here for review. Milestone 1, the published single-crystal solver, is the next planned task and must not begin without explicit user direction.
+Milestones 0A, 0B, and 0C are complete as of 2026-07-11. The core Milestone 1 single-hopper acceptance gate is also complete: the CPU reference and WebGPU solver agree, the published hopper parameter set produces a resolved face-center recession, and a fixed-domain `128^3`/`256^3` comparison shows close physical extents. The immediate task is the remaining Milestone 1 transition discrepancy documented in `current_tasks.md`: a mature `D_L = 4` browser run remained nearly cubic instead of reproducing the paper's `<111>` dendrite. Resolve that source/discretization mismatch before beginning Milestone 2 or morphology art tuning.
 
 ## Milestone sequence
 
@@ -73,6 +73,8 @@ Exit criteria:
 
 ### 1. Published single-crystal solver
 
+Status: **Complete for the single-hopper acceptance gate** (2026-07-11). The full published transition-suite validation remains open as recorded below.
+
 Reproduce the reference hopper model without production material work.
 
 - Transcribe and cite the phase and chemical-potential equations, anisotropy, constants, initial conditions, and boundary conditions.
@@ -80,8 +82,8 @@ Reproduce the reference hopper model without production material work.
 - Implement GPU ping-pong updates for phase and chemical potential.
 - Start with a centered spherical seed and the published single-orientation anisotropy.
 - Record first solidification time in a separate rendering-input field when phase first crosses the documented threshold; this field must not feed back into solver physics.
-- Add developer-only slice views, field summaries, NaN detection, symmetry metrics, and adapter timing.
-- Compare representative parameter sets and morphology against the paper, including the reported cube/hopper/dendritic transitions.
+- Add developer-only slice views, field summaries, NaN detection, symmetry metrics, and queue-complete wall timing. True timestamp-query adapter timing remains part of the benchmark milestone.
+- Encode the reported cube, hopper, fractal, and dendritic parameter sets. The hopper is validated; run and record the complete transition suite before using the remaining preset names as validated browser outcomes.
 - Add grid-refinement checks before selecting a working interactive resolution.
 
 Exit criteria:
@@ -91,6 +93,18 @@ Exit criteria:
 - Solidification-time capture is deterministic and write-once for each cell.
 - A 3D run produces a recognizable single hopper with face-center depression and terracing.
 - Resolution changes have documented convergence behavior rather than unexplained visual drift.
+
+Recorded Step 1 evidence:
+
+- A `9^3` `r32float` CPU/WebGPU comparison passed at initialization, one step, and three steps. Maximum observed absolute errors were `1.1920929e-7` for phase, `1.7136335e-7` for chemical potential, and `0` for solidification time.
+- At `t = 500`, the unperturbed physical-domain comparison measured maximum extent/robust rim-relative recession `94 / 6` on `128^3` at `dx = 2` and `93 / 7` on `256^3` at `dx = 1`.
+- The accepted deterministic perturbed `256^3` checkpoint measured extent `100`, mean robust face recession `7.833` (minimum `6`, maximum `10`), symmetry error `0.0064696`, and boundary-clearance ratio `1.5`, with no non-finite values or WebGPU errors.
+- The scalar cubic model is a generic hopper baseline, not a calibrated bismuth model. Screw-growth spirals, twins, and differently oriented intergrowths remain out of scope until defect/orientation physics is added.
+
+Remaining Milestone 1 validation debt:
+
+- Resolve why the mature `D_L = 4` browser checkpoint remained nearly cubic, then run the fixed-domain cube/fractal/dendritic presets and document whether the browser discretization reproduces the paper's qualitative transition series. See `current_tasks.md` and `docs/evidence/step1-dl4-t500-256dx2.json`.
+- Expand the perturbation seed suite so realism decisions do not rest on one accepted run.
 
 ### 2. Live GPU surface extraction
 

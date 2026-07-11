@@ -13,6 +13,7 @@
     "test:gpu": "node scripts/run-browser-gpu-test.mjs",
     "test:e2e": "playwright test",
     "benchmark": "node scripts/run-browser-gpu-test.mjs --benchmark",
+    "validate:morphology": "node scripts/run-browser-gpu-test.mjs --morphology --baseline --high-resolution --grid=256 --steps=50000 --dt=0.01 --mu=0.04",
     "lint": "eslint .",
     "format": "prettier --write .",
     "format:check": "prettier --check .",

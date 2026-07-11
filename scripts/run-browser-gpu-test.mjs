@@ -5,8 +5,42 @@ import { createServer } from 'vite';
 const host = '127.0.0.1';
 const port = 4173;
 const includeBenchmark = process.argv.includes('--benchmark');
-const timeoutMilliseconds = 120_000;
+const morphologyMode = process.argv.includes('--morphology');
+const perturbedMode = process.argv.includes('--perturbed');
+const baselineMode = process.argv.includes('--baseline') && !perturbedMode;
+const highResolutionMode = process.argv.includes('--high-resolution');
+const gridArgument = process.argv.find((argument) =>
+  argument.startsWith('--grid='),
+);
+const stepsArgument = process.argv.find((argument) =>
+  argument.startsWith('--steps='),
+);
+const timeStepArgument = process.argv.find((argument) =>
+  argument.startsWith('--dt='),
+);
+const spacingArgument = process.argv.find((argument) =>
+  argument.startsWith('--spacing='),
+);
+const diffusivityArgument = process.argv.find((argument) =>
+  argument.startsWith('--dl='),
+);
+const chemicalPotentialArgument = process.argv.find((argument) =>
+  argument.startsWith('--mu='),
+);
+const surfaceScaleArgument = process.argv.find((argument) =>
+  argument.startsWith('--surface-scale='),
+);
+const timeoutMilliseconds = morphologyMode ? 600_000 : 120_000;
 const runId = randomUUID();
+
+if (includeBenchmark && morphologyMode) {
+  throw new Error('Benchmark and morphology modes must be run separately.');
+}
+if (process.argv.includes('--baseline') && perturbedMode) {
+  // The package script supplies --baseline; an explicit trailing --perturbed
+  // is the supported override used for the physics-perturbed validation.
+  console.info('[Bismuth] --perturbed overrides the scripted --baseline mode.');
+}
 
 let resolveReport;
 const reportPromise = new Promise((resolve) => {
@@ -59,7 +93,27 @@ await server.listen();
 
 const query = new URLSearchParams({ report: '1', run: runId });
 if (includeBenchmark) query.set('benchmark', '1');
-const fixtureUrl = `http://${host}:${port}/__dev/webgpu-proof?${query}`;
+if (baselineMode) query.set('mode', 'baseline');
+if (perturbedMode) query.set('mode', 'perturbed');
+if (highResolutionMode) query.set('high-resolution', '1');
+if (gridArgument) query.set('grid', gridArgument.slice('--grid='.length));
+if (stepsArgument) query.set('steps', stepsArgument.slice('--steps='.length));
+if (timeStepArgument) query.set('dt', timeStepArgument.slice('--dt='.length));
+if (spacingArgument)
+  query.set('spacing', spacingArgument.slice('--spacing='.length));
+if (diffusivityArgument)
+  query.set('dl', diffusivityArgument.slice('--dl='.length));
+if (chemicalPotentialArgument)
+  query.set('mu', chemicalPotentialArgument.slice('--mu='.length));
+if (surfaceScaleArgument)
+  query.set(
+    'surface-scale',
+    surfaceScaleArgument.slice('--surface-scale='.length),
+  );
+const fixturePath = morphologyMode
+  ? '/__dev/single-crystal'
+  : '/__dev/webgpu-proof';
+const fixtureUrl = `http://${host}:${port}${fixturePath}?${query}`;
 
 await mkdir('test-results/gpu', { recursive: true });
 await writeFile('test-results/gpu/fixture-url.txt', `${fixtureUrl}\n`, 'utf8');
@@ -77,30 +131,41 @@ const timeoutPromise = new Promise((_, reject) => {
 
 try {
   const outcome = await Promise.race([reportPromise, timeoutPromise]);
-  await writeFile(
-    'test-results/gpu/latest.json',
-    `${JSON.stringify(outcome, null, 2)}\n`,
-    'utf8',
-  );
+  const resultPath = morphologyMode
+    ? 'test-results/gpu/latest-morphology.json'
+    : 'test-results/gpu/latest.json';
+  await writeFile(resultPath, `${JSON.stringify(outcome, null, 2)}\n`, 'utf8');
   console.info(JSON.stringify(outcome, null, 2));
 
   if (!outcome?.ok) {
     throw new Error(outcome?.error?.message ?? 'The GPU fixture failed.');
   }
-  if (!outcome.result.compute.passed) {
-    throw new Error('The 3D ping-pong compute comparison failed.');
-  }
-  if (!outcome.result.indirectDraw.passed) {
-    throw new Error('The compute-generated indirect draw proof failed.');
-  }
-  if (outcome.result.uncapturedErrors.length > 0) {
-    throw new Error('The WebGPU device reported uncaptured errors.');
-  }
-  if (includeBenchmark && !outcome.result.benchmark) {
-    throw new Error('The browser report did not include benchmark timings.');
-  }
-  if (!includeBenchmark && outcome.result.benchmark) {
-    throw new Error('The GPU test received a benchmark-mode report.');
+  if (morphologyMode) {
+    if (!outcome.result.passed) {
+      throw new Error('The single-crystal morphology fixture did not pass.');
+    }
+    if (outcome.result.uncapturedErrors.length > 0) {
+      throw new Error('The morphology fixture reported WebGPU errors.');
+    }
+  } else {
+    if (!outcome.result.compute.passed) {
+      throw new Error('The 3D ping-pong compute comparison failed.');
+    }
+    if (!outcome.result.singleCrystal?.passed) {
+      throw new Error('The Step 1 CPU/WebGPU solver comparison failed.');
+    }
+    if (!outcome.result.indirectDraw.passed) {
+      throw new Error('The compute-generated indirect draw proof failed.');
+    }
+    if (outcome.result.uncapturedErrors.length > 0) {
+      throw new Error('The WebGPU device reported uncaptured errors.');
+    }
+    if (includeBenchmark && !outcome.result.benchmark) {
+      throw new Error('The browser report did not include benchmark timings.');
+    }
+    if (!includeBenchmark && outcome.result.benchmark) {
+      throw new Error('The GPU test received a benchmark-mode report.');
+    }
   }
 } finally {
   await server.close();

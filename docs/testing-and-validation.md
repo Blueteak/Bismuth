@@ -10,15 +10,16 @@ Use deterministic seeds and pinned dependencies. Keep numerical validation indep
 
 Once scaffolded, maintain:
 
-| Command             | Purpose                                      |
-| ------------------- | -------------------------------------------- |
-| `npm run dev`       | Local Vite server                            |
-| `npm test`          | Unit tests and CPU-reference numerical tests |
-| `npm run test:gpu`  | Browser WebGPU compute/extraction tests      |
-| `npm run test:e2e`  | Playwright lifecycle and screenshot tests    |
-| `npm run benchmark` | Hardware adapter benchmarks                  |
-| `npm run build`     | Production client/server build               |
-| `npm start`         | Express production server                    |
+| Command                       | Purpose                                      |
+| ----------------------------- | -------------------------------------------- |
+| `npm run dev`                 | Local Vite server                            |
+| `npm test`                    | Unit tests and CPU-reference numerical tests |
+| `npm run test:gpu`            | Browser WebGPU compute/extraction tests      |
+| `npm run validate:morphology` | Full-volume Step 1 hopper checkpoint         |
+| `npm run test:e2e`            | Playwright lifecycle and screenshot tests    |
+| `npm run benchmark`           | Hardware adapter benchmarks                  |
+| `npm run build`               | Production client/server build               |
+| `npm start`                   | Express production server                    |
 
 Scripts must work from PowerShell on Windows and from a standard shell on Ubuntu without separate implementations.
 
@@ -67,6 +68,83 @@ Milestone 0C evidence recorded on 2026-07-11 through the local Codex in-app brow
 - The production build emitted the unchanged `61093`-byte source as a content-hashed JPG asset.
 - The application shell returned `Cache-Control: no-cache`; the hashed environment returned a one-year immutable cache policy.
 
+### Step 1 single-crystal evidence
+
+The Step 1 numerical fixture uses a `9 x 9 x 9` grid, `r32float` fields, and a
+`4 x 4 x 4` workgroup. It compares complete CPU and GPU phase, chemical
+potential, and solidification-time fields at initialization, after one step,
+and after three steps. Reference hardware results from Chromium `150.0.0.0`,
+Three.js r185, and the NVIDIA Blackwell adapter were:
+
+| Step | Maximum phase absolute error | Maximum `mu` absolute error | Maximum birth-time absolute error |
+| ---: | ---------------------------: | --------------------------: | --------------------------------: |
+|  `0` |               `5.9604645e-8` |              `1.0430813e-7` |                               `0` |
+|  `1` |               `1.1920929e-7` |              `1.5646219e-7` |                               `0` |
+|  `3` |               `1.1920929e-7` |              `1.7136335e-7` |                               `0` |
+
+All checkpoints passed their staged absolute/relative tolerances of `1e-6`,
+`1e-5`, and `1e-4`. The current unit suite also covers the analytical
+functions, anisotropy derivative, explicit stability rejection, boundary
+conditions, exact `Delta g` source, deterministic perturbations, metrics, and
+write-once threshold crossing. The complete suite passed `43` tests in `9`
+files for the recorded Step 1 run.
+
+The developer-only `/__dev/single-crystal` fixture performs a full field
+readback only at its fixed diagnostic checkpoint. It renders orthogonal slices
+and a voxel-surface preview, then reports field summaries, solid bounds,
+symmetry, six face-center recession depths, boundary clearance, solver timing,
+and uncaptured WebGPU errors. This readback and voxel preview are not permitted
+in the production frame loop.
+
+The unperturbed fixed-domain refinement study used the published hopper
+parameters, `dt = 0.01`, and `t = 500`:
+
+| Grid    | `dx` | Physical half-extent | Maximum solid extent | Face-center recession |
+| ------- | ---: | -------------------: | -------------------: | --------------------: |
+| `128^3` |  `2` |                `127` |                 `94` |                   `6` |
+| `256^3` |  `1` |              `127.5` |                 `93` |                   `7` |
+
+The extent changed by one physical unit and both grids retained a resolved
+face-center recess. This is sufficient evidence that the accepted hopper is
+not unique to one grid spacing. It does not select the eventual production
+grid or replace a broader convergence study.
+
+The accepted physics-perturbed checkpoint used `256^3`, `dx = 1`, `dt = 0.01`,
+`t = 500`, internal seed `99539473`, seed-radius amplitude/correlation
+`0.3 / 8`, initial chemical-potential amplitude/correlation `0.006 / 12`, and
+far-field gradient `[0.00018, -0.0001, 0.00014]`. It reported:
+
+- Solid extent `[100, 100, 100]` and `743922` solid voxels.
+- Mean robust rim-relative recession `7.8333333`, minimum `6`, and maximum `10`.
+- Symmetry error `0.0064696274`.
+- Boundary clearance `75`, or `1.5` times the solid half-extent.
+- `54603` diagnostic surface voxels.
+- `0` non-finite field values and `0` uncaptured WebGPU errors.
+- Chemical-potential range `[-0.0135500, 1.5332261]`.
+- `100215.9 ms` queue-complete fixture wall time for `50000` explicit steps.
+
+The durable [Step 1 validation record](evidence/step1-validation.md) contains the
+reference metrics. The accepted `256^3` result has a durable
+[diagnostic image](evidence/step1-physics-perturbed-hopper-256.png) and
+[machine-readable report](evidence/step1-perturbed-reference-256.json). The
+`128^3`, `dx = 2`
+[preview image](evidence/step1-physics-perturbed-hopper-128.png) and
+[preview report](evidence/step1-perturbed-preview-128.json) preserve the
+perturbed refinement case. The convenience path
+`test-results/gpu/latest-morphology.json` is overwritten by each morphology run.
+The accepted result passes the current gate: bounded finite phase and birth-time
+fields, a nonempty solid and surface, distributed rim-relative recession,
+nonzero bounded asymmetry, at least one solid-half-extent of boundary clearance,
+and no WebGPU errors.
+
+The morphology reproduces the faceted single-crystal hopper class modeled by
+the source paper. The smooth initial and reservoir perturbations produce
+measurable asymmetry without post-processing the shape. This is not sufficient
+evidence to call the result generally representative of real bismuth crystal
+formation: the cubic scalar model cannot produce screw-dislocation spirals,
+twins, or differently oriented intergrowths, and it omits bismuth-specific
+facet kinetics, free-surface transport, convection, and finite melt effects.
+
 Run the same tiny fields through CPU and TSL/WebGPU kernels, then compare with explicit absolute/relative tolerances.
 
 Required cases:
@@ -107,7 +185,18 @@ For fixed solver configurations, track:
 - Surface area or a stable proxy.
 - Terrace/facet descriptors where robustly measurable.
 
-Validate the paper's qualitative cube/hopper/dendritic parameter transitions before art tuning.
+Validate the paper's qualitative cube/hopper/fractal/dendritic parameter
+transitions before art tuning. The named configurations are encoded, but as of
+2026-07-11 only the hopper has completed full-domain morphology and refinement
+validation. Do not report the other transition labels as reproduced yet.
+
+Run the published symmetric control separately from perturbation studies. The
+control tests stencil symmetry and the paper baseline. Perturbation runs may
+use only documented, deterministic changes to initial or boundary conditions:
+smooth seed-radius heterogeneity, smooth initial liquid chemical-potential
+heterogeneity, and a macroscopic far-field gradient. Never add final-geometry
+warping, decorative spirals, or uncorrelated per-step noise to satisfy a visual
+reference.
 
 For the cluster phase, compare distributions across a fixed seed suite rather than selecting only favorable outputs.
 

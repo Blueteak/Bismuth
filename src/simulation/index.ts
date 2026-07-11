@@ -2,3 +2,9 @@
 export interface SimulationSubsystem {
   readonly kind: 'simulation';
 }
+
+export * from './config';
+export * from './cpu-reference';
+export * from './metrics';
+export * from './model';
+export * from './random';
