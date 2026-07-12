@@ -60,6 +60,8 @@ const ANALYTIC_PLANE_TRIANGLE_COUNT = 98;
 const ANALYTIC_PLANE_VERTEX_COUNT = ANALYTIC_PLANE_TRIANGLE_COUNT * 3;
 const WORKGROUP_SIZE = [2, 2, 2] as const;
 const COMPUTE_TOLERANCE = 1e-6;
+const EXPECTED_ANALYTIC_SURFACE_AGE = 4;
+const SURFACE_AGE_TOLERANCE = 4e-6;
 const EXPECTED_POSITIONS = [
   -0.75, -0.6, 0, 1, 0.75, -0.6, 0, 1, 0, 0.75, 0, 1,
 ] as const;
@@ -113,6 +115,10 @@ export interface ExtractionEmissionProofResult {
   readonly windingMismatchCount: number;
   readonly normalMismatchCount: number;
   readonly surfaceAgeMismatchCount: number;
+  readonly expectedSurfaceAge: number;
+  readonly surfaceAgeTolerance: number;
+  readonly surfaceAgeMinimum: number;
+  readonly surfaceAgeMaximum: number;
   readonly retainedPositionMismatchCount: number;
   readonly completeSummary: readonly number[];
   readonly overflowSummary: readonly number[];
@@ -774,6 +780,8 @@ async function runExtractionEmissionProof(
 
   let normalMismatchCount = 0;
   let surfaceAgeMismatchCount = 0;
+  let surfaceAgeMinimum = Number.POSITIVE_INFINITY;
+  let surfaceAgeMaximum = Number.NEGATIVE_INFINITY;
   let retainedPositionMismatchCount = 0;
   for (let vertex = 0; vertex < emittedVertexCount; vertex += 1) {
     const base = vertex * 4;
@@ -784,9 +792,12 @@ async function runExtractionEmissionProof(
     ) {
       normalMismatchCount += 1;
     }
+    const surfaceAge = packedNormalAge[base + 3] ?? Number.NaN;
+    surfaceAgeMinimum = Math.min(surfaceAgeMinimum, surfaceAge);
+    surfaceAgeMaximum = Math.max(surfaceAgeMaximum, surfaceAge);
     if (
-      Math.abs((packedNormalAge[base + 3] ?? Number.NaN) - 8) >
-      COMPUTE_TOLERANCE
+      Math.abs(surfaceAge - EXPECTED_ANALYTIC_SURFACE_AGE) >
+      SURFACE_AGE_TOLERANCE
     ) {
       surfaceAgeMismatchCount += 1;
     }
@@ -812,6 +823,10 @@ async function runExtractionEmissionProof(
     windingMismatchCount,
     normalMismatchCount,
     surfaceAgeMismatchCount,
+    expectedSurfaceAge: EXPECTED_ANALYTIC_SURFACE_AGE,
+    surfaceAgeTolerance: SURFACE_AGE_TOLERANCE,
+    surfaceAgeMinimum,
+    surfaceAgeMaximum,
     retainedPositionMismatchCount,
     completeSummary,
     overflowSummary,

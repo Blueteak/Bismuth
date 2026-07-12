@@ -61,6 +61,7 @@ export interface GpuVertexEmissionOptions {
 
 type UintNode = Node<'uint'>;
 type Uvec3Node = Node<'uvec3'>;
+const RENDER_NORMAL_GRADIENT_RADIUS = 1;
 
 export function planVertexEmission(
   triangleCount: number,
@@ -106,14 +107,11 @@ export function interpolateSurfaceAge(
   ) {
     throw new RangeError('Surface-age interpolation inputs are invalid.');
   }
+  const resolvedBirthTimeA = birthTimeA >= 0 ? birthTimeA : simulatedTime;
+  const resolvedBirthTimeB = birthTimeB >= 0 ? birthTimeB : simulatedTime;
   const birthTime =
-    birthTimeA >= 0 && birthTimeB >= 0
-      ? birthTimeA + (birthTimeB - birthTimeA) * interpolation
-      : birthTimeA >= 0
-        ? birthTimeA
-        : birthTimeB >= 0
-          ? birthTimeB
-          : simulatedTime;
+    resolvedBirthTimeA +
+    (resolvedBirthTimeB - resolvedBirthTimeA) * interpolation;
   return Math.max(0, simulatedTime - birthTime);
 }
 
@@ -261,18 +259,27 @@ export function createGpuVertexEmission(
     const [width, height, depth] = classification.cellShape.map(
       (size) => size + 1,
     ) as [number, number, number];
-    const xm = coordinate.x.equal(0).select(coordinate.x, coordinate.x.sub(1));
+    const xm = coordinate.x
+      .lessThan(RENDER_NORMAL_GRADIENT_RADIUS)
+      .select(uint(0), coordinate.x.sub(RENDER_NORMAL_GRADIENT_RADIUS));
     const xp = coordinate.x
-      .equal(width - 1)
-      .select(coordinate.x, coordinate.x.add(1));
-    const ym = coordinate.y.equal(0).select(coordinate.y, coordinate.y.sub(1));
+      .greaterThanEqual(width - RENDER_NORMAL_GRADIENT_RADIUS)
+      .select(uint(width - 1), coordinate.x.add(RENDER_NORMAL_GRADIENT_RADIUS));
+    const ym = coordinate.y
+      .lessThan(RENDER_NORMAL_GRADIENT_RADIUS)
+      .select(uint(0), coordinate.y.sub(RENDER_NORMAL_GRADIENT_RADIUS));
     const yp = coordinate.y
-      .equal(height - 1)
-      .select(coordinate.y, coordinate.y.add(1));
-    const zm = coordinate.z.equal(0).select(coordinate.z, coordinate.z.sub(1));
+      .greaterThanEqual(height - RENDER_NORMAL_GRADIENT_RADIUS)
+      .select(
+        uint(height - 1),
+        coordinate.y.add(RENDER_NORMAL_GRADIENT_RADIUS),
+      );
+    const zm = coordinate.z
+      .lessThan(RENDER_NORMAL_GRADIENT_RADIUS)
+      .select(uint(0), coordinate.z.sub(RENDER_NORMAL_GRADIENT_RADIUS));
     const zp = coordinate.z
-      .equal(depth - 1)
-      .select(coordinate.z, coordinate.z.add(1));
+      .greaterThanEqual(depth - RENDER_NORMAL_GRADIENT_RADIUS)
+      .select(uint(depth - 1), coordinate.z.add(RENDER_NORMAL_GRADIENT_RADIUS));
     const phaseAt = (sampleCoordinate: Uvec3Node) =>
       storageTexture3D(phase).load(sampleCoordinate).toReadOnly().r;
     return vec3(
@@ -285,7 +292,7 @@ export function createGpuVertexEmission(
       phaseAt(uvec3(coordinate.x, coordinate.y, zp)).sub(
         phaseAt(uvec3(coordinate.x, coordinate.y, zm)),
       ),
-    ).mul(0.5 / options.spacing);
+    ).mul(1 / (2 * RENDER_NORMAL_GRADIENT_RADIUS * options.spacing));
   });
 
   const normalAgeForEdge = Fn(
@@ -326,20 +333,14 @@ export function createGpuVertexEmission(
       const birthTimeB = storageTexture3D(solidificationTime)
         .load(coordinateB)
         .toReadOnly().r;
-      const bothValid = birthTimeA
+      const resolvedBirthTimeA = birthTimeA
         .greaterThanEqual(0)
-        .and(birthTimeB.greaterThanEqual(0));
-      const interpolatedBirthTime = birthTimeA.add(
-        birthTimeB.sub(birthTimeA).mul(interpolation),
-      );
-      const birthTime = bothValid.select(
-        interpolatedBirthTime,
-        birthTimeA
-          .greaterThanEqual(0)
-          .select(
-            birthTimeA,
-            birthTimeB.greaterThanEqual(0).select(birthTimeB, simulatedTime),
-          ),
+        .select(birthTimeA, simulatedTime);
+      const resolvedBirthTimeB = birthTimeB
+        .greaterThanEqual(0)
+        .select(birthTimeB, simulatedTime);
+      const birthTime = resolvedBirthTimeA.add(
+        resolvedBirthTimeB.sub(resolvedBirthTimeA).mul(interpolation),
       );
       return vec4(normal, max(simulatedTime.sub(birthTime), 0));
     },

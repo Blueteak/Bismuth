@@ -1,6 +1,6 @@
 # Bismuth Visualizer
 
-A browser-based real-time visualizer for physically motivated bismuth hopper-crystal growth. Milestones 1 and 2 are complete: the retained single-hopper solver feeds GPU marching cubes continuously through an imperative controller across both solver texture parities, with no production field or mesh readback. The reference controller run promoted `1021` meshes at `55.193 /s`; future milestones target `30 /s` and block below `15 /s` because watching every stage of growth is a primary product feature. The recorded paper-transition investigation reproduces cube and hopper but not the fractal and dendritic gates. The public route remains the neutral foundation while Milestone 3 adds the surface-age-driven bismuth material and presentation.
+A browser-based real-time visualizer for physically motivated bismuth hopper-crystal growth. Milestones 1 and 2 are complete: the retained single-hopper solver feeds GPU marching cubes continuously through an imperative controller across both solver texture parities, with no production field or mesh readback. Milestone 3 now has an initial surface-age-driven physical bismuth material on the developer fixture; its corrected reference run promoted `1021` meshes at `53.692 /s`, above the `30 /s` target and `15 /s` blocking floor. The recorded paper-transition investigation reproduces cube and hopper but not the fractal and dendritic gates. The public route remains the neutral foundation while material calibration, camera behavior, and final presentation continue.
 
 ## Prerequisites
 
@@ -20,10 +20,12 @@ Open the local URL printed by Vite.
 
 For a one-step review of the most advanced integrated visualization, double-
 click `review.cmd`. It starts Vite and currently opens
-`http://127.0.0.1:5173/__dev/live-controller`, where the live solver feeds GPU
-marching cubes through the imperative visualizer controller. This review route
-is developer-only; the public root remains the neutral foundation until the
-final presentation is integrated.
+`http://127.0.0.1:5173/__dev/material`, where the live solver, GPU extraction,
+continuous mesh promotion, and surface-age-driven physical bismuth material
+run together. This review route is developer-only; the neutral
+`/__dev/live-controller` route remains the Milestone 2 geometry regression
+surface, and the public root remains the neutral foundation until the final
+presentation is integrated.
 
 Whenever mesh-generation or visualization work moves to a newer integration
 fixture, update the default `Path` in `review.ps1` and keep this section,

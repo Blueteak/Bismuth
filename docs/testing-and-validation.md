@@ -237,8 +237,10 @@ and produced no uncaptured WebGPU errors.
 
 The analytic phase gradient is positive x, and all `294` emitted normals
 matched `[1, 0, 0]`. The solid endpoint used birth time `2`, the liquid endpoint
-retained sentinel `-1`, and simulated time `10` produced surface age `8` for
-every emitted vertex. Normal and age mismatch counts were both zero.
+retained sentinel `-1`, and simulated time `10` produced surface age `4` for
+every emitted vertex. The measured float32 range was exactly
+`4.0000019073..4.0000019073`, inside the dedicated `4e-6` surface-age
+interpolation tolerance. Normal and age mismatch counts were both zero.
 
 Promoting the complete candidate wrote indirect arguments `[294, 1, 0, 0]`.
 The undersized candidate then exercised the overflow promotion path: the draw
@@ -314,11 +316,13 @@ and its adjacent JSON summary.
 ### Current progress review route
 
 The double-clickable `review.cmd` launcher runs `review.ps1`, starts Vite, and
-defaults to `/__dev/live-controller`. This is the current most advanced
-integrated mesh-generation view: the retained solver, GPU extraction, mesh
-promotion, and imperative rendering controller run together. The launcher does
-not use the production Express root because development fixtures are
-tree-shaken from that build and the public presentation is not assembled yet.
+defaults to `/__dev/material`. This is the current most advanced integrated
+view: the retained solver, GPU extraction, continuous mesh promotion, and
+surface-age-driven physical material run together. The neutral
+`/__dev/live-controller` route remains the Milestone 2 geometry regression
+surface. The launcher does not use the production Express root because
+development fixtures are tree-shaken from that build and the public
+presentation is not assembled yet.
 
 Whenever the active mesh-generation or visualization validation flow moves to
 a newer integration fixture, update the default `Path` in `review.ps1` in the

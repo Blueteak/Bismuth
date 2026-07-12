@@ -4,7 +4,7 @@ param(
     [int]$Port = 5173,
 
     [ValidatePattern('^/')]
-    [string]$Path = '/__dev/live-controller',
+    [string]$Path = '/__dev/material',
 
     [switch]$NoBrowser
 )

@@ -5,6 +5,7 @@ import {
   EquirectangularReflectionMapping,
   Float32BufferAttribute,
   Mesh,
+  MeshPhysicalNodeMaterial,
   MeshStandardNodeMaterial,
   PerspectiveCamera,
   Scene,
@@ -13,9 +14,10 @@ import {
   Vector3,
   type Texture,
 } from 'three/webgpu';
-import { storage } from 'three/tsl';
+import { storage, transformNormalToView } from 'three/tsl';
 import hdriUrl from '../../hdri.jpg?url';
 import { createGpuSurfaceExtractorPair } from '../extraction';
+import { createBismuthPhysicalNodeMaterial } from '../rendering';
 import {
   validateEnvironmentPreset,
   type EnvironmentPreset,
@@ -83,9 +85,14 @@ export interface LiveVisualizerControllerOptions {
   readonly targetStepCount?: number;
   readonly simulationStepsPerMeshUpdate?: number;
   readonly vertexCapacity?: number;
+  readonly materialMode?: LiveVisualizerMaterialMode;
+  readonly oxideThicknessOverrideNanometers?: number;
 }
 
+export type LiveVisualizerMaterialMode = 'neutral' | 'bismuth';
+
 export interface LiveVisualizerCompletion {
+  readonly materialMode: LiveVisualizerMaterialMode;
   readonly targetStepCount: number;
   readonly finalStepCount: number;
   readonly parityUpdateCounts: readonly [number, number];
@@ -301,6 +308,7 @@ export function createLiveVisualizerController(
   const simulationStepsPerMeshUpdate =
     options.simulationStepsPerMeshUpdate ?? 49;
   const vertexCapacity = options.vertexCapacity ?? 300_000;
+  const materialMode = options.materialMode ?? 'neutral';
   const configuration = deriveSimulationConfiguration(
     createLiveSimulationConfiguration(gridSize),
   );
@@ -315,7 +323,7 @@ export function createLiveVisualizerController(
     ReturnType<typeof createGpuSurfaceExtractorPair> | undefined;
   let scheduler: LiveControllerScheduler | undefined;
   let geometry: BufferGeometry | undefined;
-  let material: MeshStandardNodeMaterial | undefined;
+  let material: MeshStandardNodeMaterial | MeshPhysicalNodeMaterial | undefined;
   let width = canvas.clientWidth;
   let height = canvas.clientHeight;
   let devicePixelRatio = window.devicePixelRatio;
@@ -393,6 +401,7 @@ export function createLiveVisualizerController(
     const minimumIntervalBudgetMilliseconds =
       1000 / MINIMUM_LIVE_MESH_UPDATES_PER_SECOND;
     resolveCompletion({
+      materialMode,
       targetStepCount,
       finalStepCount,
       parityUpdateCounts,
@@ -472,21 +481,37 @@ export function createLiveVisualizerController(
         new Float32BufferAttribute(new Float32Array(3), 3),
       );
       geometry.setIndirect(extractorPair.lastValidMesh.indirect);
-      material = new MeshStandardNodeMaterial({
-        color: 0xc2d0d4,
-        metalness: 0.78,
-        roughness: 0.28,
-      });
-      material.positionNode = storage(
-        extractorPair.lastValidMesh.positions,
-        'vec4',
-        vertexCapacity,
-      ).toAttribute().xyz;
-      material.normalNode = storage(
-        extractorPair.lastValidMesh.normalAge,
-        'vec4',
-        vertexCapacity,
-      ).toAttribute().xyz;
+      if (materialMode === 'bismuth') {
+        material = createBismuthPhysicalNodeMaterial({
+          positions: extractorPair.lastValidMesh.positions,
+          normalAge: extractorPair.lastValidMesh.normalAge,
+          vertexCapacity,
+          ...(options.oxideThicknessOverrideNanometers === undefined
+            ? {}
+            : {
+                oxideThicknessOverrideNanometers:
+                  options.oxideThicknessOverrideNanometers,
+              }),
+        });
+      } else {
+        material = new MeshStandardNodeMaterial({
+          color: 0xc2d0d4,
+          metalness: 0.78,
+          roughness: 0.28,
+        });
+        material.positionNode = storage(
+          extractorPair.lastValidMesh.positions,
+          'vec4',
+          vertexCapacity,
+        ).toAttribute().xyz;
+        material.normalNode = transformNormalToView(
+          storage(
+            extractorPair.lastValidMesh.normalAge,
+            'vec4',
+            vertexCapacity,
+          ).toAttribute().xyz,
+        ).normalize();
+      }
       const mesh = new Mesh(geometry, material);
       mesh.name = 'Controller-owned live GPU marching-cubes hopper';
       mesh.frustumCulled = false;

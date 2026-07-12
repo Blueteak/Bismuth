@@ -48,6 +48,21 @@ Build a curated reference set before cluster tuning. Record URL, photographer/ow
 - Three.js physical material iridescence controls:  
   <https://threejs.org/docs/pages/MeshPhysicalMaterial.html>
 
+Bismuth-oxide optical constants used to bound the provisional film IOR:
+
+- Patil, Yadav, Puri, and Puri, "Optical properties and adhesion of air
+  oxidized vacuum evaporated bismuth thin films," reports refractive indices
+  `1.854..1.991`:
+  <https://doi.org/10.1016/j.jpcs.2007.02.019>
+- Roozeboom et al., "Growth of Bi2O3 Films by Thermal- and Plasma-Enhanced
+  Atomic Layer Deposition Monitored with Real-Time Spectroscopic Ellipsometry
+  for Photocatalytic Water Splitting," reports process-dependent values around
+  `2.3..2.7` at `3 eV`:
+  <https://doi.org/10.1021/acsanm.9b01261>
+
+The material-study value `2.1` is a conservative provisional value within this
+published process-dependent spread, not a calibrated composition claim.
+
 Use Three.js r185 exactly. Re-check these APIs during the foundation spike because the WebGPU/TSL surface is evolving, but do not change the pinned version without a recorded decision.
 
 ## Browser and automated testing

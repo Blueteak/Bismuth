@@ -43,11 +43,19 @@ does not replace the last valid render mesh.
 
 Normals use clamped centered phase differences at each edge endpoint, then
 interpolate and normalize the gradient at the isosurface. This points toward
-increasing phase and agrees with the outward winding convention. Surface age
-shares the normal buffer's fourth component. When both edge endpoints have a
-captured solidification time, birth time interpolates normally; when one side
-still contains the liquid sentinel `-1`, the captured endpoint is used. If
-neither endpoint is captured, age is zero for that extraction.
+increasing phase and agrees with the outward winding convention. The emitted
+gradient is in object space; every node material must transform it to view
+space before assigning `normalNode`. Comparing an object-space gradient with
+Three.js view-space lighting vectors produces direction-locked iridescence
+seams.
+
+Surface age shares the normal buffer's fourth component. When both edge
+endpoints have a captured solidification time, birth time interpolates
+normally. A liquid sentinel `-1` is resolved to the current simulated time
+before the same interpolation. This treats the not-yet-solid endpoint as age
+zero and preserves the edge interpolation factor instead of assigning the
+entire edge the captured solid voxel's age. If neither endpoint is captured,
+age is zero for that extraction.
 
 Candidate attributes remain separate from the renderable last-valid buffers.
 A promotion pass copies positions and normal/age attributes and writes
@@ -133,6 +141,36 @@ The oxidation model is intentionally a presentation model, not temperature- and 
 - Keep the exact curve and thickness range developer-tunable until calibrated against references.
 
 Surface age should be continuous across triangle boundaries and stable between extractions.
+
+The initial developer material study uses the bounded exponential curve
+
+`h(a, p) = h_min + (h_max - h_min) * (1 - 2^(-a / tau(p)))`
+
+where negative age is treated as zero, `h_min = 40 nm`, `h_max = 600 nm`, and
+the nominal half-rise age is `90` simulation-time units. `tau(p)` is the
+half-rise age multiplied by `1 + 0.18 v(p)`, where `v(p)` is the average of
+four balanced, low-frequency sine waves in displayed physical surface
+position, using a base angular frequency of `0.85` per scene unit, and is
+bounded to `[-1, 1]`. Four non-coplanar directions avoid the preferred-axis
+color boundary visible in the initial two-wave study. The variation therefore
+changes only the local oxidation rate: every fixed position remains monotonic,
+all newly solidified points begin at `40 nm`, and every point asymptotically
+approaches `600 nm`. The physical thickness is passed directly to Three.js;
+there is no palette, wrap, ping-pong, or non-monotonic optical remapping.
+
+The initial node material blends the physical iridescence response at `0.72`
+strength with substrate roughness `0.30` and oxide-film IOR `2.1`. Published
+thin-film measurements span roughly `1.85..2.7` depending on deposition and
+phase; `2.1` is a conservative developer value, not a claim that the visualizer
+models one exact oxide composition. These values remain subject to
+reference-backed calibration.
+
+These are provisional developer-tunable material-study values, not calibrated
+oxidation kinetics. The final curve and thickness range remain deferred until
+fixed-seed, fixed-camera screenshots are compared with the selected specimen
+references. The CPU definition and invariants live in
+`src/rendering/oxide-thickness.ts`; the material node must implement the same
+formula rather than maintaining a second independent model.
 
 ## Environment and lighting
 

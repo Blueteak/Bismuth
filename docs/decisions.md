@@ -44,6 +44,11 @@
 | D-038 | Expose explicit internal seeds only in the developer morphology runner and retain a four-seed quick validation suite.      | Four distinct hopper seeds pass in under 16 seconds each without turning seeds into a public product control.                                        |
 | D-039 | Treat continuous live mesh promotion as a cross-milestone product gate: target `30 /s`, block below `15 /s`.               | Watching growth is a primary feature; render frames over a stale mesh and isolated extraction-kernel timings do not demonstrate continuous growth.   |
 | D-040 | Point the local review launcher at the most advanced integrated developer visualization until final presentation.          | Review should show current mesh-generation progress without prematurely exposing developer fixtures through the production root.                     |
+| D-041 | Start material studies with a bounded exponential oxide-age curve and deterministic low-frequency rate variation.          | Gives the node material a monotonic, testable input model while leaving final thickness calibration deferred to reference-backed screenshots.        |
+| D-042 | Transform extracted object-space phase-gradient normals to view space before assigning a Three.js node material normal.    | Three.js physical lighting and iridescence consume view-space normals; the coordinate mismatch produced false direction-locked color seams.          |
+| D-043 | Use `2.1` as the provisional bismuth-oxide film IOR for material studies.                                                  | Published bismuth-oxide thin films report indices from about `1.85` to `2.7`; this replaces the ungrounded `1.3` while calibration remains deferred. |
+| D-044 | Keep optical film thickness identical to the monotonic physical oxide curve; do not wrap or ping-pong color progress.      | Ping-pong and range-limiting experiments did not remove the border and obscured the actual rendering-normal issue.                                   |
+| D-045 | Resolve liquid birth-time sentinels to current simulated time before interpolating surface age along an isosurface edge.   | Using only the captured solid endpoint discarded edge interpolation and created piecewise age bands; the liquid endpoint represents age zero.        |
 
 ## Deferred decisions
 

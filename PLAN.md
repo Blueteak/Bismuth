@@ -137,7 +137,7 @@ Recorded Milestone 2 evidence:
 - The initial `4^3` analytic-plane WebGPU proof classified all `3^3` cells exactly. Each x-row produced cases `[255, 153, 0]`, the nine intersected cells matched the CPU reference, and the device reported no uncaptured errors.
 - The expanded `8^3` analytic-plane proof exercised `343` cells across three `128`-value scan blocks and two hierarchy levels. All case indices, active flags, triangle counts, active offsets, triangle offsets, and compacted active-cell indices matched the CPU reference. It produced `49` active cells and `98` triangles with no uncaptured WebGPU errors.
 - The same plane emitted `294` bounded vertices at `x = 3.5` with y/z bounds `0..7`, zero position mismatches at tolerance `1e-6`, and zero outward-winding mismatches across all `98` triangles. A `291`-vertex capacity reported summary `[294, 291, 1, 98]` without an out-of-bounds write or WebGPU error.
-- The plane also produced zero phase-gradient-normal and surface-age mismatches: every normal was `[1, 0, 0]`, and a solid birth time `2` at simulated time `10` yielded age `8` while ignoring the liquid `-1` sentinel. Complete promotion wrote indirect arguments `[294, 1, 0, 0]`; the subsequent overflow candidate left those arguments and all promoted positions unchanged.
+- The plane also produced zero phase-gradient-normal and surface-age mismatches: every normal was `[1, 0, 0]`, and a solid birth time `2` opposite a liquid sentinel at simulated time `10` yielded interpolated age `4`. Complete promotion wrote indirect arguments `[294, 1, 0, 0]`; the subsequent overflow candidate left those arguments and all promoted positions unchanged.
 - CPU references for a sphere and max-norm faceted cube produced one connected closed surface, exactly two uses of every mesh edge, outward winding on every triangle, and the expected smooth/symmetric or exact faceted bounds.
 - The live solver fixture extracted a `128^3`, `t = 500` perturbed hopper directly from current GPU textures into `32068` triangles and `96204` promoted vertices with no overflow or WebGPU errors. Its durable screenshot preserves a recognizable recessed and terraced hopper; `535.8 ms` is the cold compile-plus-extraction checkpoint, not the pending steady-state cadence result.
 - The repeated fixture promoted and rendered distinct meshes at `t = 100`, `200`, `300`, `400`, and `500`, growing from `23808` to `96204` vertices without overflow. Each developer checkpoint remains visible for `500 ms`; this dwell is excluded from extraction timing. After excluding the first sample, warm queue-complete extraction measured `1.2..3.9 ms` with a `2.55 ms` median; this is extraction-only fixture timing, not render cadence or an end-to-end frame budget.
@@ -173,6 +173,25 @@ Add the intended final appearance while retaining deterministic visual tests.
 - Implement the fixed camera distance, fixed target, orbit/zoom input, and gentle auto-orbit that stops after interaction.
 - Preserve continuous mesh promotion while material and camera work is active;
   material compilation or shading must not reduce cadence below `15 /s`.
+
+Recorded initial Milestone 3 evidence:
+
+- The promoted `normalAge.w` attribute drives a Three.js r185 physical node
+  material through a literal monotonic `40..600 nm` oxide curve and
+  research-bounded provisional film IOR `2.1`.
+- Storage-backed rendering paths now transform object-space extracted normals
+  into the view-space basis required by `normalNode`. This corrected the
+  shading basis but did not remove the moving age-following border.
+- Liquid birth-time sentinels resolve to current simulated time before
+  isosurface edge interpolation. This preserves continuous surface-age
+  interpolation rather than assigning the captured solid voxel's full age to
+  the crossing; rendering-normal widening experiments were reverted.
+- The hardware analytic-plane regression emitted age `4.0000019073` at all
+  `294` vertices against expected age `4`, within a dedicated `4e-6` float32
+  interpolation tolerance.
+- The final fixed-camera `1280 x 720` run removed the moving hard age boundary
+  and promoted `1021` meshes at `53.692 /s` with a `31.9 ms`
+  95th-percentile interval, both texture parities active, and no WebGPU errors.
 
 Exit criteria:
 

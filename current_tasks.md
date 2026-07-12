@@ -33,7 +33,9 @@ validated simulation and extraction paths remain developer-only until
 Milestone 3 supplies the bismuth material and presentation.
 
 For current progress review, `review.cmd` starts Vite and `review.ps1` defaults
-to `/__dev/live-controller`, the most advanced integrated solver-to-mesh view.
+to `/__dev/material`, the most advanced integrated solver-to-material view.
+The neutral `/__dev/live-controller` remains the Milestone 2 geometry
+regression surface.
 Whenever the active mesh-generation or visualization testing flow moves to a
 new fixture, update the launcher default and the matching route notes in
 `README.md`, this handoff, and `docs/testing-and-validation.md`. Keep this
@@ -185,20 +187,47 @@ Milestone 2 durable controller evidence is in
 neutral extraction fixture as the geometry regression surface while material
 work proceeds.
 
+The initial Milestone 3 material slice is complete:
+
+- `src/rendering/oxide-thickness.ts` defines the documented provisional
+  literal `40..600 nm` exponential age mapping and balanced deterministic
+  spatial-rate variation. Unit coverage fixes its bounds, monotonicity,
+  half-rise behavior,
+  determinism, and parameter validation.
+- The promoted `normalAge.w` attribute now drives a Three.js physical node
+  material without changing simulation state. The HDRI remains invisible
+  against black and the single directional light remains active.
+- Extracted phase-gradient normals are object-space values, while Three.js
+  physical node lighting consumes view-space normals. All storage-backed
+  rendering paths now apply the required normal transform. This corrected the
+  shading basis but did not remove the moving age-following border.
+- Surface age now resolves a liquid endpoint's `-1` sentinel to current
+  simulated time before edge interpolation. This preserves continuous
+  isosurface interpolation instead of assigning every crossing the captured
+  solid voxel's full age. Normal-derivative experiments were reverted because
+  they did not affect the moving border.
+- The final corrected fixed-camera, `1280 x 720` material run removed the hard
+  moving age boundary and promoted `1021` meshes at `53.692 /s` with `31.9 ms`
+  p95, both texture parities active, and no WebGPU errors. See
+  `docs/evidence/milestone3-material-integration.md`.
+- The hardware analytic-plane gate now verifies the sentinel rule directly:
+  all `294` vertices emitted age `4.0000019073` against expected age `4`
+  within the dedicated `4e-6` float32 interpolation tolerance.
+
+Final oxide calibration remains deferred to reference-backed material
+screenshots.
+
 The next implementation slice is:
 
-1. Define and unit test a documented monotonic surface-age to oxide-thickness
-   mapping with bounded deterministic spatial variation.
-2. Bind the promoted `normalAge.w` attribute into a Three.js physical node
-   material without changing simulation or extraction state.
-3. Establish fixed age samples and a fixed-camera developer material fixture
-   before tuning against lab-grown bismuth references.
-4. Keep the HDRI invisible against a black background and retain the one
-   directional self-shadow light.
-5. Measure end-to-end mesh promotion with the material enabled; preserve the
-   `30 /s` target and `15 /s` blocking floor.
-6. Record fixed-seed, fixed-camera screenshots on the reference hardware for
-   the newly grown, intermediate, and old surface-age bands.
+1. Curate licensed lab-grown bismuth references and calibrate the provisional
+   oxide curve, base reflectance, roughness, environment rotation, and exposure
+   against them without changing the scientific field.
+2. Add the fixed-target orbit/zoom controls and gentle auto-orbit that stops
+   permanently after the first user camera interaction.
+3. Record retained fixed-seed, fixed-camera screenshots for newly grown,
+   intermediate, and old surface-age bands on the reference hardware.
+4. Rerun the material-enabled cadence gate after the final material and camera
+   settings; preserve the `30 /s` target and `15 /s` blocking floor.
 
 React must not own material uniforms or per-frame camera state. The imperative
 visualizer controller owns render timing and run-scoped material state; the

@@ -25,8 +25,8 @@ describe('vertex-emission capacity planning', () => {
 
   it('interpolates valid birth times and ignores the liquid sentinel', () => {
     expect(interpolateSurfaceAge(2, 4, 0.25, 10)).toBe(7.5);
-    expect(interpolateSurfaceAge(2, -1, 0.5, 10)).toBe(8);
-    expect(interpolateSurfaceAge(-1, 4, 0.5, 10)).toBe(6);
+    expect(interpolateSurfaceAge(2, -1, 0.5, 10)).toBe(4);
+    expect(interpolateSurfaceAge(-1, 4, 0.5, 10)).toBe(3);
     expect(interpolateSurfaceAge(-1, -1, 0.5, 10)).toBe(0);
   });
 });

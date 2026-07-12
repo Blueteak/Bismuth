@@ -9,7 +9,7 @@ import {
   PerspectiveCamera,
   Scene,
 } from 'three/webgpu';
-import { storage } from 'three/tsl';
+import { storage, transformNormalToView } from 'three/tsl';
 import { createGpuSurfaceExtractor } from '../extraction';
 import { createWebGpuSession } from '../rendering/webgpu-capability';
 import {
@@ -176,7 +176,9 @@ async function runLiveExtractionFixture(
       VERTEX_CAPACITY,
     );
     material.positionNode = positionStorage.toAttribute().xyz;
-    material.normalNode = normalAgeStorage.toAttribute().xyz;
+    material.normalNode = transformNormalToView(
+      normalAgeStorage.toAttribute().xyz,
+    ).normalize();
     const mesh = new Mesh(geometry, material);
     mesh.name = 'Live GPU marching-cubes hopper';
     mesh.frustumCulled = false;

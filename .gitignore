@@ -10,3 +10,5 @@ test-results/
 docs/evidence/*
 !docs/evidence/milestone2-controller-integration.md
 !docs/evidence/milestone2-controller-integration-summary.json
+!docs/evidence/milestone3-material-integration.md
+!docs/evidence/milestone3-material-integration-summary.json

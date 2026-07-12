@@ -1,0 +1,48 @@
+{
+  "recordedAt": "2026-07-12",
+  "scope": "initial-milestone3-material-integration",
+  "backend": "webgpu",
+  "threeRevision": "185",
+  "adapter": "blackwell",
+  "viewport": [1280, 720],
+  "devicePixelRatio": 1,
+  "fixedCamera": [4.2, 3.1, 4.6],
+  "materialMode": "bismuth",
+  "oxideThicknessRangeNanometers": [40, 600],
+  "renderNormalGradientRadius": 1,
+  "surfaceAgeSentinelRule": "resolve-liquid-to-current-time-before-edge-interpolation",
+  "iridescenceStrength": 0.72,
+  "roughness": 0.3,
+  "oxideIor": 2.1,
+  "hardSeamDiagnosis": "liquid-sentinel-discarded-edge-interpolation",
+  "birthTimeReconstruction": "resolve-liquid-to-current-time-then-interpolate",
+  "analyticSurfaceAgeProof": {
+    "vertexCount": 294,
+    "expectedAge": 4,
+    "measuredMinimum": 4.000001907348633,
+    "measuredMaximum": 4.000001907348633,
+    "tolerance": 0.000004,
+    "mismatchCount": 0
+  },
+  "targetStepCount": 50000,
+  "finalStepCount": 50000,
+  "parityUpdateCounts": [511, 510],
+  "cadence": {
+    "updateCount": 1021,
+    "measuredDurationMilliseconds": 18997.100000023842,
+    "updatesPerSecond": 53.69240568290528,
+    "medianIntervalMilliseconds": 17,
+    "percentile95IntervalMilliseconds": 31.899999976158142,
+    "maximumIntervalMilliseconds": 192.5
+  },
+  "rendererFrames": 1136,
+  "uncapturedErrors": [],
+  "passed": true,
+  "oxideThicknessSamples": [
+    { "surfaceAge": 0, "thicknessNanometers": 40 },
+    { "surfaceAge": 45, "thicknessNanometers": 188.01693090815118 },
+    { "surfaceAge": 90, "thicknessNanometers": 296.9106263958231 },
+    { "surfaceAge": 180, "thicknessNanometers": 435.9586278718352 },
+    { "surfaceAge": 500, "thicknessNanometers": 581.5081351302151 }
+  ]
+}

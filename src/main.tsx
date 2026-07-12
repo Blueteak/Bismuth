@@ -53,6 +53,12 @@ async function startApplication(): Promise<void> {
     return;
   }
 
+  if (import.meta.env.DEV && window.location.pathname === '/__dev/material') {
+    const { mountMaterialFixture } = await import('./dev/material-fixture');
+    mountMaterialFixture(applicationRoot);
+    return;
+  }
+
   if (import.meta.env.DEV) {
     console.info('[Bismuth] Milestone 0C foundation', getRuntimeSummary());
   }
