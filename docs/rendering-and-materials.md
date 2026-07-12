@@ -13,6 +13,59 @@ Pipeline:
 5. Write indirect draw arguments.
 6. Draw the latest valid output through Three.js storage-backed geometry.
 
+Cell classification uses the standard Lorensen-Cline corner order
+`000, 100, 110, 010, 001, 101, 111, 011`. A case bit is set when its phase
+sample is on the solid side, including the threshold: `phase <= 0.5`. Thus an
+x-normal plane with solid on negative x has crossing case `153`. This ordering
+is shared by the CPU reference and GPU classifier and must remain fixed when
+the edge and triangle lookup tables are introduced.
+
+Active flags and per-cell triangle counts use independent hierarchical
+exclusive scans with `128` values per workgroup. Each workgroup performs a
+Blelloch scan in shared memory, block totals recurse until one block remains,
+and parent offsets are added back down the hierarchy. Active cells then scatter
+their source indices into a stable compact list. Triangle offsets remain keyed
+by source cell for bounded vertex emission. Production extraction dispatches
+these passes on the GPU; only small validation summaries may be read back.
+
+Vertex emission uses the canonical Three.js r185 marching-cubes triangle table
+with each triangle reversed so the `phase <= 0.5` solid convention winds toward
+increasing phase. Edge intersections linearly interpolate the two phase samples
+in physical grid coordinates. Triangle edges, edge endpoints, and corner
+offsets share one packed read-only buffer so the emission shader stays within
+the portable eight-storage-buffer WebGPU limit.
+
+Vertex capacity is always a multiple of three. The GPU summary records
+`[requested vertices, emitted vertices, overflow, triangles]`, and emission
+checks the complete triangle against the emitted bound before writing any of
+its vertices. An overflowed candidate is therefore bounded and detectable, but
+does not replace the last valid render mesh.
+
+Normals use clamped centered phase differences at each edge endpoint, then
+interpolate and normalize the gradient at the isosurface. This points toward
+increasing phase and agrees with the outward winding convention. Surface age
+shares the normal buffer's fourth component. When both edge endpoints have a
+captured solidification time, birth time interpolates normally; when one side
+still contains the liquid sentinel `-1`, the captured endpoint is used. If
+neither endpoint is captured, age is zero for that extraction.
+
+Candidate attributes remain separate from the renderable last-valid buffers.
+A promotion pass copies positions and normal/age attributes and writes
+non-indexed indirect arguments `[vertex count, 1, 0, 0]` only when overflow is
+zero. An overflow candidate performs neither copy nor indirect update, so the
+renderer continues drawing the preceding complete mesh without CPU repair or
+mesh readback.
+
+Extraction cadence is independent from solver and render cadence. The first
+live tracking fixture extracts at five even-step checkpoints so the ping-pong
+solver returns to the same bound phase and solidification-time textures before
+every extraction. Production controller integration must bind both texture
+parities to candidates that share one promoted last-valid mesh; it must not
+rely on even batch sizes as a public run-lifecycle constraint. Queue-complete
+extraction timing excludes the small validation-summary reads and all
+rendering work. The first sample is reported separately from warm samples
+because browser and driver pipeline caches can survive page reloads.
+
 The production loop must not copy the volume or generated mesh to JavaScript.
 
 ## Capacity and correctness

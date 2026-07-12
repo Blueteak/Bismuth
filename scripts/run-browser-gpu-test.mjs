@@ -526,6 +526,12 @@ try {
     if (!outcome.result.singleCrystal?.passed) {
       throw new Error('The Step 1 CPU/WebGPU solver comparison failed.');
     }
+    if (!outcome.result.extractionClassification?.passed) {
+      throw new Error('The marching-cubes cell classification proof failed.');
+    }
+    if (!outcome.result.extractionEmission?.passed) {
+      throw new Error('The marching-cubes vertex-emission proof failed.');
+    }
     if (!outcome.result.indirectDraw.passed) {
       throw new Error('The compute-generated indirect draw proof failed.');
     }

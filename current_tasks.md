@@ -1,7 +1,7 @@
 # Current Tasks
 
-Updated 2026-07-11. Milestone 1 is complete. This is the handoff into
-Milestone 2 live GPU surface extraction.
+Updated 2026-07-12. Milestone 1 is complete. Milestone 2 live GPU surface
+extraction is in progress.
 
 Do not inspect deleted branches, caches, or repository history. Work from the
 current tree, the primary sources in `docs/`, and the durable local evidence in
@@ -32,6 +32,16 @@ The public route intentionally remains the Milestone 0C empty foundation
 scene. The simulation is exposed only through developer routes until Step 2
 supplies a GPU-resident surface.
 
+Milestone 2 now has GPU classification, hierarchical prefix scans, active-cell
+compaction, bounded vertex emission, phase-gradient normals, surface age,
+indirect promotion, overflow retention, analytic topology references, and a
+live solver-to-mesh fixture. Five `128^3` checkpoints at `t = 100..500`
+promoted and visibly rendered five distinct meshes without phase-volume or
+mesh readback. The developer fixture holds each checkpoint for `500 ms` so the
+growth sequence remains observable even on the reference GPU. The four warm
+extraction samples measured `1.2..3.9 ms` with a `2.55 ms` median on the
+reference browser and adapter.
+
 ## Step 1 completion review
 
 All five Step 1 exit criteria in `PLAN.md` are satisfied:
@@ -60,6 +70,23 @@ does not claim a calibrated bismuth process or a complete reproduction of the
 paper's qualitative transition series.
 
 ## Fast validation loops
+
+For browser-independent code iteration, start with:
+
+```powershell
+npm.cmd run check:fast
+```
+
+Before handoff, run the browser-free baseline gate:
+
+```powershell
+npm.cmd run check:baseline
+```
+
+Add `test:e2e` only for UI or capability-shell work and `test:gpu` for GPU
+compute, extraction, solver, or rendering work. Neither browser command is part
+of the baseline gate. Solver equation or numerical-configuration edits also
+require the morphology screen below.
 
 Routine solver edits start with:
 
@@ -134,20 +161,23 @@ Do not add decorative spirals, stamped terraces, mesh noise, or post-processed
 offshoots. Those features require cited defect, orientation, multiphase, or
 bismuth-specific kinetic physics and are deferred in `docs/decisions.md`.
 
-## Next task: Milestone 2 surface extraction
+## Current task: finish Milestone 2 surface extraction
 
-Implement live GPU marching cubes at `phi = 0.5` while preserving the current
-simulation and architecture boundaries:
+The extraction core and repeated live tracking are implemented. Durable
+evidence is in `docs/evidence/milestone2-live-solver-extraction.md` and
+`docs/evidence/milestone2-live-tracking-summary.json`.
 
-1. Add analytic-field tests for empty/full fields, planes, spheres, faceted
-   fields, ambiguous saddles, and boundary-adjacent surfaces.
-2. Implement GPU cell classification and per-cell triangle counts.
-3. Add GPU prefix-sum compaction without full-field production readback.
-4. Emit positions, phase-gradient normals, surface-age attributes, and
-   indirect draw arguments into capacity-bounded GPU buffers.
-5. Report overflow and retain the last valid mesh on failure.
-6. Measure extraction cadence separately from solver and render cadence.
-7. Review facet and terrace quality before considering dual contouring.
+The next implementation slice is:
+
+1. Integrate the solver and extractor into the imperative visualizer
+   controller without moving per-frame state into React.
+2. Handle both solver ping-pong texture parities while sharing one promoted
+   last-valid render mesh.
+3. Schedule solver, extraction, and rendering independently so warm extraction
+   cadence is not treated as frame cadence.
+4. Add controller-level lifecycle and resize coverage for the live mesh.
+5. Record the final facet/terrace visual gate before closing Milestone 2;
+   consider dual contouring only if marching cubes fails that gate.
 
 React must not own extraction or per-frame simulation state. The imperative
 visualizer controller owns the render loop and run-scoped GPU resources; the
@@ -172,8 +202,10 @@ marching-cubes render.
 
 - All current milestone work is uncommitted and unstaged. Preserve unrelated
   user changes and do not reset the tree.
-- `npm run test:e2e` deletes ignored `test-results/`; durable evidence belongs
-  under `docs/evidence/`.
+- `npm run test:e2e` writes its transient output under
+  `test-results/playwright/`; GPU and CPU convenience reports remain under
+  their sibling directories. Durable evidence still belongs under
+  `docs/evidence/`.
 - Hardware tests use the Codex in-app browser and the real WebGPU adapter. Do
   not substitute SwiftShader or unsafe browser flags.
 - Keep agent-facing Markdown ASCII-only.

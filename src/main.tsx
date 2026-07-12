@@ -33,6 +33,16 @@ async function startApplication(): Promise<void> {
     return;
   }
 
+  if (
+    import.meta.env.DEV &&
+    window.location.pathname === '/__dev/live-extraction'
+  ) {
+    const { mountLiveExtractionFixture } =
+      await import('./dev/live-extraction-fixture');
+    mountLiveExtractionFixture(applicationRoot);
+    return;
+  }
+
   if (import.meta.env.DEV) {
     console.info('[Bismuth] Milestone 0C foundation', getRuntimeSummary());
   }

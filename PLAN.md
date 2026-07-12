@@ -8,7 +8,7 @@ The existing repository history and previous implementations are out of scope. T
 
 ## Current status and next task
 
-Milestones 0A, 0B, 0C, and 1 are complete as of 2026-07-11. Milestone 1 closes around its scoped single-hopper objective: CPU/WebGPU agreement, deterministic finite fields, write-once birth time, resolved hopper recession, physical-domain refinement, a four-seed fast suite, and the complete recorded transition investigation. The browser reproduces the cube and hopper gates but not the paper's fractal and dendritic outcomes. The remaining adaptive-mesh, BDF2, multigrid, and Float64 differences are explicit fidelity limits, not hidden successes. The next implementation task is Milestone 2 live GPU surface extraction; retain the Step 1 fast profiles as regression gates while extraction work proceeds.
+Milestones 0A, 0B, 0C, and 1 are complete as of 2026-07-11. Milestone 1 closes around its scoped single-hopper objective: CPU/WebGPU agreement, deterministic finite fields, write-once birth time, resolved hopper recession, physical-domain refinement, a four-seed fast suite, and the complete recorded transition investigation. The browser reproduces the cube and hopper gates but not the paper's fractal and dendritic outcomes. The remaining adaptive-mesh, BDF2, multigrid, and Float64 differences are explicit fidelity limits, not hidden successes. Milestone 2 is in progress: analytic sphere and faceted-field references pass closed, connected, manifold, outward-winding topology gates, and a live `128^3` solver run promoted five distinct GPU marching-cubes meshes without phase-volume or mesh readback. Four warm extraction samples measured `1.2..3.9 ms` with a `2.55 ms` median on the reference browser and adapter. The next implementation task is controller integration across both solver texture parities, independent solver/extraction/render scheduling, lifecycle coverage, and the final facet/terrace visual gate; retain the Step 1 fast profiles as regression gates while extraction work proceeds.
 
 ## Milestone sequence
 
@@ -124,6 +124,17 @@ Turn the phase field into a renderable surface without production readback.
 - Validate extraction on analytic planes, spheres, and faceted scalar fields.
 - Measure extraction cadence independently from render cadence.
 - Evaluate facet and terrace quality; use dual contouring only if marching cubes fails the documented visual gate.
+
+Recorded Milestone 2 evidence:
+
+- The initial `4^3` analytic-plane WebGPU proof classified all `3^3` cells exactly. Each x-row produced cases `[255, 153, 0]`, the nine intersected cells matched the CPU reference, and the device reported no uncaptured errors.
+- The expanded `8^3` analytic-plane proof exercised `343` cells across three `128`-value scan blocks and two hierarchy levels. All case indices, active flags, triangle counts, active offsets, triangle offsets, and compacted active-cell indices matched the CPU reference. It produced `49` active cells and `98` triangles with no uncaptured WebGPU errors.
+- The same plane emitted `294` bounded vertices at `x = 3.5` with y/z bounds `0..7`, zero position mismatches at tolerance `1e-6`, and zero outward-winding mismatches across all `98` triangles. A `291`-vertex capacity reported summary `[294, 291, 1, 98]` without an out-of-bounds write or WebGPU error.
+- The plane also produced zero phase-gradient-normal and surface-age mismatches: every normal was `[1, 0, 0]`, and a solid birth time `2` at simulated time `10` yielded age `8` while ignoring the liquid `-1` sentinel. Complete promotion wrote indirect arguments `[294, 1, 0, 0]`; the subsequent overflow candidate left those arguments and all promoted positions unchanged.
+- CPU references for a sphere and max-norm faceted cube produced one connected closed surface, exactly two uses of every mesh edge, outward winding on every triangle, and the expected smooth/symmetric or exact faceted bounds.
+- The live solver fixture extracted a `128^3`, `t = 500` perturbed hopper directly from current GPU textures into `32068` triangles and `96204` promoted vertices with no overflow or WebGPU errors. Its durable screenshot preserves a recognizable recessed and terraced hopper; `535.8 ms` is the cold compile-plus-extraction checkpoint, not the pending steady-state cadence result.
+- The repeated fixture promoted and rendered distinct meshes at `t = 100`, `200`, `300`, `400`, and `500`, growing from `23808` to `96204` vertices without overflow. Each developer checkpoint remains visible for `500 ms`; this dwell is excluded from extraction timing. After excluding the first sample, warm queue-complete extraction measured `1.2..3.9 ms` with a `2.55 ms` median; this is extraction-only fixture timing, not render cadence or an end-to-end frame budget.
+- Unit coverage fixes the standard corner and edge orders, the solid-side convention `phase <= 0.5`, threshold inclusion, canonical triangle counts, outward winding, physical interpolation, sentinel-aware surface age, cell-count derivation, uint32 scan validation, stable compaction, triangle-aligned capacity, indirect promotion, last-valid retention, and malformed-input rejection.
 
 Exit criteria:
 

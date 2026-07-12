@@ -20,39 +20,48 @@ Open the local URL printed by Vite.
 
 ## Validation commands
 
+Use the browser-independent fast loop during ordinary code iteration:
+
 ```powershell
-npm.cmd test
-npm.cmd run test:gpu
-npm.cmd run validate:morphology:quick
-npm.cmd run validate:morphology:reference
-npm.cmd run validate:morphology
-npm.cmd run validate:morphology:seed:99539473
-npm.cmd run validate:morphology:seed:324508639
-npm.cmd run validate:morphology:seed:610839776
-npm.cmd run validate:morphology:seed:3221344269
-npm.cmd run validate:morphology:seeds:compare
-npm.cmd run validate:transition:control
-npm.cmd run validate:transition:quick
-npm.cmd run validate:transition:reference
-npm.cmd run validate:transition:compare
-npm.cmd run validate:transition:cube
-npm.cmd run validate:transition:fractal
-npm.cmd run validate:transition:cube:source
-npm.cmd run validate:transition:fractal:source
-npm.cmd run validate:transition:summarize
-npm.cmd run validate:coupling
-npm.cmd run test:e2e
-npm.cmd run benchmark
-npm.cmd run lint
-npm.cmd run format:check
-npm.cmd run typecheck
-npm.cmd run build
-npm.cmd start
+npm.cmd run check:fast
 ```
 
-The production server uses `PORT=3000` by default and exposes `GET /healthz`.
+Before a handoff, run the baseline code-quality and production-build gate:
 
-`test:gpu`, the morphology commands, and `benchmark` start a temporary local fixture and wait for a report from the Codex in-app browser. Open the printed fixture URL in that browser. The fixture fails if it cannot obtain a hardware adapter, if Three.js selects a fallback backend, if its numerical or morphology gate fails, or if WebGPU reports an uncaptured error.
+```powershell
+npm.cmd run check:baseline
+```
+
+Add only the checks that match the subsystem changed:
+
+```powershell
+npm.cmd run test:e2e                    # UI or capability-state changes
+npm.cmd run test:gpu                    # GPU solver, extraction, or rendering
+npm.cmd run validate:morphology:quick # Solver physics or configuration changes
+npm.cmd run benchmark                 # Performance investigations only
+```
+
+`check:fast` runs the unit/CPU-reference suite and strict TypeScript checks.
+`check:baseline` adds lint, formatting, and both production builds. It does not
+start a standalone development/production server or browser and intentionally
+excludes hardware and scientific promotion gates. The unit suite still uses
+short-lived loopback listeners for its Express contract cases.
+
+`test:e2e` starts one temporary Vite server and Chrome. Its current scope is the
+GPU-independent loading and unsupported shell integration; add it for UI,
+capability, or browser-shell changes. `test:gpu`, the morphology commands, and
+`benchmark` start a temporary local fixture and wait for a report from the
+Codex in-app browser. Open the printed fixture URL in that browser. The fixture
+fails if it cannot obtain a hardware adapter, if Three.js selects a fallback
+backend, if its numerical or morphology gate fails, or if WebGPU reports an
+uncaptured error.
+
+The `256^3` morphology gates, four-seed suite, transition controls, source A/B
+runs, and coupled CPU experiment are promotion or investigation tools rather
+than routine checks. Their exact commands and required ordering are documented
+in `docs/testing-and-validation.md`.
+
+The production server uses `PORT=3000` by default and exposes `GET /healthz`.
 
 - `test:gpu` compares the `9^3` CPU and WebGPU single-crystal fields in addition to the Milestone 0B compute and indirect-draw proofs. Its latest report is `test-results/gpu/latest.json`.
 - `validate:morphology:quick` is the routine per-edit solver screen. It runs the deterministic perturbed hopper at `128^3`, `dx = 2`, `dt = 0.01`, and `t = 500`, and it enforces both its calibrated metric envelope and a hard `25000 ms` fixture deadline. Its report is `test-results/gpu/latest-morphology-quick.json`.

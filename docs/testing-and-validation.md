@@ -14,6 +14,8 @@ Once scaffolded, maintain:
 | ------------------------------------------- | -------------------------------------------- |
 | `npm run dev`                               | Local Vite server                            |
 | `npm test`                                  | Unit tests and CPU-reference numerical tests |
+| `npm run check:fast`                        | Unit tests plus strict TypeScript checks     |
+| `npm run check:baseline`                    | Browser-free handoff quality gate            |
 | `npm run test:gpu`                          | Browser WebGPU compute/extraction tests      |
 | `npm run validate:morphology:quick`         | Calibrated Step 1 iteration screen           |
 | `npm run validate:morphology:reference`     | Paired perturbed `256^3` promotion gate      |
@@ -29,7 +31,7 @@ Once scaffolded, maintain:
 | `npm run validate:transition:*:source`      | One-time author-centered outcome A/B         |
 | `npm run validate:transition:summarize`     | Verify the retained transition conclusion    |
 | `npm run validate:coupling`                 | Coupled CPU integration experiment           |
-| `npm run test:e2e`                          | Playwright lifecycle and screenshot tests    |
+| `npm run test:e2e`                          | GPU-independent browser shell integration    |
 | `npm run benchmark`                         | Hardware adapter benchmarks                  |
 | `npm run build`                             | Production client/server build               |
 | `npm start`                                 | Express production server                    |
@@ -37,6 +39,42 @@ Once scaffolded, maintain:
 Scripts must work from PowerShell on Windows and from a standard shell on Ubuntu without separate implementations.
 
 Do not create no-op commands merely to satisfy this table. Milestone 0A requires `dev`, `test`, `test:e2e`, `lint`, `format:check`, `typecheck`, `build`, and `start` with meaningful smoke behavior. `test:gpu` and `benchmark` become required in 0B when real WebGPU fixtures exist.
+
+## Change-aware validation cadence
+
+Do not treat every command in the contract as a per-edit suite. Select the
+smallest tier that exercises the changed subsystem, then promote through the
+stronger gates before the change is handed off.
+
+| Change scope                                | Required iteration checks                             | Add before handoff or promotion                              |
+| ------------------------------------------- | ----------------------------------------------------- | ------------------------------------------------------------ |
+| Documentation only                          | `format:check` and the required ASCII scan            | Relevant link/content review                                 |
+| Browser-independent TypeScript              | `check:fast`                                          | `check:baseline`                                             |
+| UI or capability shell                      | `check:fast`, `test:e2e`                              | `check:baseline`                                             |
+| GPU compute, extraction, or rendering       | `check:fast`, `test:gpu`                              | `check:baseline` and relevant visual evidence                |
+| Solver equations or numerical configuration | `check:fast`, `test:gpu`, `validate:morphology:quick` | `check:baseline` plus the applicable reference or seed gates |
+| Express or deployment behavior              | `npm test`, `typecheck`, `build`                      | Built production-server smoke test                           |
+| Performance-only work                       | Correctness checks for the affected subsystem         | `benchmark` and recorded adapter-aware comparison            |
+
+`check:fast` is the default browser-independent edit loop. `check:baseline`
+adds full lint, formatting, and production builds, but deliberately excludes
+Playwright, hardware WebGPU, morphology, benchmark, and scientific reference
+commands. Those checks stay explicit so a baseline handoff does not
+accidentally start a browser or a long-running solver fixture.
+
+The three Express contract cases inside `npm test` use short-lived loopback
+listeners and synthetic build files. They verify `/healthz`, SPA routing, and
+cache headers without starting the built production process. Keep them in the
+fast suite. `test:e2e` starts one Vite server and Chrome for the current loading
+and injected-unsupported shell cases; it does not yet cover the later public
+run lifecycle or produce screenshot evidence. Add those checks when the
+corresponding milestones activate.
+
+`test:gpu`, `benchmark`, and every browser morphology command start one Vite
+fixture and wait for the existing Codex in-app browser. Their server startup is
+shared across the assertions in that command; GPU work, synchronization, and
+large-grid simulation dominate their cost. Report-comparison and transition-
+summary commands read existing JSON evidence and do not start a browser.
 
 ## Unit and CPU-reference tests
 
@@ -168,6 +206,92 @@ The accepted result passes the current gate: bounded finite phase and birth-time
 fields, a nonempty solid and surface, distributed rim-relative recession,
 nonzero bounded asymmetry, at least one solid-half-extent of boundary clearance,
 and no WebGPU errors.
+
+### Step 2 extraction classification evidence
+
+The first Milestone 2 hardware fixture used an analytic x-normal plane on a
+`4 x 4 x 4` phase texture. Its `3 x 3 x 3` marching-cubes cells classified as
+`[255, 153, 0]` along every x-row: fully solid, intersected, then fully liquid.
+The recorded Chromium 150, Three.js r185, NVIDIA Blackwell WebGPU run matched
+all `27` case indices, reported exactly `9` active cells, and produced no
+uncaptured WebGPU errors.
+
+The compaction fixture expands that field to `8 x 8 x 8`, yielding `343` cells
+and forcing three `128`-value blocks through two hierarchical scan levels. Its
+representative case row is `[255, 255, 255, 153, 0, 0, 0]`. The hardware result
+matched the CPU reference with zero mismatches across case indices, active
+flags, canonical triangle counts, active offsets, triangle offsets, and stable
+compacted cell indices. Totals were exactly `49` active cells and `98`
+triangles, with no uncaptured WebGPU errors.
+
+The vertex-emission continuation generated `294` vertices for those `98`
+triangles. Every position matched the analytic plane at `x = 3.5` within
+`1e-6`; the observed float32 x bound was `3.4999997616`, while y and z covered
+exactly `0..7`. All `98` triangles wound toward positive x, matching the
+outward/increasing-phase convention. The complete capacity summary was
+`[294, 294, 0, 98]`.
+
+A second emission used a deliberately undersized, triangle-aligned capacity of
+`291` vertices. It reported `[294, 291, 1, 98]`, issued no out-of-bounds write,
+and produced no uncaptured WebGPU errors.
+
+The analytic phase gradient is positive x, and all `294` emitted normals
+matched `[1, 0, 0]`. The solid endpoint used birth time `2`, the liquid endpoint
+retained sentinel `-1`, and simulated time `10` produced surface age `8` for
+every emitted vertex. Normal and age mismatch counts were both zero.
+
+Promoting the complete candidate wrote indirect arguments `[294, 1, 0, 0]`.
+The undersized candidate then exercised the overflow promotion path: the draw
+arguments remained `[294, 1, 0, 0]`, and a complete comparison of promoted
+position components found zero changes. Thus overflow preserves the last valid
+mesh rather than exposing its bounded partial candidate.
+
+The CPU reference then validated a radial sphere field and max-norm faceted
+cube on `16^3` grids. Both produced one connected surface, every undirected
+mesh edge appeared exactly twice, and every triangle wound away from the field
+center. The sphere bounds were symmetric within the interpolation tolerance;
+the faceted field retained exact bounds `3.5..11.5` on all axes.
+
+### Step 2 live solver integration evidence
+
+The developer-only `/__dev/live-extraction` fixture uses the retained perturbed
+hopper profile on `128^3` for `50000` steps. At `t = 500`, it binds the
+extractor to the solver's current phase and solidification-time textures,
+classifies, scans, emits, promotes, and draws the resulting mesh through
+indirect arguments. The integration does not read back the phase volume or
+generated mesh; only the candidate summary and draw arguments are read.
+
+The reference hardware run produced `32068` triangles, `96204` vertices, no
+overflow, no console errors, and no uncaptured WebGPU errors. The cold
+compile-plus-extraction checkpoint took `535.8 ms`; steady-state extraction
+cadence was measured in the repeated continuation. The durable
+[live solver screenshot](evidence/milestone2-live-solver-extraction.png),
+[validation record](evidence/milestone2-live-solver-extraction.md), and
+[tracking summary](evidence/milestone2-live-tracking-summary.json) show the
+smooth marching-cubes hopper with face-center recession and terraces.
+
+The repeated fixture promoted meshes at `t = 100`, `200`, `300`, `400`, and
+`500`. Vertex counts were `23808`, `39888`, `58236`, `76176`, and `96204`, so
+the render source changed at every checkpoint instead of retaining a stale
+candidate. All five promoted candidates were submitted to the renderer and
+held onscreen for `500 ms`; an intermediate browser inspection captured the
+fourth mesh at `76176` vertices while solver progress continued beyond its
+checkpoint. No checkpoint overflowed. After excluding the first sample, the
+four warm queue-complete extractions measured `1.2`, `1.3`, `3.9`, and `3.8`
+ms, for a `2.55 ms` median. These measurements exclude summary readback,
+solver work, rendering, and the display dwell; they are not a frame-rate
+claim.
+
+The CPU unit reference covers the same corner order, `phase <= 0.5` threshold,
+triangle-count table, exclusive offsets, uint32 bounds, and stable active-cell
+ordering. It also fixes oriented triangle-edge lookup, physical edge
+interpolation, and triangle-aligned capacity planning. `npm run test:gpu`
+rejects missing or failed classification, compaction, or emission results in
+addition to its existing compute, solver, and indirect-draw proofs. Analytic
+sphere/faceted topology, repeated live tracking, and warm extraction cadence
+are complete. Controller integration across both solver texture parities,
+lifecycle coverage, and the final facet/terrace visual gate remain pending
+later Milestone 2 slices.
 
 ### Validation tiers and iteration budget
 
