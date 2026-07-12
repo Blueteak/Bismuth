@@ -35,6 +35,16 @@ export interface GpuSolverValidationResult {
   readonly precision: 'float32';
   readonly checkpoints: readonly SolverCheckpointComparison[];
   readonly timings: SolverStepTimings;
+  readonly authorCentered: {
+    readonly checkpoints: readonly SolverCheckpointComparison[];
+    readonly timings: SolverStepTimings;
+    readonly passed: boolean;
+  };
+  readonly octant: {
+    readonly checkpoints: readonly SolverCheckpointComparison[];
+    readonly timings: SolverStepTimings;
+    readonly passed: boolean;
+  };
   readonly passed: boolean;
 }
 
@@ -141,11 +151,15 @@ function addTimings(
   };
 }
 
-export async function runGpuSolverValidation(
+async function runOperatorValidation(
   renderer: WebGPURenderer,
   device: GPUDevice,
-): Promise<GpuSolverValidationResult> {
+  phaseOperator: 'conservative-flux' | 'author-centered',
+  domainMode: 'full' | 'octant' = 'full',
+) {
   const configuration = createSimulationConfiguration('hopper', {
+    phaseOperator,
+    domainMode,
     parameters: {
       criticalRadius: 0.75,
       initialRadius: 1.5,
@@ -186,15 +200,58 @@ export async function runGpuSolverValidation(
       compareCheckpoint(await solver.readFields(), cpu, 1e-4, 1e-4),
     );
 
-    return {
-      grid: configuration.grid.shape,
-      workgroup: SOLVER_WORKGROUP_SIZE,
-      precision: 'float32',
-      checkpoints,
-      timings,
-      passed: checkpoints.every((checkpoint) => checkpoint.passed),
-    };
+    return { configuration, checkpoints, timings };
   } finally {
     solver.dispose();
   }
+}
+
+export async function runGpuSolverValidation(
+  renderer: WebGPURenderer,
+  device: GPUDevice,
+): Promise<GpuSolverValidationResult> {
+  const conservative = await runOperatorValidation(
+    renderer,
+    device,
+    'conservative-flux',
+  );
+  const authorCentered = await runOperatorValidation(
+    renderer,
+    device,
+    'author-centered',
+  );
+  const octant = await runOperatorValidation(
+    renderer,
+    device,
+    'author-centered',
+    'octant',
+  );
+  const conservativePassed = conservative.checkpoints.every(
+    (checkpoint) => checkpoint.passed,
+  );
+  const authorCenteredPassed = authorCentered.checkpoints.every(
+    (checkpoint) => checkpoint.passed,
+  );
+  const octantPassed = octant.checkpoints.every(
+    (checkpoint) => checkpoint.passed,
+  );
+
+  return {
+    grid: conservative.configuration.grid.shape,
+    workgroup: SOLVER_WORKGROUP_SIZE,
+    precision: 'float32',
+    checkpoints: conservative.checkpoints,
+    timings: conservative.timings,
+    authorCentered: {
+      checkpoints: authorCentered.checkpoints,
+      timings: authorCentered.timings,
+      passed: authorCenteredPassed,
+    },
+    octant: {
+      checkpoints: octant.checkpoints,
+      timings: octant.timings,
+      passed: octantPassed,
+    },
+    passed: conservativePassed && authorCenteredPassed && octantPassed,
+  };
 }

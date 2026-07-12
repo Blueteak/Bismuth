@@ -1,184 +1,179 @@
 # Current Tasks
 
-Updated 2026-07-11. This is the handoff for the unfinished portion of Step 1.
+Updated 2026-07-11. Milestone 1 is complete. This is the handoff into
+Milestone 2 live GPU surface extraction.
+
 Do not inspect deleted branches, caches, or repository history. Work from the
-current tree, the primary sources linked below, and the durable evidence in
+current tree, the primary sources in `docs/`, and the durable local evidence in
 `docs/evidence/`.
 
 ## Current status
 
-The core single-hopper solver is implemented and validated:
+Milestones 0A, 0B, 0C, and 1 are complete.
 
-- Full 3D CPU reference and Three.js r185 TSL/WebGPU solvers for phase,
+The Step 1 single-crystal implementation now includes:
+
+- Full 3D CPU and Three.js r185 TSL/WebGPU phase-field solvers for phase,
   chemical potential, and write-once solidification time.
-- Conservative anisotropy and chemical-diffusion fluxes, exact `Delta g`
-  source integration, explicit stability rejection, deterministic random
-  state, and documented Neumann/Dirichlet boundary conditions.
-- Developer-only `/__dev/single-crystal` diagnostics and a hardware-WebGPU
-  CPU/GPU comparison integrated into `npm run test:gpu`.
-- The published `D_L = 1 / 12`, `mu_inf = 0.04` hopper has a resolved,
-  grid-refined face recession. A deterministic physics-perturbed run adds
-  measurable asymmetry by changing only the initial and reservoir conditions.
-- All current local checks pass: 43 unit tests, lint, formatting, typecheck,
-  build, and 2 end-to-end shell tests. The hardware `test:gpu` proof also
-  passed on Chromium 150 and an NVIDIA Blackwell WebGPU adapter.
+- Conservative fluxes, an opt-in source-matched author-centered operator,
+  explicit stability rejection, deterministic perturbations, full and octant
+  boundaries, maturity checkpoints, and transition-specific metrics.
+- Tiny-grid CPU/WebGPU parity for conservative, author-centered, and
+  author-centered-octant paths.
+- A resolved, fixed-domain grid-refined hopper and an accepted perturbed
+  `256^3` checkpoint.
+- Calibrated `128^3` hopper and `D_L = 4` regression loops under a hard
+  `25000 ms` fixture deadline.
+- A four-seed hopper suite, uniform-resolution and time-step screens, a
+  coupled backward-Euler CPU experiment, and the complete recorded
+  cube/hopper/fractal/dendritic investigation.
 
-This is complete only for the single-hopper acceptance gate. Do not describe
-all of Step 1 as complete yet.
+The public route intentionally remains the Milestone 0C empty foundation
+scene. The simulation is exposed only through developer routes until Step 2
+supplies a GPU-resident surface.
 
-## Realism conclusion
+## Step 1 completion review
 
-The accepted output is a credible generic faceted hopper baseline, but it is
-not generally representative of real bismuth crystal formation. It remains a
-mostly regular cubic single crystal. The scalar cubic model does not contain
-the state needed for screw-dislocation spirals, twins, differently oriented
+All five Step 1 exit criteria in `PLAN.md` are satisfied:
+
+| Gate                           | Evidence                                          | Status |
+| ------------------------------ | ------------------------------------------------- | ------ |
+| CPU/WebGPU numerical agreement | Three operator/domain paths through three steps   | pass   |
+| Finite deterministic fields    | Unit, hardware, repeated-profile, and seed checks | pass   |
+| Write-once birth time          | CPU tests and complete-field GPU comparison       | pass   |
+| Recognizable 3D hopper         | Resolved multi-face recession at `t = 500`        | pass   |
+| Documented convergence         | Fixed-domain `128^3`/`256^3` hopper pair          | pass   |
+
+The implementation-list requirement to encode, run, and record the complete
+transition suite is also complete. It is a partial reproduction, not four
+successes:
+
+| Paper label | Browser conclusion                                                        |
+| ----------- | ------------------------------------------------------------------------- |
+| Cube        | validated with conservative and author-centered operators                 |
+| Hopper      | validated and grid refined                                                |
+| Fractal     | recorded but not reproduced; source stencil remains below complexity gate |
+| Dendritic   | recorded but not reproduced; mature source run remains too filled         |
+
+Step 1 is therefore `100%` complete for its documented scope. This percentage
+does not claim a calibrated bismuth process or a complete reproduction of the
+paper's qualitative transition series.
+
+## Fast validation loops
+
+Routine solver edits start with:
+
+```powershell
+npm.cmd run validate:morphology:quick
+```
+
+This fixed perturbed hopper uses `128^3`, `dx = 2`, `dt = 0.01`, `t = 500`,
+and seed `99539473`. Five retained runs produced identical summaries and
+completed in `14.513..15.871 s`. Its paired `256^3`, `dx = 1` promotion gate is:
+
+```powershell
+npm.cmd run validate:morphology:reference
+```
+
+The separate `D_L = 4`, `t = 350` screen is:
+
+```powershell
+npm.cmd run validate:transition:control
+npm.cmd run validate:transition:quick
+npm.cmd run validate:transition:compare
+```
+
+Control takes `9.12..9.23 s`; quick takes `17.58..17.88 s`. Both enforce the
+hard `25000 ms` deadline. Their one-time spatial reference takes about
+`114.56 s` and is not part of the per-edit loop.
+
+The four retained explicit-seed hopper checks each take `14.85..15.32 s`:
+
+```powershell
+npm.cmd run validate:morphology:seed:99539473
+npm.cmd run validate:morphology:seed:324508639
+npm.cmd run validate:morphology:seed:610839776
+npm.cmd run validate:morphology:seed:3221344269
+npm.cmd run validate:morphology:seeds:compare
+```
+
+Do not add the full-resolution transition controls to a routine edit loop.
+
+## Completed scientific investigation
+
+The uniform `D_L = 4` spatial pair is the interface-resolution bound. Holding
+domain, physical time, operator, and time step fixed while refining `dx = 2`
+to `dx = 1` changes diagonal/face reach from `1.02857` to `1.00000`, away from
+the missing dendrite. Physical volume and surface differ by only `1.40%` and
+`1.89%`.
+
+Halving `dt` changes no directional reach. The converged coupled
+backward-Euler experiment changes the subcell diagonal/face ratio by only
+`2.56e-6` at `dt = 0.01`, again away from the source dendrite. Do not promote
+a production coupled integrator or mature time-step refinement.
+
+The author-centered source stencil is the only tested departure with a large
+source-directed signal. At `D_L = 1 / 2`, it changes fill from `0.953535` to
+`0.600643`, complexity from `5.88791` to `7.34534`, and diagonal/face reach
+from `1.03774` to `1.47059`. It still misses the fixed complexity gate `8`.
+Do not lower that gate after observing the run.
+
+The authors' adaptive mesh, variable-step implicit BDF2 history, multigrid
+solve, and Float64 storage remain unimplemented. Their individual effects are
+not claimed to be bounded. Reopening them is a separate scientific-fidelity
+task, not a prerequisite for Milestone 2.
+
+## Model interpretation boundary
+
+The accepted output is a credible generic faceted single-crystal hopper. It
+is not a calibrated model of real bismuth crystal formation. The scalar cubic
+model cannot represent screw-dislocation spirals, twins, differently oriented
 intergrowths, or bismuth-specific rhombohedral attachment kinetics.
 
-Physics-grounded irregularity dials now exist for seed-radius amplitude and
-correlation length, initial chemical-potential amplitude and correlation
-length, and a far-field chemical-potential gradient. They do not deform the
-final mesh. Other legitimate morphology controls are `mu_inf`, `D_L / M`,
-`R0 / Rc`, facet set/orientation/regularization, and `D_S / D_L`. Do not add
-decorative spirals, stamped terraces, mesh noise, or post-processed offshoots.
+Do not add decorative spirals, stamped terraces, mesh noise, or post-processed
+offshoots. Those features require cited defect, orientation, multiphase, or
+bismuth-specific kinetic physics and are deferred in `docs/decisions.md`.
 
-Future realistic spirals and multi-grain offshoots require new physical state:
+## Next task: Milestone 2 surface extraction
 
-- A cited dislocation or explicit step field for screw-growth spirals.
-- An orientation or multiphase field for twins, grains, and intergrowths.
-- A bismuth-specific facet and attachment-kinetic calibration.
-- Later evaluation of free-surface transport, convection, and finite melt
-  depletion.
+Implement live GPU marching cubes at `phi = 0.5` while preserving the current
+simulation and architecture boundaries:
 
-These extensions are recorded in `docs/decisions.md` as deferred decisions
-`X-009` and `X-010`.
+1. Add analytic-field tests for empty/full fields, planes, spheres, faceted
+   fields, ambiguous saddles, and boundary-adjacent surfaces.
+2. Implement GPU cell classification and per-cell triangle counts.
+3. Add GPU prefix-sum compaction without full-field production readback.
+4. Emit positions, phase-gradient normals, surface-age attributes, and
+   indirect draw arguments into capacity-bounded GPU buffers.
+5. Report overflow and retain the last valid mesh on failure.
+6. Measure extraction cadence separately from solver and render cadence.
+7. Review facet and terrace quality before considering dual contouring.
 
-## Main unresolved Step 1 discrepancy
+React must not own extraction or per-frame simulation state. The imperative
+visualizer controller owns the render loop and run-scoped GPU resources; the
+extraction layer owns classification, compaction, emission, capacity, and
+indirect draw state.
 
-The full published cube/hopper/fractal/dendritic transition suite is not
-validated. The 2023 paper reports that, at `mu_inf = 0.04`, changing only
-liquid diffusivity gives a hopper at `D_L = 1 / 12`, a fractal-looking
-eight-vertex dendrite at `D_L = 1 / 2`, and a smooth `<111>` eight-pronged
-dendrite at `D_L = 4`. Its mature examples grow a radius-20 nucleus to roughly
-ten times its initial size and use runs below `t = 1000`.
+## Durable Step 1 evidence
 
-The latest exploratory hardware run deliberately used that larger scale:
+- `docs/evidence/step1-validation.md`
+- `docs/evidence/step1-quick-profile-validation.md`
+- `docs/evidence/step1-hopper-seed-suite-validation.md`
+- `docs/evidence/step1-transition-suite-validation.md`
+- `docs/evidence/step1-dl4-screen-validation.md`
+- `docs/evidence/step1-coupled-cpu-validation.md`
+- `docs/evidence/step1-source-audit.md`
 
-```powershell
-node scripts/run-browser-gpu-test.mjs --morphology --baseline --high-resolution --grid=256 --spacing=2 --steps=50000 --dt=0.01 --dl=4 --mu=0.04
-```
-
-At `t = 500` it produced:
-
-- Grid `256^3`, `dx = 2`, physical half-extent `255`.
-- Solid extent `[178, 178, 178]`, `709752` solid voxels.
-- Approximate bounding-box fill `709752 / 90^3 = 0.974`.
-- Robust face-recession metric `2`, exactly one grid cell.
-- Symmetry error `0`, boundary clearance `166`, and no non-finite values or
-  WebGPU errors.
-- Chemical-potential range `[0.04, 0.9998964]`.
-- Queue-complete fixture time `107508.9 ms`.
-
-The durable report and screenshot are:
-
-- `docs/evidence/step1-dl4-t500-256dx2.json`
-- `docs/evidence/step1-dl4-t500-256dx2.png`
-
-The result is nearly a filled cube, not the paper's expected `<111>` dendrite.
-It also shows that the current hopper pass threshold is too permissive for
-non-hopper cases: a one-cell recession let this cube pass. Do not tune visual
-parameters around this mismatch. First find the model or discretization
-difference.
-
-## Recommended next investigation
-
-1. Compare the active equations against the authors' current 3D Fortran path,
-   especially `phi_stencil.f90`, `mp_stencils_terms.f90`, and the toy-model
-   branches in `mp_problem.f90`:
-
-   - Confirm the cubic surface-energy normalization in the exact branch used
-     by the paper, rather than assuming all author-code branches use the same
-     factor.
-   - Confirm nondimensional time scaling, mobility/diffusivity scaling,
-     `lambda`, anisotropy signs, and the diffusion/source split.
-   - Confirm how octant symmetry and the far-field chemical boundary are
-     imposed.
-   - Compare the uniform explicit stencil against the paper's adaptive mesh
-     and implicit BDF2 method. Record every deliberate numerical departure.
-
-2. Add transition descriptors before running more expensive cases:
-
-   - Bounding-box fill fraction. The latest cube is about `0.974`; the accepted
-     perturbed hopper is about `0.722` at `dx = 1`.
-   - Surface-to-volume ratio.
-   - Radial reach along the six face, twelve edge, and eight body-diagonal
-     directions.
-   - Concavity/recession that requires at least three grid cells, not one.
-   - Connectedness and branch/arm occupancy along `<111>` directions.
-
-3. Add an explicit expected morphology to the runner and fixture, for example
-   `--expected=cube|hopper|fractal|dendritic`. A cube or dendrite must not be
-   judged by the hopper gate. Reject invalid or conflicting options and assert
-   that the report matches every requested grid and physical parameter.
-
-4. Only after the source comparison, run the remaining symmetric cases on the
-   same physical domain and maturity criterion:
-
-```powershell
-# Fractal candidate
-node scripts/run-browser-gpu-test.mjs --morphology --baseline --high-resolution --grid=256 --spacing=2 --steps=50000 --dt=0.01 --dl=0.5 --mu=0.04
-
-# Equilibrium-cube control. D_L = 20 requires the smaller stable step.
-node scripts/run-browser-gpu-test.mjs --morphology --baseline --high-resolution --grid=256 --spacing=2 --steps=100000 --dt=0.005 --dl=20 --mu=0.04
-```
-
-Do not start both expensive runs until the source comparison explains why the
-`D_L = 4` result remained cubic.
-
-5. Expand the deterministic perturbation seed suite. The current accepted
-   physics-perturbed evidence uses one seed only, and its four correlated modes
-   randomize phases but not wave-vector directions. Either describe that narrow
-   sampling honestly or seed the mode directions and revalidate CPU/GPU parity.
-
-## Durable accepted evidence
-
-- `docs/evidence/step1-validation.md` - concise validation record.
-- `docs/evidence/step1-perturbed-reference-256.json` - accepted `256^3`
-  perturbed hopper report.
-- `docs/evidence/step1-physics-perturbed-hopper-256.png` - accepted diagnostic
-  image; this is voxel-surface evidence, not the Step 2 marching-cubes render.
-- `docs/evidence/step1-perturbed-preview-128.json` and
-  `step1-physics-perturbed-hopper-128.png` - coarse perturbed refinement case.
-
-The accepted `256^3`, `dx = 1`, `t = 500` perturbed hopper has extent `100`,
-mean robust face recession `7.8333` with range `6..10`, symmetry error
-`0.0064696`, boundary clearance `75`, and no non-finite values or WebGPU
-errors. Its evolved chemical potential reaches `1.5332261`; the paper
-explicitly reports `mu > mu0` inside low-diffusivity hopper/dendritic solids,
-so this is recorded as an interfacial diagnostic rather than rejected as a
-phase-range violation.
-
-## Primary sources
-
-- Bollada, Jimack, and Mullis (2023), phase-field hopper model:
-  https://www.nature.com/articles/s41598-023-38741-2
-- Supplementary material:
-  https://static-content.springer.com/esm/art%3A10.1038%2Fs41598-023-38741-2/MediaObjects/41598_2023_38741_MOESM2_ESM.pdf
-- Authors' reference implementation:
-  https://github.com/prepcb/PhaseField
-- Bismuth-specific morphology study (2024):
-  https://www.nature.com/articles/s43246-024-00538-9
-- Frank's screw-dislocation growth mechanism:
-  https://doi.org/10.1039/DF9490500048
-- Orientation-field phase-field example:
-  https://doi.org/10.1016/S1359-6454(03)00388-4
+The adjacent JSON and PNG files contain the machine reports and diagnostic
+images. These images are voxel-surface developer evidence, not the Step 2
+marching-cubes render.
 
 ## Worktree and validation notes
 
-- All Step 1 work is currently uncommitted and unstaged. Preserve unrelated
-  user work and do not reset the tree.
+- All current milestone work is uncommitted and unstaged. Preserve unrelated
+  user changes and do not reset the tree.
 - `npm run test:e2e` deletes ignored `test-results/`; durable evidence belongs
   under `docs/evidence/`.
-- The public route intentionally remains the Milestone 0C empty foundation
-  scene. The solver is exposed only through developer routes until Step 2
-  supplies GPU marching-cubes extraction.
-- Browser tabs and temporary local servers were closed at this stopping point.
+- Hardware tests use the Codex in-app browser and the real WebGPU adapter. Do
+  not substitute SwiftShader or unsafe browser flags.
+- Keep agent-facing Markdown ASCII-only.

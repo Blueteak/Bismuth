@@ -14,17 +14,22 @@ import {
   deriveSimulationConfiguration,
   type DerivedSimulationConfiguration,
   type SimulationConfiguration,
+  type SimulationPresetName,
 } from '../simulation/config';
 import {
   createGpuSingleCrystalSolver,
+  SOLVER_WORKGROUP_SIZE,
   type GpuFieldState,
   type GpuSingleCrystalSolver,
   type SolverStepTimings,
 } from '../simulation/gpu-solver';
 import {
+  evaluateExpectedMorphology,
   measureFaceCenterDepression,
+  measureGrowthMaturity,
   measureSolidBounds,
   measureSymmetry,
+  measureTransitionMorphology,
   summarizeField,
 } from '../simulation/metrics';
 import {
@@ -32,19 +37,30 @@ import {
   type WebGpuDiagnostics,
   type WebGpuSession,
 } from '../rendering/webgpu-capability';
+import {
+  evaluateValidationProfile,
+  isScreeningValidationProfile,
+  type FixtureMode,
+  type ValidationProfile,
+  type ValidationProfileResult,
+} from './morphology-validation-profile';
 import './single-crystal.css';
-
-type FixtureMode = 'baseline' | 'perturbed';
 
 export interface SingleCrystalFixtureResult {
   readonly mode: FixtureMode;
+  readonly validationProfile: ValidationProfile | null;
+  readonly expectedMorphology: SimulationPresetName;
   readonly diagnostics: WebGpuDiagnostics;
   readonly configuration: {
     readonly grid: readonly [number, number, number];
+    readonly workgroup: typeof SOLVER_WORKGROUP_SIZE;
+    readonly precision: 'float32';
     readonly spacing: number;
     readonly timeStep: number;
     readonly steps: number;
     readonly simulatedTime: number;
+    readonly phaseOperator: SimulationConfiguration['phaseOperator'];
+    readonly domainMode: SimulationConfiguration['domainMode'];
     readonly liquidDiffusivity: number;
     readonly farFieldChemicalPotential: number;
     readonly criticalRadius: number;
@@ -68,8 +84,40 @@ export interface SingleCrystalFixtureResult {
     readonly boundaryClearance: number;
     readonly boundaryClearanceRatio: number;
     readonly surfaceVoxelCount: number;
+    readonly boundingBoxFillFraction: number;
+    readonly surfaceToVolumeRatio: number;
+    readonly surfaceComplexity: number;
+    readonly faceReach: number;
+    readonly edgeReach: number;
+    readonly bodyDiagonalReach: number;
+    readonly bodyDiagonalToFaceReachRatio: number;
+    readonly occupiedBodyDiagonalArms: number;
+    readonly connectedComponentCount: number;
+    readonly largestConnectedComponentFraction: number;
+  };
+  readonly expectation: ReturnType<typeof evaluateExpectedMorphology>;
+  readonly maturity: {
+    readonly targetRadiusMultiple: number | null;
+    readonly checkpointSteps: number;
+    readonly completionReason: 'target-reach' | 'max-steps';
+    readonly checkpoints: readonly {
+      readonly step: number;
+      readonly simulatedTime: number;
+      readonly radiusMultiple: number;
+      readonly maximumDirectionalReach: number;
+      readonly faceReach: number;
+      readonly edgeReach: number;
+      readonly bodyDiagonalReach: number;
+      readonly farBoundaryClearanceRatio: number;
+    }[];
   };
   readonly timings: SolverStepTimings;
+  readonly runtime: {
+    readonly budgetMilliseconds: number | null;
+    readonly fixtureWallMilliseconds: number;
+    readonly passed: boolean;
+  };
+  readonly profileValidation: ValidationProfileResult | null;
   readonly uncapturedErrors: readonly string[];
   readonly passed: boolean;
 }
@@ -148,10 +196,28 @@ function parseFiniteNumber(
 
 function parseFixtureConfiguration(): {
   readonly mode: FixtureMode;
+  readonly expectedMorphology: SimulationPresetName;
   readonly configuration: DerivedSimulationConfiguration;
   readonly steps: number;
+  readonly targetRadiusMultiple: number | null;
+  readonly checkpointSteps: number;
+  readonly maximumWallTimeMilliseconds: number | null;
+  readonly reportMode: boolean;
+  readonly validationProfile: ValidationProfile | null;
 } {
   const query = new URLSearchParams(location.search);
+  const requestedProfile = query.get('profile');
+  if (
+    requestedProfile !== null &&
+    requestedProfile !== 'hopper-quick' &&
+    requestedProfile !== 'hopper-reference' &&
+    requestedProfile !== 'hopper-acceptance' &&
+    requestedProfile !== 'dl4-screen-control' &&
+    requestedProfile !== 'dl4-screen-quick' &&
+    requestedProfile !== 'dl4-screen-reference'
+  ) {
+    throw new RangeError(`Invalid validation profile: ${requestedProfile}.`);
+  }
   const requestedMode = query.get('mode');
   if (
     requestedMode !== null &&
@@ -162,12 +228,58 @@ function parseFixtureConfiguration(): {
   }
   const mode: FixtureMode =
     requestedMode === 'baseline' ? 'baseline' : 'perturbed';
+  const requestedExpected = query.get('expected');
+  if (
+    requestedExpected !== null &&
+    !['cube', 'hopper', 'fractal', 'dendritic'].includes(requestedExpected)
+  ) {
+    throw new RangeError(`Invalid expected morphology: ${requestedExpected}.`);
+  }
+  const expectedMorphology = (requestedExpected ??
+    'hopper') as SimulationPresetName;
+  const requestedOperator = query.get('operator');
+  if (
+    requestedOperator !== null &&
+    requestedOperator !== 'conservative-flux' &&
+    requestedOperator !== 'author-centered'
+  ) {
+    throw new RangeError(`Invalid phase operator: ${requestedOperator}.`);
+  }
+  const requestedDomain = query.get('domain');
+  if (
+    requestedDomain !== null &&
+    requestedDomain !== 'full' &&
+    requestedDomain !== 'octant'
+  ) {
+    throw new RangeError(`Invalid domain mode: ${requestedDomain}.`);
+  }
+  const domainMode = requestedDomain === 'octant' ? 'octant' : 'full';
   const gridSize = parsePositiveInteger(query.get('grid'), 64, 24, 256);
   const steps = parsePositiveInteger(query.get('steps'), 6000, 1, 500_000);
+  const targetRadiusMultiple =
+    query.get('target-radius-multiple') === null
+      ? null
+      : parsePositiveNumber(query.get('target-radius-multiple'), 10, 1, 20);
+  const checkpointSteps = parsePositiveInteger(
+    query.get('checkpoint-steps'),
+    targetRadiusMultiple === null ? steps : 5000,
+    1,
+    steps,
+  );
+  const maximumWallTimeMilliseconds =
+    query.get('max-wall-ms') === null
+      ? null
+      : parsePositiveInteger(query.get('max-wall-ms'), 25_000, 1000, 600_000);
+  const seed = parsePositiveInteger(
+    query.get('seed'),
+    0x5eeda11,
+    0,
+    0xffff_ffff,
+  );
   const timeStep = parsePositiveNumber(query.get('dt'), 0.002, 0.00001, 0.01);
   const spacing = parsePositiveNumber(query.get('spacing'), 1, 0.25, 4);
   const lengthScale = query.get('high-resolution') === '1' ? 2 : 1;
-  const base = createSimulationConfiguration('hopper');
+  const base = createSimulationConfiguration(expectedMorphology);
   const liquidDiffusivity = parsePositiveNumber(
     query.get('dl'),
     base.parameters.liquidDiffusivity,
@@ -188,6 +300,11 @@ function parseFixtureConfiguration(): {
   );
   const configuration: SimulationConfiguration = {
     ...base,
+    phaseOperator:
+      requestedOperator === 'author-centered'
+        ? 'author-centered'
+        : 'conservative-flux',
+    domainMode,
     parameters: {
       ...base.parameters,
       criticalRadius: 5 * lengthScale,
@@ -207,11 +324,11 @@ function parseFixtureConfiguration(): {
       mode === 'baseline'
         ? {
             ...base.perturbations,
-            seed: 0x5eeda11,
+            seed,
           }
         : {
             ...base.perturbations,
-            seed: 0x5eeda11,
+            seed,
             seedRadiusAmplitude: 0.3,
             seedRadiusCorrelationLength: 8,
             chemicalPotentialAmplitude: 0.006,
@@ -220,10 +337,36 @@ function parseFixtureConfiguration(): {
           },
   };
 
+  const derived = deriveSimulationConfiguration(configuration);
+  if (targetRadiusMultiple !== null) {
+    const targetReach = targetRadiusMultiple * derived.parameters.initialRadius;
+    const farBoundaryDistance = Math.min(
+      ...derived.domainMaximum.map((maximum, axis) =>
+        derived.domainMode === 'octant'
+          ? maximum
+          : Math.min(
+              maximum,
+              Math.abs(derived.domainMinimum[axis] ?? Number.NaN),
+            ),
+      ),
+    );
+    if (farBoundaryDistance < 2 * targetReach) {
+      throw new RangeError(
+        'The maturity target requires a far boundary at least twice the target radius.',
+      );
+    }
+  }
+
   return {
     mode,
-    configuration: deriveSimulationConfiguration(configuration),
+    expectedMorphology,
+    configuration: derived,
     steps,
+    targetRadiusMultiple,
+    checkpointSteps,
+    maximumWallTimeMilliseconds,
+    reportMode: query.get('report') === '1',
+    validationProfile: requestedProfile,
   };
 }
 
@@ -304,7 +447,10 @@ function createSurfaceMesh(
   mesh.castShadow = true;
   mesh.receiveShadow = true;
   const matrix = new Matrix4();
-  const center = [(width - 1) / 2, (height - 1) / 2, (depth - 1) / 2];
+  const center =
+    configuration.domainMode === 'octant'
+      ? [0, 0, 0]
+      : [(width - 1) / 2, (height - 1) / 2, (depth - 1) / 2];
 
   surface.forEach((voxel, index) => {
     matrix.makeTranslation(
@@ -336,9 +482,12 @@ function drawDiagnosticSlice(
   }
 
   const pixels = context.createImageData(planeWidth, planeHeight);
-  const centerX = Math.floor(width / 2);
-  const centerY = Math.floor(height / 2);
-  const centerZ = Math.floor(depth / 2);
+  const centerX =
+    configuration.domainMode === 'octant' ? 0 : Math.floor(width / 2);
+  const centerY =
+    configuration.domainMode === 'octant' ? 0 : Math.floor(height / 2);
+  const centerZ =
+    configuration.domainMode === 'octant' ? 0 : Math.floor(depth / 2);
   const muFar = configuration.parameters.farFieldChemicalPotential;
   const muRange = Math.max(
     configuration.parameters.equilibriumChemicalPotential - muFar,
@@ -408,6 +557,7 @@ async function runSingleCrystalFixture(
   readout: HTMLElement,
   sliceCanvases: readonly HTMLCanvasElement[],
 ): Promise<SingleCrystalFixtureResult> {
+  const fixtureStartedAt = performance.now();
   const fixture = parseFixtureConfiguration();
   let session: WebGpuSession | undefined;
   let solver: GpuSingleCrystalSolver | undefined;
@@ -429,17 +579,68 @@ async function runSingleCrystalFixture(
       solidificationTimeMilliseconds: 0,
       totalMilliseconds: 0,
     };
+    const maturityCheckpoints: SingleCrystalFixtureResult['maturity']['checkpoints'][number][] =
+      [];
+    let completionReason: 'target-reach' | 'max-steps' = 'max-steps';
+    let completed = 0;
 
-    for (let completed = 0; completed < fixture.steps; completed += batchSize) {
-      const count = Math.min(batchSize, fixture.steps - completed);
-      timings = sumTimings(timings, await solver.step(count));
-      const nextCompleted = completed + count;
-      const percent = (nextCompleted / fixture.steps) * 100;
-      progress.style.setProperty('--progress', `${percent.toFixed(2)}%`);
-      status.textContent = `Evolving the ${fixture.mode} field: ${nextCompleted.toLocaleString()} / ${fixture.steps.toLocaleString()} steps`;
-      await new Promise<void>((resolve) =>
-        requestAnimationFrame(() => resolve()),
+    while (completed < fixture.steps) {
+      const stepsToCheckpoint =
+        fixture.checkpointSteps - (completed % fixture.checkpointSteps);
+      const count = Math.min(
+        batchSize,
+        fixture.steps - completed,
+        stepsToCheckpoint,
       );
+      timings = sumTimings(timings, await solver.step(count));
+      completed += count;
+      const percent = (completed / fixture.steps) * 100;
+      progress.style.setProperty('--progress', `${percent.toFixed(2)}%`);
+      status.textContent = `Evolving the ${fixture.mode} field: ${completed.toLocaleString()} / ${fixture.steps.toLocaleString()} steps`;
+      if (!fixture.reportMode) {
+        await new Promise<void>((resolve) =>
+          requestAnimationFrame(() => resolve()),
+        );
+      }
+      const elapsedMilliseconds = performance.now() - fixtureStartedAt;
+      if (
+        fixture.maximumWallTimeMilliseconds !== null &&
+        elapsedMilliseconds > fixture.maximumWallTimeMilliseconds
+      ) {
+        throw new Error(
+          `Morphology fixture exceeded its ${fixture.maximumWallTimeMilliseconds} ms wall-time budget after ${completed} of ${fixture.steps} steps (${elapsedMilliseconds.toFixed(1)} ms).`,
+        );
+      }
+
+      if (
+        fixture.targetRadiusMultiple !== null &&
+        (completed % fixture.checkpointSteps === 0 ||
+          completed === fixture.steps)
+      ) {
+        status.textContent = `Measuring maturity at ${completed.toLocaleString()} steps...`;
+        const phaseCheckpoint = await solver.readPhase();
+        const maturity = measureGrowthMaturity(
+          phaseCheckpoint.phase,
+          fixture.configuration,
+        );
+        maturityCheckpoints.push({
+          step: phaseCheckpoint.stepCount,
+          simulatedTime: phaseCheckpoint.simulatedTime,
+          radiusMultiple: maturity.radiusMultiple,
+          maximumDirectionalReach: maturity.maximumDirectionalReach,
+          faceReach: maturity.directionalReach.meanFace,
+          edgeReach: maturity.directionalReach.meanEdge,
+          bodyDiagonalReach: maturity.directionalReach.meanBodyDiagonal,
+          farBoundaryClearanceRatio: maturity.farBoundaryClearanceRatio,
+        });
+        if (
+          fixture.targetRadiusMultiple !== null &&
+          maturity.radiusMultiple >= fixture.targetRadiusMultiple
+        ) {
+          completionReason = 'target-reach';
+          break;
+        }
+      }
     }
 
     status.textContent = 'Reading the fixed diagnostic checkpoint...';
@@ -451,24 +652,59 @@ async function runSingleCrystalFixture(
     const chemicalPotentialSummary = summarizeField(fields.chemicalPotential);
     const solidificationSummary = summarizeField(fields.solidificationTime);
     const solidBounds = measureSolidBounds(fields.phase, fixture.configuration);
+    const finalMaturity = measureGrowthMaturity(
+      fields.phase,
+      fixture.configuration,
+    );
+    if (maturityCheckpoints.at(-1)?.step !== fields.stepCount) {
+      maturityCheckpoints.push({
+        step: fields.stepCount,
+        simulatedTime: fields.simulatedTime,
+        radiusMultiple: finalMaturity.radiusMultiple,
+        maximumDirectionalReach: finalMaturity.maximumDirectionalReach,
+        faceReach: finalMaturity.directionalReach.meanFace,
+        edgeReach: finalMaturity.directionalReach.meanEdge,
+        bodyDiagonalReach: finalMaturity.directionalReach.meanBodyDiagonal,
+        farBoundaryClearanceRatio: finalMaturity.farBoundaryClearanceRatio,
+      });
+    }
+    if (
+      fixture.targetRadiusMultiple !== null &&
+      finalMaturity.radiusMultiple >= fixture.targetRadiusMultiple
+    ) {
+      completionReason = 'target-reach';
+    }
     const symmetry = measureSymmetry(
       fields.phase,
       fixture.configuration.grid.shape,
+      fixture.configuration.domainMode,
     );
     const faceCenterDepression = measureFaceCenterDepression(
       fields.phase,
       fixture.configuration,
     );
+    const transition = measureTransitionMorphology(
+      fields.phase,
+      fixture.configuration,
+    );
+    const expectation = evaluateExpectedMorphology(
+      fixture.expectedMorphology,
+      transition,
+      faceCenterDepression,
+      fixture.configuration,
+    );
     const surface = collectSurfaceVoxels(fields, fixture.configuration);
     const solidHalfExtent = Math.max(...solidBounds.extent) / 2;
     const boundaryClearance = Math.min(
-      ...fixture.configuration.domainCenter.map(
-        (halfExtent, axis) =>
-          halfExtent -
-          Math.max(
-            Math.abs(solidBounds.minimum[axis] ?? Number.NaN),
-            Math.abs(solidBounds.maximum[axis] ?? Number.NaN),
-          ),
+      ...fixture.configuration.domainMaximum.map(
+        (maximum, axis) =>
+          maximum -
+          (fixture.configuration.domainMode === 'octant'
+            ? (solidBounds.maximum[axis] ?? Number.NaN)
+            : Math.max(
+                Math.abs(solidBounds.minimum[axis] ?? Number.NaN),
+                Math.abs(solidBounds.maximum[axis] ?? Number.NaN),
+              )),
       ),
     );
     const boundaryClearanceRatio =
@@ -544,15 +780,76 @@ async function runSingleCrystalFixture(
     `;
     status.textContent = `${fixture.mode === 'baseline' ? 'Published symmetric control' : 'Physics-perturbed single crystal'} at t=${fields.simulatedTime.toFixed(2)}. Voxel surface is diagnostic only.`;
 
+    const reportedConfiguration: SingleCrystalFixtureResult['configuration'] = {
+      grid: fixture.configuration.grid.shape,
+      workgroup: SOLVER_WORKGROUP_SIZE,
+      precision: 'float32',
+      spacing: fixture.configuration.grid.spacing,
+      timeStep: fixture.configuration.grid.timeStep,
+      steps: fixture.steps,
+      simulatedTime: fields.simulatedTime,
+      phaseOperator: fixture.configuration.phaseOperator,
+      domainMode: fixture.configuration.domainMode,
+      liquidDiffusivity: fixture.configuration.parameters.liquidDiffusivity,
+      farFieldChemicalPotential:
+        fixture.configuration.parameters.farFieldChemicalPotential,
+      criticalRadius: fixture.configuration.parameters.criticalRadius,
+      initialRadius: fixture.configuration.parameters.initialRadius,
+      interfaceWidth: fixture.configuration.parameters.interfaceWidth,
+      surfaceEnergyNormalization:
+        fixture.configuration.surfaceEnergyNormalization,
+      perturbations: fixture.configuration.perturbations,
+    };
+    const reportedFields: SingleCrystalFixtureResult['fields'] = {
+      phase: phaseSummary,
+      chemicalPotential: chemicalPotentialSummary,
+      solidificationTime: solidificationSummary,
+    };
+    const reportedMorphology: SingleCrystalFixtureResult['morphology'] = {
+      solidVoxelCount: solidBounds.voxelCount,
+      solidExtent: solidBounds.extent,
+      symmetryError: symmetry.maximum,
+      faceCenterDepression: faceCenterDepression.meanDepth,
+      minimumFaceCenterDepression: faceCenterDepression.minimumDepth,
+      maximumFaceCenterDepression: faceCenterDepression.maximumDepth,
+      boundaryClearance,
+      boundaryClearanceRatio,
+      surfaceVoxelCount: surface.length,
+      boundingBoxFillFraction: transition.boundingBoxFillFraction,
+      surfaceToVolumeRatio: transition.surfaceToVolumeRatio,
+      surfaceComplexity: transition.surfaceComplexity,
+      faceReach: transition.directionalReach.meanFace,
+      edgeReach: transition.directionalReach.meanEdge,
+      bodyDiagonalReach: transition.directionalReach.meanBodyDiagonal,
+      bodyDiagonalToFaceReachRatio:
+        transition.directionalReach.bodyDiagonalToFaceRatio,
+      occupiedBodyDiagonalArms:
+        transition.directionalReach.occupiedBodyDiagonalArms,
+      connectedComponentCount: transition.connectedComponentCount,
+      largestConnectedComponentFraction:
+        transition.largestConnectedComponentFraction,
+    };
     const nonFiniteCount =
       phaseSummary.nonFiniteCount +
       chemicalPotentialSummary.nonFiniteCount +
       solidificationSummary.nonFiniteCount;
-    const hasResolvedHopper =
-      faceCenterDepression.meanDepth >= fixture.configuration.grid.spacing &&
-      (fixture.mode === 'perturbed' ||
-        faceCenterDepression.minimumDepth >=
-          fixture.configuration.grid.spacing);
+    const fixtureWallMilliseconds = performance.now() - fixtureStartedAt;
+    const runtime = {
+      budgetMilliseconds: fixture.maximumWallTimeMilliseconds,
+      fixtureWallMilliseconds,
+      passed:
+        fixture.maximumWallTimeMilliseconds === null ||
+        fixtureWallMilliseconds <= fixture.maximumWallTimeMilliseconds,
+    };
+    const profileValidation = evaluateValidationProfile(
+      fixture.validationProfile,
+      fixture.mode,
+      fixture.expectedMorphology,
+      reportedConfiguration,
+      reportedFields,
+      reportedMorphology,
+      runtime,
+    );
     const passed =
       nonFiniteCount === 0 &&
       phaseSummary.minimum >= -0.02 &&
@@ -562,49 +859,36 @@ async function runSingleCrystalFixture(
         fields.simulatedTime + fixture.configuration.grid.timeStep &&
       !solidBounds.empty &&
       surface.length > 0 &&
-      hasResolvedHopper &&
+      (expectation.passed ||
+        isScreeningValidationProfile(fixture.validationProfile)) &&
+      (fixture.targetRadiusMultiple === null ||
+        completionReason === 'target-reach') &&
       boundaryClearanceRatio >= 1 &&
       (fixture.mode === 'baseline'
         ? symmetry.maximum <= 1e-6
         : symmetry.maximum >= 1e-5 && symmetry.maximum <= 0.1) &&
+      runtime.passed &&
+      (profileValidation?.passed ?? true) &&
       session.errors.length === 0;
 
     return {
       mode: fixture.mode,
+      validationProfile: fixture.validationProfile,
+      expectedMorphology: fixture.expectedMorphology,
       diagnostics: session.diagnostics,
-      configuration: {
-        grid: fixture.configuration.grid.shape,
-        spacing: fixture.configuration.grid.spacing,
-        timeStep: fixture.configuration.grid.timeStep,
-        steps: fixture.steps,
-        simulatedTime: fields.simulatedTime,
-        liquidDiffusivity: fixture.configuration.parameters.liquidDiffusivity,
-        farFieldChemicalPotential:
-          fixture.configuration.parameters.farFieldChemicalPotential,
-        criticalRadius: fixture.configuration.parameters.criticalRadius,
-        initialRadius: fixture.configuration.parameters.initialRadius,
-        interfaceWidth: fixture.configuration.parameters.interfaceWidth,
-        surfaceEnergyNormalization:
-          fixture.configuration.surfaceEnergyNormalization,
-        perturbations: fixture.configuration.perturbations,
-      },
-      fields: {
-        phase: phaseSummary,
-        chemicalPotential: chemicalPotentialSummary,
-        solidificationTime: solidificationSummary,
-      },
-      morphology: {
-        solidVoxelCount: solidBounds.voxelCount,
-        solidExtent: solidBounds.extent,
-        symmetryError: symmetry.maximum,
-        faceCenterDepression: faceCenterDepression.meanDepth,
-        minimumFaceCenterDepression: faceCenterDepression.minimumDepth,
-        maximumFaceCenterDepression: faceCenterDepression.maximumDepth,
-        boundaryClearance,
-        boundaryClearanceRatio,
-        surfaceVoxelCount: surface.length,
+      configuration: reportedConfiguration,
+      fields: reportedFields,
+      morphology: reportedMorphology,
+      expectation,
+      maturity: {
+        targetRadiusMultiple: fixture.targetRadiusMultiple,
+        checkpointSteps: fixture.checkpointSteps,
+        completionReason,
+        checkpoints: maturityCheckpoints,
       },
       timings,
+      runtime,
+      profileValidation,
       uncapturedErrors: [...session.errors],
       passed,
     };
@@ -678,13 +962,19 @@ export function mountSingleCrystalFixture(root: HTMLElement): void {
   const query = new URLSearchParams(location.search);
   const reportToRunner = query.has('report');
   const runId = query.get('run');
-  window.__BISMUTH_SINGLE_CRYSTAL__ = runSingleCrystalFixture(
-    canvas,
-    status,
-    progress,
-    readout,
-    slices,
-  )
+  const startFixture = async () => {
+    if (reportToRunner && runId) {
+      const response = await fetch(
+        `/__gpu-start?run=${encodeURIComponent(runId)}`,
+        { method: 'POST' },
+      );
+      if (!response.ok) {
+        throw new Error('Unable to start the budgeted morphology fixture.');
+      }
+    }
+    return runSingleCrystalFixture(canvas, status, progress, readout, slices);
+  };
+  window.__BISMUTH_SINGLE_CRYSTAL__ = startFixture()
     .then((result): SingleCrystalFixtureOutcome => ({ ok: true, result }))
     .catch(serializeError);
 

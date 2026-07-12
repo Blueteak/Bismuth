@@ -47,6 +47,12 @@ export interface GpuFieldState {
   readonly stepCount: number;
 }
 
+export interface GpuPhaseState {
+  readonly phase: Float32Array;
+  readonly simulatedTime: number;
+  readonly stepCount: number;
+}
+
 export interface SolverStepTimings {
   readonly steps: number;
   /** CPU-side async submission overhead; these are not GPU timestamp queries. */
@@ -65,6 +71,7 @@ export interface GpuSingleCrystalSolver {
   readonly currentTextures: GpuSolverTextures;
   initialize(): Promise<void>;
   step(steps?: number): Promise<SolverStepTimings>;
+  readPhase(): Promise<GpuPhaseState>;
   readFields(): Promise<GpuFieldState>;
   dispose(): void;
 }
@@ -197,7 +204,11 @@ function createSolverResources(
   const positionAt = Fn(([coordinate]: [Ivec3Node]) =>
     coordinate
       .toVec3()
-      .sub(vec3((width - 1) / 2, (height - 1) / 2, (depth - 1) / 2))
+      .sub(
+        configuration.domainMode === 'octant'
+          ? vec3(0, 0, 0)
+          : vec3((width - 1) / 2, (height - 1) / 2, (depth - 1) / 2),
+      )
       .mul(spacing),
   );
 
@@ -209,6 +220,25 @@ function createSolverResources(
       .or(coordinate.x.equal(width - 1))
       .or(coordinate.y.equal(height - 1))
       .or(coordinate.z.equal(depth - 1)),
+  );
+
+  const isFarBoundary = Fn(([coordinate]: [Ivec3Node]) =>
+    configuration.domainMode === 'octant'
+      ? coordinate.x
+          .equal(width - 1)
+          .or(coordinate.y.equal(height - 1))
+          .or(coordinate.z.equal(depth - 1))
+      : isBoundary(coordinate),
+  );
+
+  const isSymmetryBoundary = Fn(([coordinate]: [Ivec3Node]) =>
+    configuration.domainMode === 'octant'
+      ? coordinate.x
+          .equal(0)
+          .or(coordinate.y.equal(0))
+          .or(coordinate.z.equal(0))
+          .and(isFarBoundary(coordinate).not())
+      : int(0).equal(1),
   );
 
   const nearestInteriorCoordinate = Fn(([coordinate]: [Ivec3Node]) =>
@@ -271,8 +301,15 @@ function createSolverResources(
   const initializeA = Fn(() => {
     const coordinate = voxelCoordinate();
     const position = positionAt(coordinate);
-    const boundary = isBoundary(coordinate);
+    const farBoundary = isFarBoundary(coordinate);
+    const symmetryBoundary = isSymmetryBoundary(coordinate);
     const phasePosition = positionAt(nearestInteriorCoordinate(coordinate));
+    const chemicalPosition = position.toVar();
+    If(symmetryBoundary, () => {
+      chemicalPosition.assign(
+        positionAt(nearestInteriorCoordinate(coordinate)),
+      );
+    });
     const seedPerturbation = seedRadiusPerturbation(
       phasePosition,
       float(configuration.perturbations.seedRadiusCorrelationLength),
@@ -286,7 +323,7 @@ function createSolverResources(
         ),
       )
       .toVar();
-    const farField = farFieldAtNode(position);
+    const farField = farFieldAtNode(chemicalPosition);
     const chemicalPerturbation = chemicalPotentialPerturbation(
       phasePosition,
       float(configuration.perturbations.chemicalPotentialCorrelationLength),
@@ -304,8 +341,8 @@ function createSolverResources(
       .select(0, -1)
       .toVar();
 
-    If(boundary, () => {
-      chemicalPotential.assign(farField);
+    If(farBoundary, () => {
+      chemicalPotential.assign(farFieldAtNode(position));
       solidificationTime.assign(-1);
     });
 
@@ -371,6 +408,118 @@ function createSolverResources(
         .mul(derivative.x)
         .add(crystalAxisY.mul(derivative.y))
         .add(crystalAxisZ.mul(derivative.z));
+    });
+
+    const authorCenteredDivergenceAt = Fn(([coordinate]: [Ivec3Node]) => {
+      const center = phaseAt(coordinate);
+      const xp = phaseAt(coordinate.add(ivec3(1, 0, 0)));
+      const xm = phaseAt(coordinate.sub(ivec3(1, 0, 0)));
+      const yp = phaseAt(coordinate.add(ivec3(0, 1, 0)));
+      const ym = phaseAt(coordinate.sub(ivec3(0, 1, 0)));
+      const zp = phaseAt(coordinate.add(ivec3(0, 0, 1)));
+      const zm = phaseAt(coordinate.sub(ivec3(0, 0, 1)));
+      const gradient = vec3(
+        xp.sub(xm).mul(0.5 * inverseSpacing),
+        yp.sub(ym).mul(0.5 * inverseSpacing),
+        zp.sub(zm).mul(0.5 * inverseSpacing),
+      );
+      const hxx = xp.sub(center.mul(2)).add(xm).mul(inverseSpacingSquared);
+      const hyy = yp.sub(center.mul(2)).add(ym).mul(inverseSpacingSquared);
+      const hzz = zp.sub(center.mul(2)).add(zm).mul(inverseSpacingSquared);
+      const mixedScale = 0.25 * inverseSpacingSquared;
+      const hxy = phaseAt(coordinate.add(ivec3(1, 1, 0)))
+        .sub(phaseAt(coordinate.add(ivec3(1, -1, 0))))
+        .sub(phaseAt(coordinate.add(ivec3(-1, 1, 0))))
+        .add(phaseAt(coordinate.add(ivec3(-1, -1, 0))))
+        .mul(mixedScale);
+      const hxz = phaseAt(coordinate.add(ivec3(1, 0, 1)))
+        .sub(phaseAt(coordinate.add(ivec3(1, 0, -1))))
+        .sub(phaseAt(coordinate.add(ivec3(-1, 0, 1))))
+        .add(phaseAt(coordinate.add(ivec3(-1, 0, -1))))
+        .mul(mixedScale);
+      const hyz = phaseAt(coordinate.add(ivec3(0, 1, 1)))
+        .sub(phaseAt(coordinate.add(ivec3(0, 1, -1))))
+        .sub(phaseAt(coordinate.add(ivec3(0, -1, 1))))
+        .add(phaseAt(coordinate.add(ivec3(0, -1, -1))))
+        .mul(mixedScale);
+      const worldHessian = [
+        [hxx, hxy, hxz],
+        [hxy, hyy, hyz],
+        [hxz, hyz, hzz],
+      ];
+      const axes = [crystalAxisX, crystalAxisY, crystalAxisZ];
+      const components = (vector: Vec3Node) => [vector.x, vector.y, vector.z];
+      const crystalHessian = axes.map((left) =>
+        axes.map((right) => {
+          const leftComponents = components(left);
+          const rightComponents = components(right);
+          let value: FloatNode = float(0);
+          for (let i = 0; i < 3; i += 1) {
+            for (let j = 0; j < 3; j += 1) {
+              value = value.add(
+                leftComponents[i]!.mul(worldHessian[i]![j]!).mul(
+                  rightComponents[j]!,
+                ),
+              );
+            }
+          }
+          return value;
+        }),
+      );
+      const gradientMagnitude = gradient.length();
+      const crystalGradient = [
+        gradient.dot(crystalAxisX),
+        gradient.dot(crystalAxisY),
+        gradient.dot(crystalAxisZ),
+      ];
+      const direction = crystalGradient.map((component) =>
+        component.div(max(gradientMagnitude, 1e-12)),
+      );
+      const epsilon = parameters.anisotropyRegularization;
+      const roots = direction.map((component) =>
+        component.mul(component).add(epsilonSquared).sqrt(),
+      );
+      const a0 = roots[0]!
+        .add(roots[1]!)
+        .add(roots[2]!)
+        .div(1 + epsilon);
+      const first = roots.map((root, term) =>
+        direction.map((component, axis) =>
+          component.mul((term === axis ? 1 : 0) + epsilonSquared).div(root),
+        ),
+      );
+      const second = roots.map((root, term) =>
+        direction.map((_, i) =>
+          direction.map((__, j) =>
+            float(((term === i ? 1 : 0) + epsilonSquared) * (i === j ? 1 : 0))
+              .sub(first[term]![i]!.mul(first[term]![j]!))
+              .div(root),
+          ),
+        ),
+      );
+      let contraction: FloatNode = float(0);
+      for (let i = 0; i < 3; i += 1) {
+        for (let j = 0; j < 3; j += 1) {
+          let firstI: FloatNode = float(0);
+          let firstJ: FloatNode = float(0);
+          let secondSum: FloatNode = float(0);
+          for (let term = 0; term < 3; term += 1) {
+            firstI = firstI.add(first[term]![i]!);
+            firstJ = firstJ.add(first[term]![j]!);
+            secondSum = secondSum.add(second[term]![i]![j]!);
+          }
+          const energyHessian = a0
+            .mul(secondSum)
+            .add(firstI.mul(firstJ))
+            .div((1 + epsilon) * (1 + epsilon));
+          contraction = contraction.add(
+            crystalHessian[i]![j]!.mul(energyHessian),
+          );
+        }
+      }
+      const centered = contraction.div(3);
+      const laplacian = hxx.add(hyy).add(hzz);
+      return gradientMagnitude.greaterThan(1e-6).select(centered, laplacian);
     });
 
     const xFaceFluxAt = Fn(([coordinate]: [Ivec3Node]) => {
@@ -447,20 +596,23 @@ function createSolverResources(
 
     const updatedPhaseAt = Fn(([coordinate]: [Ivec3Node]) => {
       const oldPhase = phaseAt(coordinate);
-      const divergence = xFaceFluxAt(coordinate)
-        .x.sub(xFaceFluxAt(coordinate.sub(ivec3(1, 0, 0))).x)
-        .add(
-          yFaceFluxAt(coordinate).y.sub(
-            yFaceFluxAt(coordinate.sub(ivec3(0, 1, 0))).y,
-          ),
-        )
-        .add(
-          zFaceFluxAt(coordinate).z.sub(
-            zFaceFluxAt(coordinate.sub(ivec3(0, 0, 1))).z,
-          ),
-        )
-        .mul(inverseSpacing)
-        .mul(configuration.surfaceEnergyNormalization);
+      const divergence =
+        configuration.phaseOperator === 'author-centered'
+          ? authorCenteredDivergenceAt(coordinate)
+          : xFaceFluxAt(coordinate)
+              .x.sub(xFaceFluxAt(coordinate.sub(ivec3(1, 0, 0))).x)
+              .add(
+                yFaceFluxAt(coordinate).y.sub(
+                  yFaceFluxAt(coordinate.sub(ivec3(0, 1, 0))).y,
+                ),
+              )
+              .add(
+                zFaceFluxAt(coordinate).z.sub(
+                  zFaceFluxAt(coordinate.sub(ivec3(0, 0, 1))).z,
+                ),
+              )
+              .mul(inverseSpacing)
+              .mul(configuration.surfaceEnergyNormalization);
       const oneMinusPhase = float(1).sub(oldPhase);
       const doubleWellDerivative = oldPhase
         .mul(oneMinusPhase)
@@ -540,50 +692,59 @@ function createSolverResources(
       );
     });
 
+    const updatedChemicalPotentialAt = Fn(([coordinate]: [Ivec3Node]) => {
+      const oldChemicalPotential = chemicalPotentialAt(coordinate);
+      const diffusionDivergence = faceFlux(coordinate, ivec3(1, 0, 0))
+        .add(faceFlux(coordinate, ivec3(-1, 0, 0)))
+        .add(
+          faceFlux(coordinate, ivec3(0, 1, 0)).add(
+            faceFlux(coordinate, ivec3(0, -1, 0)),
+          ),
+        )
+        .add(
+          faceFlux(coordinate, ivec3(0, 0, 1)).add(
+            faceFlux(coordinate, ivec3(0, 0, -1)),
+          ),
+        )
+        .mul(inverseSpacingSquared);
+      const oldPhase = oldPhaseAt(coordinate);
+      const nextPhase = nextPhaseAt(coordinate);
+      const oldInterpolation = oldPhase
+        .mul(oldPhase)
+        .mul(float(3).sub(oldPhase.mul(2)));
+      const nextInterpolation = nextPhase
+        .mul(nextPhase)
+        .mul(float(3).sub(nextPhase.mul(2)));
+      const diffusionIncrement = diffusionDivergence.mul(
+        parameters.freeEnergyCurvature * timeStep,
+      );
+      const phaseChangeIncrement = nextInterpolation
+        .sub(oldInterpolation)
+        .mul(
+          -parameters.freeEnergyCurvature * configuration.deltaConcentration,
+        );
+      return oldChemicalPotential
+        .add(diffusionIncrement)
+        .add(phaseChangeIncrement);
+    });
+
     return Fn(() => {
       const coordinate = voxelCoordinate();
       const position = positionAt(coordinate);
       const oldChemicalPotential = chemicalPotentialAt(coordinate);
       const nextChemicalPotential = oldChemicalPotential.toVar();
 
-      If(isBoundary(coordinate), () => {
+      If(isFarBoundary(coordinate), () => {
         nextChemicalPotential.assign(farFieldAtNode(position));
-      }).Else(() => {
-        const diffusionDivergence = faceFlux(coordinate, ivec3(1, 0, 0))
-          .add(faceFlux(coordinate, ivec3(-1, 0, 0)))
-          .add(
-            faceFlux(coordinate, ivec3(0, 1, 0)).add(
-              faceFlux(coordinate, ivec3(0, -1, 0)),
-            ),
-          )
-          .add(
-            faceFlux(coordinate, ivec3(0, 0, 1)).add(
-              faceFlux(coordinate, ivec3(0, 0, -1)),
-            ),
-          )
-          .mul(inverseSpacingSquared);
-        const oldPhase = oldPhaseAt(coordinate);
-        const nextPhase = nextPhaseAt(coordinate);
-        const oldInterpolation = oldPhase
-          .mul(oldPhase)
-          .mul(float(3).sub(oldPhase.mul(2)));
-        const nextInterpolation = nextPhase
-          .mul(nextPhase)
-          .mul(float(3).sub(nextPhase.mul(2)));
-        const diffusionIncrement = diffusionDivergence.mul(
-          parameters.freeEnergyCurvature * timeStep,
-        );
-        const phaseChangeIncrement = nextInterpolation
-          .sub(oldInterpolation)
-          .mul(
-            -parameters.freeEnergyCurvature * configuration.deltaConcentration,
+      })
+        .ElseIf(isSymmetryBoundary(coordinate), () => {
+          nextChemicalPotential.assign(
+            updatedChemicalPotentialAt(nearestInteriorCoordinate(coordinate)),
           );
-        nextChemicalPotential.assign(
-          oldChemicalPotential
-            .add(diffusionIncrement)
-            .add(phaseChangeIncrement),
-        );
-      });
+        })
+        .Else(() => {
+          nextChemicalPotential.assign(updatedChemicalPotentialAt(coordinate));
+        });
 
       writeScalar(targetChemicalPotential, coordinate, nextChemicalPotential);
     })().compute(voxelCount, [...SOLVER_WORKGROUP_SIZE]);
@@ -615,14 +776,10 @@ function createSolverResources(
           .toReadOnly().r,
     );
 
-    return Fn(() => {
-      const coordinate = voxelCoordinate();
+    const updatedRecordedAt = Fn(([coordinate]: [Ivec3Node]) => {
       const recorded = recordedAt(coordinate);
       const nextRecorded = recorded.toVar();
-
-      If(isBoundary(coordinate), () => {
-        nextRecorded.assign(-1);
-      }).ElseIf(
+      If(
         recorded
           .lessThan(0)
           .and(
@@ -639,6 +796,20 @@ function createSolverResources(
           nextRecorded.assign(nextTime);
         },
       );
+      return nextRecorded;
+    });
+
+    return Fn(() => {
+      const coordinate = voxelCoordinate();
+      const nextRecorded = updatedRecordedAt(coordinate).toVar();
+
+      If(isFarBoundary(coordinate), () => {
+        nextRecorded.assign(-1);
+      }).ElseIf(isSymmetryBoundary(coordinate), () => {
+        nextRecorded.assign(
+          updatedRecordedAt(nearestInteriorCoordinate(coordinate)),
+        );
+      });
 
       writeScalar(targetSolidificationTime, coordinate, nextRecorded);
     })().compute(voxelCount, [...SOLVER_WORKGROUP_SIZE]);
@@ -886,6 +1057,23 @@ export function createGpuSingleCrystalSolver(
         phase,
         chemicalPotential,
         solidificationTime,
+        simulatedTime: currentTime,
+        stepCount: currentStep,
+      };
+    },
+    async readPhase() {
+      assertUsable();
+      if (!isInitialized) {
+        throw new Error('Initialize the GPU solver before reading phase.');
+      }
+
+      await device.queue.onSubmittedWorkDone();
+      return {
+        phase: await readScalarTexture(
+          renderer,
+          textures().phase,
+          derived.grid.shape,
+        ),
         simulatedTime: currentTime,
         stepCount: currentStep,
       };

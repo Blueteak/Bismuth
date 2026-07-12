@@ -7,6 +7,7 @@ import {
 } from './config';
 import {
   UNBORN_SOLIDIFICATION_TIME,
+  authorCenteredAnisotropyDivergence,
   captureSolidificationTimes,
   computeCpuChemicalPotentialStep,
   computeCpuPhaseStep,
@@ -201,6 +202,47 @@ describe('CPU phase-field reference', () => {
     );
   });
 
+  it('applies octant symmetry at origin planes and a reservoir at far faces', () => {
+    const config = deriveSimulationConfiguration(
+      createSimulationConfiguration('hopper', {
+        domainMode: 'octant',
+        parameters: {
+          initialRadius: 2.5,
+          criticalRadius: 1,
+          interfaceWidth: 1,
+        },
+        grid: { shape: [11, 11, 11], spacing: 1, timeStep: 0.001 },
+      }),
+    );
+    const initialized = createInitialCpuState(config);
+    const symmetry = gridIndex(0, 1, 1, config.grid.shape);
+    const nearestInterior = gridIndex(1, 1, 1, config.grid.shape);
+    const far = gridIndex(10, 1, 1, config.grid.shape);
+
+    expect(initialized.phase[symmetry]).toBe(
+      initialized.phase[nearestInterior],
+    );
+    expect(initialized.chemicalPotential[symmetry]).toBe(
+      initialized.chemicalPotential[nearestInterior],
+    );
+    expect(initialized.solidificationTime[symmetry]).toBe(0);
+    expect(initialized.chemicalPotential[far]).toBeCloseTo(
+      config.parameters.farFieldChemicalPotential,
+      7,
+    );
+    expect(initialized.solidificationTime[far]).toBe(-1);
+
+    const stepped = stepCpuSimulation(initialized);
+    expect(stepped.phase[symmetry]).toBe(stepped.phase[nearestInterior]);
+    expect(stepped.chemicalPotential[symmetry]).toBe(
+      stepped.chemicalPotential[nearestInterior],
+    );
+    expect(stepped.chemicalPotential[far]).toBeCloseTo(
+      config.parameters.farFieldChemicalPotential,
+      7,
+    );
+  });
+
   it('couples adjacent lattice sites through analytic near-isotropic face fluxes', () => {
     const epsilon = 10;
     const config = deriveSimulationConfiguration(
@@ -248,6 +290,46 @@ describe('CPU phase-field reference', () => {
 
     expect(next.phase[center]).toBe(expected);
     expect(next.phase[center]).toBeGreaterThan(centerPhi);
+  });
+
+  it('supports the authors centered gradient-Hessian phase operator', () => {
+    const config = deriveSimulationConfiguration(
+      createSimulationConfiguration('hopper', {
+        phaseOperator: 'author-centered',
+        parameters: {
+          initialRadius: 1.5,
+          criticalRadius: 0.75,
+          interfaceWidth: 1,
+        },
+        grid: { shape: [11, 11, 11], spacing: 1, timeStep: 1e-4 },
+      }),
+    );
+    const phase = new Float32Array(config.voxelCount);
+    phase.fill(0.5);
+    phase[gridIndex(4, 5, 5, config.grid.shape)] = 0.51;
+    phase[gridIndex(6, 5, 5, config.grid.shape)] = 0.51;
+    const centerCoordinate = [5, 5, 5] as const;
+    const divergence = authorCenteredAnisotropyDivergence(
+      phase,
+      [...centerCoordinate],
+      config,
+    );
+    expect(divergence).toBeCloseTo(0.02, 6);
+
+    const chemicalPotential = new Float32Array(config.voxelCount);
+    chemicalPotential.fill(config.parameters.equilibriumChemicalPotential);
+    const state: CpuSimulationState = {
+      config,
+      phase,
+      chemicalPotential,
+      solidificationTime: new Float32Array(config.voxelCount).fill(-1),
+      time: 0,
+      step: 0,
+    };
+    const next = computeCpuPhaseStep(state);
+    expect(
+      next.phase[gridIndex(...centerCoordinate, config.grid.shape)],
+    ).toBeCloseTo(0.5 + config.grid.timeStep * divergence, 7);
   });
 
   it('captures downward threshold crossings once', () => {

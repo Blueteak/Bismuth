@@ -138,6 +138,30 @@ describe('simulation configuration', () => {
     );
   });
 
+  it('derives an octant domain and rejects symmetry-breaking inputs', () => {
+    const octant = createSimulationConfiguration('hopper', {
+      domainMode: 'octant',
+      grid: { shape: [65, 65, 65], spacing: 2 },
+    });
+    const derived = deriveSimulationConfiguration(octant);
+
+    expect(derived.domainCenter).toEqual([0, 0, 0]);
+    expect(derived.domainMinimum).toEqual([0, 0, 0]);
+    expect(derived.domainMaximum).toEqual([128, 128, 128]);
+    expect(() =>
+      createSimulationConfiguration('hopper', {
+        domainMode: 'octant',
+        orientation: { z: 0.1 },
+      }),
+    ).toThrow(/axis-aligned/);
+    expect(() =>
+      createSimulationConfiguration('hopper', {
+        domainMode: 'octant',
+        perturbations: { seedRadiusAmplitude: 0.1 },
+      }),
+    ).toThrow(/unperturbed/);
+  });
+
   it('rejects unstable or physically invalid configurations', () => {
     const base = createSimulationConfiguration('hopper');
     expect(() =>

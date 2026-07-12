@@ -5,10 +5,13 @@ import {
 } from './config';
 import { createInitialCpuState, gridIndex } from './cpu-reference';
 import {
+  evaluateExpectedMorphology,
   measureFaceCenterDepression,
+  measureGrowthMaturity,
   measureMorphology,
   measureSolidBounds,
   measureSymmetry,
+  measureTransitionMorphology,
   summarizeField,
 } from './metrics';
 
@@ -126,5 +129,115 @@ describe('simulation metrics', () => {
     expect(metrics.chemicalPotential.nonFiniteCount).toBe(0);
     expect(metrics.solidVolume).toBeGreaterThan(0);
     expect(metrics.symmetry.maximum).toBe(0);
+  });
+
+  it('distinguishes a filled cube from a resolved hopper recession', () => {
+    const config = metricConfig();
+    const cube = new Float32Array(config.voxelCount);
+    cube.fill(1);
+    for (let z = 2; z <= 6; z += 1) {
+      for (let y = 2; y <= 6; y += 1) {
+        for (let x = 2; x <= 6; x += 1) {
+          cube[gridIndex(x, y, z, config.grid.shape)] = 0;
+        }
+      }
+    }
+
+    const cubeTransition = measureTransitionMorphology(cube, config);
+    const cubeDepression = measureFaceCenterDepression(cube, config);
+    expect(cubeTransition.boundingBoxFillFraction).toBe(1);
+    expect(cubeTransition.connectedComponentCount).toBe(1);
+    expect(cubeTransition.largestConnectedComponentFraction).toBe(1);
+    expect(cubeTransition.directionalReach.bodyDiagonalToFaceRatio).toBe(1);
+    expect(
+      evaluateExpectedMorphology('cube', cubeTransition, cubeDepression, config)
+        .passed,
+    ).toBe(true);
+    expect(
+      evaluateExpectedMorphology(
+        'hopper',
+        cubeTransition,
+        cubeDepression,
+        config,
+      ).passed,
+    ).toBe(false);
+
+    const hopper = new Float32Array(cube);
+    for (const [x, y, z] of [
+      [2, 4, 4],
+      [3, 4, 4],
+      [5, 4, 4],
+      [6, 4, 4],
+      [4, 2, 4],
+      [4, 3, 4],
+      [4, 5, 4],
+      [4, 6, 4],
+      [4, 4, 2],
+      [4, 4, 3],
+      [4, 4, 5],
+      [4, 4, 6],
+      [4, 4, 4],
+    ] as const) {
+      hopper[gridIndex(x, y, z, config.grid.shape)] = 1;
+    }
+    const hopperTransition = measureTransitionMorphology(hopper, config);
+    expect(hopperTransition.boundingBoxFillFraction).toBeLessThan(0.9);
+    expect(hopperTransition.surfaceComplexity).toBeGreaterThan(
+      cubeTransition.surfaceComplexity,
+    );
+  });
+
+  it('reports disconnected solids and diagonal-arm reach', () => {
+    const config = metricConfig();
+    const phase = new Float32Array(config.voxelCount);
+    phase.fill(1);
+    for (let offset = -3; offset <= 3; offset += 1) {
+      phase[gridIndex(4 + offset, 4 + offset, 4 + offset, config.grid.shape)] =
+        0;
+    }
+    phase[gridIndex(1, 7, 4, config.grid.shape)] = 0;
+
+    const transition = measureTransitionMorphology(phase, config);
+    expect(transition.connectedComponentCount).toBe(8);
+    expect(transition.largestConnectedComponentFraction).toBe(1 / 8);
+    expect(transition.directionalReach.bodyDiagonal[0]).toBeGreaterThan(0);
+    expect(transition.directionalReach.bodyDiagonal[7]).toBeGreaterThan(0);
+    expect(transition.directionalReach.meanFace).toBe(0);
+  });
+
+  it('interprets an octant field as a mirrored full crystal', () => {
+    const config = deriveSimulationConfiguration(
+      createSimulationConfiguration('hopper', {
+        domainMode: 'octant',
+        parameters: {
+          initialRadius: 1,
+          criticalRadius: 0.5,
+          interfaceWidth: 0.5,
+        },
+        grid: { shape: [9, 9, 9], spacing: 1, timeStep: 0.001 },
+      }),
+    );
+    const phase = new Float32Array(config.voxelCount);
+    phase.fill(1);
+    for (let z = 0; z <= 4; z += 1) {
+      for (let y = 0; y <= 4; y += 1) {
+        for (let x = 0; x <= 4; x += 1) {
+          phase[gridIndex(x, y, z, config.grid.shape)] = 0;
+        }
+      }
+    }
+
+    const bounds = measureSolidBounds(phase, config);
+    const transition = measureTransitionMorphology(phase, config);
+    const maturity = measureGrowthMaturity(phase, config);
+    expect(bounds.minimum).toEqual([-4, -4, -4]);
+    expect(bounds.maximum).toEqual([4, 4, 4]);
+    expect(bounds.extent).toEqual([8, 8, 8]);
+    expect(transition.boundingBoxFillFraction).toBe(1);
+    expect(transition.directionalReach.bodyDiagonalToFaceRatio).toBe(1);
+    expect(maturity.maximumDirectionalReach).toBe(4);
+    expect(maturity.radiusMultiple).toBe(4);
+    expect(maturity.farBoundaryDistance).toBe(8);
+    expect(maturity.farBoundaryClearanceRatio).toBe(1);
   });
 });

@@ -8,7 +8,7 @@ The existing repository history and previous implementations are out of scope. T
 
 ## Current status and next task
 
-Milestones 0A, 0B, and 0C are complete as of 2026-07-11. The core Milestone 1 single-hopper acceptance gate is also complete: the CPU reference and WebGPU solver agree, the published hopper parameter set produces a resolved face-center recession, and a fixed-domain `128^3`/`256^3` comparison shows close physical extents. The immediate task is the remaining Milestone 1 transition discrepancy documented in `current_tasks.md`: a mature `D_L = 4` browser run remained nearly cubic instead of reproducing the paper's `<111>` dendrite. Resolve that source/discretization mismatch before beginning Milestone 2 or morphology art tuning.
+Milestones 0A, 0B, 0C, and 1 are complete as of 2026-07-11. Milestone 1 closes around its scoped single-hopper objective: CPU/WebGPU agreement, deterministic finite fields, write-once birth time, resolved hopper recession, physical-domain refinement, a four-seed fast suite, and the complete recorded transition investigation. The browser reproduces the cube and hopper gates but not the paper's fractal and dendritic outcomes. The remaining adaptive-mesh, BDF2, multigrid, and Float64 differences are explicit fidelity limits, not hidden successes. The next implementation task is Milestone 2 live GPU surface extraction; retain the Step 1 fast profiles as regression gates while extraction work proceeds.
 
 ## Milestone sequence
 
@@ -73,7 +73,7 @@ Exit criteria:
 
 ### 1. Published single-crystal solver
 
-Status: **Complete for the single-hopper acceptance gate** (2026-07-11). The full published transition-suite validation remains open as recorded below.
+Status: **Complete** (2026-07-11) for the scoped single-hopper milestone. The complete published transition series was tested but only partially reproduced, as recorded below.
 
 Reproduce the reference hopper model without production material work.
 
@@ -83,7 +83,7 @@ Reproduce the reference hopper model without production material work.
 - Start with a centered spherical seed and the published single-orientation anisotropy.
 - Record first solidification time in a separate rendering-input field when phase first crosses the documented threshold; this field must not feed back into solver physics.
 - Add developer-only slice views, field summaries, NaN detection, symmetry metrics, and queue-complete wall timing. True timestamp-query adapter timing remains part of the benchmark milestone.
-- Encode the reported cube, hopper, fractal, and dendritic parameter sets. The hopper is validated; run and record the complete transition suite before using the remaining preset names as validated browser outcomes.
+- Encode and run the reported cube, hopper, fractal, and dendritic parameter sets. Cube and hopper are validated browser outcomes; fractal and dendritic remain paper-labeled expected classes with recorded failed gates.
 - Add grid-refinement checks before selecting a working interactive resolution.
 
 Exit criteria:
@@ -98,13 +98,20 @@ Recorded Step 1 evidence:
 
 - A `9^3` `r32float` CPU/WebGPU comparison passed at initialization, one step, and three steps. Maximum observed absolute errors were `1.1920929e-7` for phase, `1.7136335e-7` for chemical potential, and `0` for solidification time.
 - At `t = 500`, the unperturbed physical-domain comparison measured maximum extent/robust rim-relative recession `94 / 6` on `128^3` at `dx = 2` and `93 / 7` on `256^3` at `dx = 1`.
+- The deterministic perturbed `128^3`, `dx = 2` iteration profile reproduced the paired `256^3`, `dx = 1` extent exactly and matched scale-adjusted volume within `0.21%`; five repeated runs produced identical numerical summaries and completed the budgeted browser fixture in `14512.7..15871.1 ms` against a hard `25000 ms` deadline.
+- The separate `D_L = 4`, `t = 350` screen completed its `128^3` temporal control and candidate in `9.12..9.23 s` and `17.58..17.88 s` fixture time. The candidate matched its one-time `256^3` spatial reference within `1.40%` physical volume and `1.89%` physical surface, while halving `dt` changed no directional reach and only `0.0185%` of the solid count; mature refinement was not promoted.
+- The CPU-only coupled backward-Euler experiment reduced the first chemical fixed-point defect by `1693x`, converged every step in `3..5` iterations, and completed split/coupled pairs at two time steps and two domains in `16.58..16.72 s` setup-plus-matrix time. The directional difference shrank by `1.9500x` when `dt` was halved but retained its away-from-dendrite sign, so neither a production coupled integrator nor a mature GPU run was promoted.
+- Uniform interface refinement in the matched `D_L = 4`, `t = 350` spatial pair changed the diagonal/face reach ratio from `1.02857` at `dx = 2` to `1.00000` at `dx = 1`, away from the missing dendrite. This bounds the tested uniform-grid effect without motivating adaptive GPU infrastructure.
+- Four deterministic perturbed hopper seeds all passed at `128^3`, retained one connected component and mean recession `8`, produced four distinct summaries, and completed in `14.851..15.320 s` against the `25000 ms` deadline. Solid count varied by `0.60%` and the physical surface proxy by `0.64%`.
+- The conservative full-domain transition controls accepted the cube (`fill = 0.999995`) and rejected the fractal (`fill = 0.953535`, complexity `5.88791`). The author-centered A/B accepted the cube and moved the fractal strongly toward the source (`fill = 0.600643`, complexity `7.34534`, diagonal/face reach `1.47059`) but still missed the fixed complexity gate `8`. The mature author-centered dendrite remained a deeply recessed hopper and failed its fill gate.
 - The accepted deterministic perturbed `256^3` checkpoint measured extent `100`, mean robust face recession `7.833` (minimum `6`, maximum `10`), symmetry error `0.0064696`, and boundary-clearance ratio `1.5`, with no non-finite values or WebGPU errors.
 - The scalar cubic model is a generic hopper baseline, not a calibrated bismuth model. Screw-growth spirals, twins, and differently oriented intergrowths remain out of scope until defect/orientation physics is added.
 
-Remaining Milestone 1 validation debt:
+Milestone 1 closure boundary:
 
-- Resolve why the mature `D_L = 4` browser checkpoint remained nearly cubic, then run the fixed-domain cube/fractal/dendritic presets and document whether the browser discretization reproduces the paper's qualitative transition series. See `current_tasks.md` and `docs/evidence/step1-dl4-t500-256dx2.json`.
-- Expand the perturbation seed suite so realism decisions do not rest on one accepted run.
+- All literal exit criteria and implementation-list evidence are complete. See `docs/evidence/step1-transition-suite-validation.md` and `docs/evidence/step1-hopper-seed-suite-validation.md`.
+- The full paper transition series is not reproduced. Do not call fractal or dendritic validated browser outcomes, and do not tune their gates after the fact.
+- Adaptive mesh, implicit variable-step BDF2, multigrid, and Float64 storage remain unimplemented source differences. Reopening them is a separate fidelity investigation, not a prerequisite for Milestone 2.
 
 ### 2. Live GPU surface extraction
 

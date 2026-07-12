@@ -69,8 +69,8 @@ repeats `X_3`; the three-dimensional limit is the sum of `X_1`, `X_2`, and
 ### Surface-energy normalization
 
 The paper's displayed equation does not state the normalization used by the
-active cubic branch of the authors' code. That branch divides the cubic
-surface-energy operator by `3 (1 + epsilon)^2`. Step 1 therefore uses:
+active cubic branch of the authors' code. The browser applies the common scale
+`1 / [3 (1 + epsilon)^2]` to the exact derivative of the displayed energy:
 
 ```text
 N_A = 1 / [3 (1 + epsilon)^2]
@@ -81,8 +81,11 @@ dot(phi) = M [N_A div(d(A^2 / 2) / d(grad(phi)))
 ```
 
 For `epsilon = 0.02`, `N_A = 0.3203895937459951`. This is a source-traceable
-normalization, not an appearance adjustment. Omitting it produced a different
-growth regime and is not considered the reference implementation.
+normalization, not an appearance adjustment. The 2026-07-11
+[author-source audit](evidence/step1-source-audit.md) found that the active
+Fortran centered-Hessian branch gives its `A0` curvature term one additional
+factor of `(1 + epsilon)^-1`; the browser operator is therefore a close
+continuum analogue, not an exact transcription of that discrete branch.
 
 ## Published constants and presets
 
@@ -111,9 +114,10 @@ description, and author implementation and is the value used here.
 
 Named configurations also encode the reported diffusivity sweep at
 `mu_inf = 0.04`: `DL = 20` for cube, `1 / 12` for hopper, `1 / 2` for fractal,
-and `4` for dendritic. Only the hopper configuration has completed the Step 1
-full-domain morphology and refinement gate. The complete transition suite must
-still be run before using those labels as validated browser outcomes.
+and `4` for dendritic. The complete Step 1 investigation accepts cube and
+hopper as validated browser outcomes. Fractal and dendritic retain the paper's
+parameter-set labels but fail the browser morphology gates and must not be
+described as reproduced outcomes.
 
 ## Initial and boundary conditions
 
@@ -156,6 +160,19 @@ condition. The author code contains boundary machinery whose effective choice
 is not as explicit as the paper prose, so the browser choice is documented and
 tested rather than inferred silently.
 
+Transition validation may opt into a developer-only `octant` domain. Grid
+coordinate zero is the physical origin on all three axes; `phi` and `mu` copy
+the nearest interior update on those three symmetry planes. The three high
+faces retain phase Neumann conditions and the fixed `mu` reservoir. Octant
+mode requires an axis-aligned crystal and rejects every seed, chemical, or
+reservoir perturbation that would break mirror symmetry. Production and
+perturbed runs remain full-domain.
+
+At `256^3`, `dx = 2`, the octant represents `[0, 510]^3`, whereas the same full
+grid represents approximately `[-255, 255]^3`. Metrics interpret the octant as
+a mirrored full crystal, exclude symmetry planes from the surface proxy, and
+report actual octant voxel counts with mirrored physical extents.
+
 ## Browser discretization
 
 The paper uses an adaptive mesh and an implicit BDF2 time integrator. Step 1
@@ -175,6 +192,41 @@ For the anisotropy operator, each cell face receives one gradient:
 This conservative face-flux stencil shares one physical flux between adjacent
 cells and avoids the odd/even decoupling observed with a cell-centered
 central-gradient/central-divergence trial.
+
+The authors' active 3D path instead contracts a cell-centered phase Hessian
+with a cubic energy Hessian assembled from the centered gradient. The Step 1
+investigation isolates that 27-point operator, time-step sensitivity,
+future-state coupling, and uniform refinement. The authors' nonlinear implicit
+BDF2 solve, adaptive mesh, multigrid machinery, and Float64 storage remain
+unimplemented source differences; they are not compensated with physical
+parameter tuning.
+
+The developer configuration can select that spatial contraction with
+`phaseOperator = "author-centered"` (runner option
+`--operator=author-centered`). It transcribes the active Fortran branch,
+including its split normalization of the `A0` and gradient-product terms. The
+CPU and WebGPU versions agree on the tiny validation grid. It remains an
+experimental diagnostic: at `D_L = 4`, `dx = 2`, and `t = 500`, it reduced the
+bounding-box fill from `0.9736` to `0.8804` and increased normalized
+`<111>/<100>` reach from `1.0230` to `1.0690`, but did not meet the dendrite
+gate. The conservative face-flux operator remains the default.
+
+### Maturity checkpoints
+
+Developer morphology runs may specify a target radius multiple and checkpoint
+interval. At each checkpoint the solver reads back only `phi`, measures
+axis-equivalent reach along `<100>`, `<110>`, and `<111>`, and stops if the
+maximum mean directional reach reaches the requested multiple of `R0`. The
+final report records the full reach history and far-boundary clearance. The
+runner rejects a target unless the far boundary is at least twice the target
+radius.
+
+The source-matched `D_L = 4` octant run used target `10 R0`, a hard guard of
+`t = 1000`, and checkpoints every `Delta t = 50`. It reached only `8.3 R0` at
+the guard, while retaining a far-boundary clearance ratio `2.0723`. The final
+`<111>/<100>` reach ratio was `1.2388`, but bounding-box fill remained
+`0.7939`; this is a diagonal-dominant deep hopper rather than the paper's
+smooth dendrite.
 
 The phase pass writes `phi^(n+1)` first. The chemical pass then uses
 `D(phi^(n+1))` and the old chemical-potential gradient. Chemical diffusion is
@@ -286,15 +338,16 @@ conditions, not to the evolved chemical-potential state. Solidification rejects
 the modeled concentration difference through the exact `Delta g` source, so
 interfacial `mu` can exceed `mu0 = 1`; the accepted `256^3` checkpoint reached
 `1.5332261` without phase overshoot or non-finite values. That maximum is
-recorded as a diagnostic, not treated as a calibrated physical prediction, and
-must be checked for convergence across the remaining preset and seed suite.
+recorded as a diagnostic, not treated as a calibrated physical prediction. The
+completed transition and four-seed studies retain the extrema in their durable
+reports.
 
 ## Limits of the scalar single-crystal model
 
 The current scalar `phi` plus `mu` model has validated cubic hopper recession
 and transport-driven asymmetry. The published model family also contains
-terraced and same-orientation branching regimes, but those browser outcomes
-remain part of the open transition-suite validation. The scalar model cannot
+terraced and same-orientation branching regimes, but the completed browser
+study reproduces only the cube and hopper gates. The scalar model cannot
 honestly represent:
 
 - Screw-dislocation-driven growth spirals. That mechanism requires a
@@ -322,12 +375,99 @@ consistently and compare solid volume, bounding extent, symmetry, face-center
 recession, and boundary distance.
 
 At simulated time `t = 500`, the unperturbed hopper control produced maximum
-solid extent `94` and robust rim-relative face recession `6` on a `128^3`, `dx = 2` grid,
-versus extent `93` and recession `7` on a `256^3`, `dx = 1` grid. Both runs used
-the published `R0 = 20`, `Rc = 10`, `delta = 2`, `DL = 1 / 12`,
-`mu_inf = 0.04`, and `dt = 0.01`. This supports the hopper as a resolved
-physical-domain outcome rather than a single-grid artifact; it does not yet
-select a production resolution.
+solid extent `94` and robust rim-relative face recession `6` on a `128^3`,
+`dx = 2` grid, versus extent `93` and recession `7` on a `256^3`, `dx = 1`
+grid. Both runs used the published `R0 = 20`, `Rc = 10`, `delta = 2`,
+`DL = 1 / 12`, `mu_inf = 0.04`, and `dt = 0.01`. This supports the hopper as
+a resolved physical-domain outcome rather than a single-grid artifact; it
+does not yet select a production resolution.
+
+The deterministic perturbed pair at those same grids is the developer
+iteration calibration. The `128^3` case preserves physical extent, recession,
+boundary clearance, and scale-adjusted volume/surface proxies closely enough
+to serve as a regression screen under a `25000 ms` fixture-wall budget. This
+is a validation tier, not a reduced physical model or a production-resolution
+choice. Any change to equations, stencil, boundary conditions, time step,
+physical scale, or perturbation construction invalidates the calibration until
+the paired `128^3` and `256^3` checkpoints are repeated.
+
+Correlation for the hopper case does not establish correlation for another
+transport regime. The `D_L = 4` investigation therefore has a separate early
+matrix at `t = 350`. Its `128^3`, `dx = 2`, `dt = 0.005` candidate correlates
+with a one-time `256^3`, `dx = 1`, `dt = 0.005` spatial reference: physical
+volume and surface proxies differ by `1.40%` and `1.89%`, while extent is equal
+and directional reaches differ by at most one physical unit. Both reduced
+temporal profiles complete below the `25000 ms` fixture budget on the reference
+machine.
+
+Against the matching `128^3`, `dx = 2`, `dt = 0.01` control, however, halving
+the time step changes solid count by only `0.0185%`, surface count by `0.0804%`,
+fill by `+0.000178`, and complexity by `+0.00377`; extent, recession, all
+directional reaches, and the diagonal/face ratio are unchanged. The temporal
+signal is smaller than the observed spatial mismatch and does not move the
+immature morphology toward the source dendrite. The full `256^3`, `dx = 2`,
+`dt = 0.005`, `t = 1000` maturity run is therefore not promoted. The three-run
+matrix does not prove temporal sensitivity is resolution-independent; a fourth
+`256^3`, `dx = 1`, `dt = 0.01` control would be required for that narrower
+claim.
+
+The subsequent CPU-only experiment isolates future-state coupling with a
+block-Picard backward-Euler reference. It preserves the same author-centered
+operator, octant boundaries, Float32 fields, physical parameters, and exact
+conserved `Delta g` source. On `17^3` and `25^3`, `dx = 2` domains through
+`t = 0.2`, every coupled step converged in `3..5` iterations at both `dt = 0.01`
+and `dt = 0.005`. The first full-step chemical fixed-point defect fell by
+`1693x` to `5.96046e-8`; the half-step defect fell by `423x` to the same floor.
+Three complete four-method matrices reproduced every numerical summary in
+`15.79..15.91 s`, with setup-plus-matrix times of `16.58..16.72 s`.
+
+Split-minus-coupled subcell body-diagonal/face ratio differences were
+`+2.56335e-6` at `dt = 0.01` and `+1.31454e-6` at `dt = 0.005`. Their `1.9500x`
+scaling is consistent with a first-order method difference. The positive sign
+on both domains and time steps means the coupled result has the lower ratio,
+slightly away from the source dendrite. Thresholded morphology was unchanged.
+This does not support a production coupled integrator or mature GPU run. It
+bounds the first-order future-state integration difference but does not
+reproduce the authors' BDF2 history/order, adaptive mesh, or double precision.
+The matched early spatial pair separately bounds uniform interface resolution:
+at `t = 350`, refinement from `dx = 2` to `dx = 1` changes diagonal/face reach
+from `1.02857` to `1.00000`, away from the source dendrite, while physical
+volume and surface proxies remain within `1.40%` and `1.89%`. Neither tested
+time integration nor uniform refinement justifies adaptive GPU infrastructure.
+
+## Completed transition investigation
+
+The fixed-gate transition study is complete. With the conservative production
+operator, the `D_L = 20` cube passes with fill `0.999995` and zero face
+recession. The `D_L = 1 / 2` candidate remains cube-like with fill `0.953535`,
+complexity `5.88791`, and diagonal/face reach `1.03774`, so it fails the
+fractal fill and complexity gates.
+
+The source-matched author-centered A/B preserves the cube and moves the
+fractal candidate strongly toward the paper: fill `0.600643`, complexity
+`7.34534`, diagonal/face reach `1.47059`, all eight arms, and one connected
+component. It still misses the predeclared complexity gate `8`. The mature
+`D_L = 4` octant reaches diagonal/face ratio `1.23881` but remains too filled
+at `0.793868` for the dendritic gate `< 0.65`.
+
+This is a partial transition reproduction: cube and hopper pass; fractal and
+dendritic do not. The authors' adaptive mesh, implicit variable-step BDF2,
+multigrid solve, and Float64 storage are unimplemented and their individual
+effects are not claimed to be bounded. They remain explicit fidelity limits
+rather than being combined into an unvalidated production variant. Full
+reports are in
+[`step1-transition-suite-validation.md`](evidence/step1-transition-suite-validation.md).
+
+## Seed-suite result
+
+Four explicit internal seeds were run through the calibrated `128^3` perturbed
+hopper profile. All four passed, retained one connected component and mean
+face recession `8`, produced distinct summaries, and completed in
+`14.851..15.320 s` under the `25000 ms` limit. Solid count varied by `0.60%`
+and the physical surface proxy by `0.64%`. The modes randomize phase but retain
+fixed wave-vector directions, so this is a bounded robustness sample rather
+than a broad stochastic distribution. See
+[`step1-hopper-seed-suite-validation.md`](evidence/step1-hopper-seed-suite-validation.md).
 
 ## Completion and determinism
 
@@ -341,16 +481,14 @@ presentation boundary rather than thermodynamic equilibrium:
 Each run has an internal seed. Tests and developer tools may set it explicitly;
 the public interface neither displays nor persists it.
 
-## Required follow-up evidence
+## Step 1 completion boundary
 
 Step 1 has completed CPU/GPU agreement, deterministic write-once birth-time
-capture, a resolved single hopper, and one physical-domain refinement
-comparison. The following evidence remains required before morphology art
-tuning or claims about the full paper series:
+capture, a resolved and grid-refined single hopper, four-seed robustness, and
+the recorded cube/hopper/fractal/dendritic investigation. Its scoped milestone
+is complete even though the full paper transition series is not reproduced.
 
-- Run and record the cube/hopper/fractal/dendritic transition suite.
-- Expand the fixed perturbation-seed suite beyond the accepted checkpoint.
-- Separate solver, extraction, and rendering performance at candidate
-  production grids.
-- Calibrate any bismuth-specific facet or kinetic extension against primary
-  experimental evidence.
+Later milestones must still separate solver, extraction, and rendering cost at
+candidate production grids. Any bismuth-specific facet, kinetic, defect, or
+orientation extension requires new primary evidence and renewed convergence
+tests; it is not silently folded into this scalar baseline.

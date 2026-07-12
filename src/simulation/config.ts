@@ -4,6 +4,10 @@ export type GridShape = readonly [number, number, number];
 
 export type SimulationPresetName = 'cube' | 'hopper' | 'fractal' | 'dendritic';
 
+export type PhaseOperator = 'conservative-flux' | 'author-centered';
+
+export type DomainMode = 'full' | 'octant';
+
 export interface PhaseFieldParameters {
   readonly mobility: number;
   readonly liquidConcentration: number;
@@ -49,6 +53,8 @@ export interface PerturbationConfiguration {
 
 export interface SimulationConfiguration {
   readonly preset: SimulationPresetName;
+  readonly phaseOperator: PhaseOperator;
+  readonly domainMode: DomainMode;
   readonly parameters: PhaseFieldParameters;
   readonly grid: GridConfiguration;
   readonly orientation: EulerOrientation;
@@ -66,11 +72,15 @@ export interface DerivedSimulationConfiguration extends SimulationConfiguration 
   readonly surfaceEnergyNormalization: number;
   readonly voxelCount: number;
   readonly domainCenter: Vec3;
+  readonly domainMinimum: Vec3;
+  readonly domainMaximum: Vec3;
   readonly crystalAxes: readonly [Vec3, Vec3, Vec3];
   readonly maximumStableTimeStep: number;
 }
 
 export interface SimulationConfigurationOverrides {
+  readonly phaseOperator?: PhaseOperator;
+  readonly domainMode?: DomainMode;
   readonly parameters?: Partial<PhaseFieldParameters>;
   readonly grid?: Partial<GridConfiguration>;
   readonly orientation?: Partial<EulerOrientation>;
@@ -123,6 +133,8 @@ function paperPreset(
 ): SimulationConfiguration {
   return {
     preset,
+    phaseOperator: 'conservative-flux',
+    domainMode: 'full',
     parameters: { ...PAPER_CONSTANTS, liquidDiffusivity },
     grid: { ...DEFAULT_GRID, timeStep },
     orientation: { ...DEFAULT_ORIENTATION },
@@ -210,7 +222,11 @@ function maximumStableTimeStep(config: SimulationConfiguration): number {
   const couplingLambda =
     (3 * parameters.criticalRadius * deltaConcentration ** 2) /
     parameters.interfaceWidth;
-  const halfExtents = grid.shape.map((size) => ((size - 1) * grid.spacing) / 2);
+  const halfExtents = grid.shape.map((size) =>
+    config.domainMode === 'octant'
+      ? (size - 1) * grid.spacing
+      : ((size - 1) * grid.spacing) / 2,
+  );
   const farFieldExcursion =
     Math.abs(config.perturbations.farFieldGradient[0]) * (halfExtents[0] ?? 0) +
     Math.abs(config.perturbations.farFieldGradient[1]) * (halfExtents[1] ?? 0) +
@@ -244,6 +260,18 @@ export function validateSimulationConfiguration(
   config: SimulationConfiguration,
 ): void {
   const { parameters, grid, orientation, perturbations } = config;
+
+  if (
+    config.phaseOperator !== 'conservative-flux' &&
+    config.phaseOperator !== 'author-centered'
+  ) {
+    throw new RangeError(
+      `Unknown phase operator: ${String(config.phaseOperator)}.`,
+    );
+  }
+  if (config.domainMode !== 'full' && config.domainMode !== 'octant') {
+    throw new RangeError(`Unknown domain mode: ${String(config.domainMode)}.`);
+  }
 
   if (!(config.preset in SIMULATION_PRESETS)) {
     throw new RangeError(`Unknown simulation preset: ${config.preset}.`);
@@ -305,6 +333,15 @@ export function validateSimulationConfiguration(
     if (!isFiniteNumber(angle)) {
       throw new RangeError(`orientation.${name} must be finite.`);
     }
+  }
+
+  if (
+    config.domainMode === 'octant' &&
+    (orientation.x !== 0 || orientation.y !== 0 || orientation.z !== 0)
+  ) {
+    throw new RangeError(
+      'Octant symmetry requires the axis-aligned crystal orientation.',
+    );
   }
 
   if (
@@ -370,8 +407,22 @@ export function validateSimulationConfiguration(
       throw new RangeError(`farFieldGradient[${axis}] must be finite.`);
     }
   });
+  if (
+    config.domainMode === 'octant' &&
+    (perturbations.seedRadiusAmplitude !== 0 ||
+      perturbations.chemicalPotentialAmplitude !== 0 ||
+      perturbations.farFieldGradient.some((component) => component !== 0))
+  ) {
+    throw new RangeError(
+      'Octant symmetry requires unperturbed initial and reservoir conditions.',
+    );
+  }
 
-  const halfExtents = grid.shape.map((size) => ((size - 1) * grid.spacing) / 2);
+  const halfExtents = grid.shape.map((size) =>
+    config.domainMode === 'octant'
+      ? (size - 1) * grid.spacing
+      : ((size - 1) * grid.spacing) / 2,
+  );
   const farFieldExcursion =
     Math.abs(perturbations.farFieldGradient[0]) * (halfExtents[0] ?? 0) +
     Math.abs(perturbations.farFieldGradient[1]) * (halfExtents[1] ?? 0) +
@@ -386,9 +437,7 @@ export function validateSimulationConfiguration(
     );
   }
 
-  const halfExtent = Math.min(
-    ...grid.shape.map((size) => ((size - 1) * grid.spacing) / 2),
-  );
+  const halfExtent = Math.min(...halfExtents);
   const requiredSeedExtent =
     parameters.initialRadius +
     perturbations.seedRadiusAmplitude +
@@ -423,6 +472,8 @@ export function createSimulationConfiguration(
   }
   const config: SimulationConfiguration = {
     preset,
+    phaseOperator: overrides.phaseOperator ?? base.phaseOperator,
+    domainMode: overrides.domainMode ?? base.domainMode,
     parameters: { ...base.parameters, ...parameterOverrides },
     grid: {
       ...base.grid,
@@ -451,6 +502,23 @@ export function deriveSimulationConfiguration(
     config.parameters.liquidConcentration -
     config.parameters.solidConcentration;
   const [width, height, depth] = config.grid.shape;
+  const domainCenter: Vec3 =
+    config.domainMode === 'octant'
+      ? [0, 0, 0]
+      : [
+          ((width - 1) * config.grid.spacing) / 2,
+          ((height - 1) * config.grid.spacing) / 2,
+          ((depth - 1) * config.grid.spacing) / 2,
+        ];
+  const domainMinimum: Vec3 =
+    config.domainMode === 'octant'
+      ? [0, 0, 0]
+      : [-domainCenter[0], -domainCenter[1], -domainCenter[2]];
+  const domainMaximum: Vec3 = [
+    (width - 1) * config.grid.spacing - domainCenter[0],
+    (height - 1) * config.grid.spacing - domainCenter[1],
+    (depth - 1) * config.grid.spacing - domainCenter[2],
+  ];
 
   return {
     ...config,
@@ -463,11 +531,9 @@ export function deriveSimulationConfiguration(
       config.parameters.interfaceWidth,
     surfaceEnergyNormalization: config.parameters.surfaceEnergyScale,
     voxelCount: width * height * depth,
-    domainCenter: [
-      ((width - 1) * config.grid.spacing) / 2,
-      ((height - 1) * config.grid.spacing) / 2,
-      ((depth - 1) * config.grid.spacing) / 2,
-    ],
+    domainCenter,
+    domainMinimum,
+    domainMaximum,
     crystalAxes: crystalAxesFromEuler(config.orientation),
     maximumStableTimeStep: maximumStableTimeStep(config),
   };

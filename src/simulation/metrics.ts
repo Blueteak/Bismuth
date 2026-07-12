@@ -1,4 +1,5 @@
 import type { DerivedSimulationConfiguration, GridShape, Vec3 } from './config';
+import type { SimulationPresetName } from './config';
 import {
   gridCoordinates,
   gridIndex,
@@ -53,6 +54,47 @@ export interface MorphologyMetrics {
   readonly bounds: SolidBounds;
   readonly symmetry: SymmetryMetrics;
   readonly faceCenterDepression: FaceCenterDepressionMetrics;
+}
+
+export interface DirectionalReachMetrics {
+  /** Axis-equivalent reach along the six <100> center rays. */
+  readonly face: readonly number[];
+  /** Axis-equivalent reach along the twelve <110> center rays. */
+  readonly edge: readonly number[];
+  /** Axis-equivalent reach along the eight <111> center rays. */
+  readonly bodyDiagonal: readonly number[];
+  readonly meanFace: number;
+  readonly meanEdge: number;
+  readonly meanBodyDiagonal: number;
+  readonly bodyDiagonalToFaceRatio: number;
+  readonly occupiedBodyDiagonalArms: number;
+}
+
+export interface TransitionMorphologyMetrics {
+  readonly boundingBoxFillFraction: number;
+  readonly surfaceVoxelCount: number;
+  /** Surface-voxel count divided by thresholded solid-voxel count. */
+  readonly surfaceToVolumeRatio: number;
+  /** Surface-voxel count divided by volume^(2/3); about 6 for a large cube. */
+  readonly surfaceComplexity: number;
+  readonly directionalReach: DirectionalReachMetrics;
+  readonly connectedComponentCount: number;
+  readonly largestConnectedComponentFraction: number;
+}
+
+export interface MorphologyExpectation {
+  readonly expected: SimulationPresetName;
+  readonly passed: boolean;
+  readonly failures: readonly string[];
+}
+
+export interface GrowthMaturityMetrics {
+  readonly directionalReach: DirectionalReachMetrics;
+  readonly maximumDirectionalReach: number;
+  readonly radiusMultiple: number;
+  readonly farBoundaryDistance: number;
+  readonly farBoundaryClearance: number;
+  readonly farBoundaryClearanceRatio: number;
 }
 
 export function summarizeField(values: ArrayLike<number>): FieldSummary {
@@ -154,6 +196,19 @@ export function measureSolidBounds(
     maximum[1] ?? Number.NaN,
     maximum[2] ?? Number.NaN,
   ];
+  if (config.domainMode === 'octant') {
+    return {
+      empty: false,
+      minimum: [-maximumVector[0], -maximumVector[1], -maximumVector[2]],
+      maximum: maximumVector,
+      extent: [
+        2 * maximumVector[0],
+        2 * maximumVector[1],
+        2 * maximumVector[2],
+      ],
+      voxelCount,
+    };
+  }
   return {
     empty: false,
     minimum: minimumVector,
@@ -198,8 +253,12 @@ function meanMirrorDifference(
 export function measureSymmetry(
   phase: Float32Array,
   shape: GridShape,
+  domainMode: DerivedSimulationConfiguration['domainMode'] = 'full',
 ): SymmetryMetrics {
   validateFieldLength(phase, shape);
+  if (domainMode === 'octant') {
+    return { x: 0, y: 0, z: 0, maximum: 0 };
+  }
   const x = meanMirrorDifference(phase, shape, 0);
   const y = meanMirrorDifference(phase, shape, 1);
   const z = meanMirrorDifference(phase, shape, 2);
@@ -222,8 +281,12 @@ function faceDepression(
   const orthogonalAxes: readonly [0 | 1 | 2, 0 | 1 | 2] =
     axis === 0 ? [1, 2] : axis === 1 ? [0, 2] : [0, 1];
   const [firstAxis, secondAxis] = orthogonalAxes;
-  const firstCenters = new Set(centerIndices(shape[firstAxis]));
-  const secondCenters = new Set(centerIndices(shape[secondAxis]));
+  const firstCenters = new Set(
+    config.domainMode === 'octant' ? [0] : centerIndices(shape[firstAxis]),
+  );
+  const secondCenters = new Set(
+    config.domainMode === 'octant' ? [0] : centerIndices(shape[secondAxis]),
+  );
   let centerRadius = 0;
   let firstHalfExtent = 0;
   let secondHalfExtent = 0;
@@ -237,7 +300,10 @@ function faceDepression(
     if (!Number.isFinite(value) || value > threshold) continue;
     const coordinates = gridCoordinates(index, shape);
     const position = positionFromCoordinates(coordinates, config);
-    const signedRadius = direction * position[axis];
+    const signedRadius =
+      config.domainMode === 'octant'
+        ? position[axis]
+        : direction * position[axis];
     if (signedRadius < 0) continue;
     const firstPosition = position[firstAxis];
     const secondPosition = position[secondAxis];
@@ -311,6 +377,347 @@ export function measureFaceCenterDepression(
   };
 }
 
+const FACE_DIRECTIONS = [
+  [-1, 0, 0],
+  [1, 0, 0],
+  [0, -1, 0],
+  [0, 1, 0],
+  [0, 0, -1],
+  [0, 0, 1],
+] as const;
+
+const EDGE_DIRECTIONS = [
+  [-1, -1, 0],
+  [-1, 1, 0],
+  [1, -1, 0],
+  [1, 1, 0],
+  [-1, 0, -1],
+  [-1, 0, 1],
+  [1, 0, -1],
+  [1, 0, 1],
+  [0, -1, -1],
+  [0, -1, 1],
+  [0, 1, -1],
+  [0, 1, 1],
+] as const;
+
+const BODY_DIAGONAL_DIRECTIONS = [
+  [-1, -1, -1],
+  [-1, -1, 1],
+  [-1, 1, -1],
+  [-1, 1, 1],
+  [1, -1, -1],
+  [1, -1, 1],
+  [1, 1, -1],
+  [1, 1, 1],
+] as const;
+
+function mean(values: readonly number[]): number {
+  return values.length > 0
+    ? values.reduce((sum, value) => sum + value, 0) / values.length
+    : 0;
+}
+
+function centeredRayReach(
+  phase: Float32Array,
+  shape: GridShape,
+  spacing: number,
+  threshold: number,
+  direction: readonly [-1 | 0 | 1, -1 | 0 | 1, -1 | 0 | 1],
+  octant: boolean,
+): number {
+  const sampledDirection = octant
+    ? (direction.map((component) => Math.abs(component)) as [
+        0 | 1,
+        0 | 1,
+        0 | 1,
+      ])
+    : direction;
+  const stationaryAxes = ([0, 1, 2] as const).filter(
+    (axis) => sampledDirection[axis] === 0,
+  );
+  const stationaryCombinations = octant ? 1 : 1 << stationaryAxes.length;
+  let maximumReach = 0;
+
+  for (
+    let combination = 0;
+    combination < stationaryCombinations;
+    combination += 1
+  ) {
+    const start = [0, 0, 0] as [number, number, number];
+    for (const axis of [0, 1, 2] as const) {
+      const lowerCenter = Math.floor((shape[axis] - 1) / 2);
+      const upperCenter = Math.ceil((shape[axis] - 1) / 2);
+      if (octant) {
+        start[axis] = 0;
+      } else if (sampledDirection[axis] < 0) {
+        start[axis] = lowerCenter;
+      } else if (sampledDirection[axis] > 0) {
+        start[axis] = upperCenter;
+      } else {
+        const bit = stationaryAxes.indexOf(axis);
+        start[axis] =
+          bit >= 0 && (combination & (1 << bit)) !== 0
+            ? upperCenter
+            : lowerCenter;
+      }
+    }
+
+    for (let step = 0; ; step += 1) {
+      const coordinate = start.map(
+        (value, axis) => value + (sampledDirection[axis] ?? 0) * step,
+      ) as [number, number, number];
+      if (
+        coordinate.some(
+          (value, axis) => value < 0 || value >= (shape[axis] ?? 0),
+        )
+      ) {
+        break;
+      }
+      if ((phase[gridIndex(...coordinate, shape)] ?? Number.NaN) <= threshold) {
+        // Even grids place the origin halfway between the two central cells.
+        const centerOffset =
+          !octant && shape.some((size) => size % 2 === 0) ? 0.5 : 0;
+        maximumReach = Math.max(maximumReach, (step + centerOffset) * spacing);
+      }
+    }
+  }
+
+  return maximumReach;
+}
+
+export function measureDirectionalReach(
+  phase: Float32Array,
+  config: DerivedSimulationConfiguration,
+  threshold: number,
+): DirectionalReachMetrics {
+  const reach = (direction: readonly [-1 | 0 | 1, -1 | 0 | 1, -1 | 0 | 1]) =>
+    centeredRayReach(
+      phase,
+      config.grid.shape,
+      config.grid.spacing,
+      threshold,
+      direction,
+      config.domainMode === 'octant',
+    );
+  const face = FACE_DIRECTIONS.map(reach);
+  const edge = EDGE_DIRECTIONS.map(reach);
+  const bodyDiagonal = BODY_DIAGONAL_DIRECTIONS.map(reach);
+  const meanFace = mean(face);
+  const meanBodyDiagonal = mean(bodyDiagonal);
+  const maximumBodyDiagonal = Math.max(...bodyDiagonal);
+  const occupiedBodyDiagonalArms = bodyDiagonal.filter(
+    (value) =>
+      value >= config.parameters.initialRadius &&
+      value >= 0.8 * maximumBodyDiagonal,
+  ).length;
+
+  return {
+    face,
+    edge,
+    bodyDiagonal,
+    meanFace,
+    meanEdge: mean(edge),
+    meanBodyDiagonal,
+    bodyDiagonalToFaceRatio:
+      meanFace > 0 ? meanBodyDiagonal / meanFace : Number.POSITIVE_INFINITY,
+    occupiedBodyDiagonalArms,
+  };
+}
+
+export function measureGrowthMaturity(
+  phase: Float32Array,
+  config: DerivedSimulationConfiguration,
+  threshold = config.grid.solidificationThreshold,
+): GrowthMaturityMetrics {
+  validateFieldLength(phase, config.grid.shape);
+  const directionalReach = measureDirectionalReach(phase, config, threshold);
+  const maximumDirectionalReach = Math.max(
+    directionalReach.meanFace,
+    directionalReach.meanEdge,
+    directionalReach.meanBodyDiagonal,
+  );
+  const farBoundaryDistance = Math.min(
+    ...config.domainMaximum.map((maximum, axis) =>
+      config.domainMode === 'octant'
+        ? maximum
+        : Math.min(maximum, Math.abs(config.domainMinimum[axis] ?? Number.NaN)),
+    ),
+  );
+  const farBoundaryClearance = farBoundaryDistance - maximumDirectionalReach;
+
+  return {
+    directionalReach,
+    maximumDirectionalReach,
+    radiusMultiple: maximumDirectionalReach / config.parameters.initialRadius,
+    farBoundaryDistance,
+    farBoundaryClearance,
+    farBoundaryClearanceRatio:
+      maximumDirectionalReach > 0
+        ? farBoundaryClearance / maximumDirectionalReach
+        : Number.POSITIVE_INFINITY,
+  };
+}
+
+export function measureTransitionMorphology(
+  phase: Float32Array,
+  config: DerivedSimulationConfiguration,
+  threshold = config.grid.solidificationThreshold,
+): TransitionMorphologyMetrics {
+  validateFieldLength(phase, config.grid.shape);
+  const bounds = measureSolidBounds(phase, config, threshold);
+  const occupancy = new Uint8Array(phase.length);
+  let surfaceVoxelCount = 0;
+  const [width, height, depth] = config.grid.shape;
+
+  for (let z = 0; z < depth; z += 1) {
+    for (let y = 0; y < height; y += 1) {
+      for (let x = 0; x < width; x += 1) {
+        const index = gridIndex(x, y, z, config.grid.shape);
+        if ((phase[index] ?? Number.NaN) > threshold) continue;
+        occupancy[index] = 1;
+        const surface =
+          (config.domainMode === 'full' && x === 0) ||
+          x === width - 1 ||
+          (config.domainMode === 'full' && y === 0) ||
+          y === height - 1 ||
+          (config.domainMode === 'full' && z === 0) ||
+          z === depth - 1 ||
+          (x > 0 &&
+            (phase[gridIndex(x - 1, y, z, config.grid.shape)] ?? Number.NaN) >
+              threshold) ||
+          (phase[gridIndex(x + 1, y, z, config.grid.shape)] ?? Number.NaN) >
+            threshold ||
+          (y > 0 &&
+            (phase[gridIndex(x, y - 1, z, config.grid.shape)] ?? Number.NaN) >
+              threshold) ||
+          (phase[gridIndex(x, y + 1, z, config.grid.shape)] ?? Number.NaN) >
+            threshold ||
+          (z > 0 &&
+            (phase[gridIndex(x, y, z - 1, config.grid.shape)] ?? Number.NaN) >
+              threshold) ||
+          (phase[gridIndex(x, y, z + 1, config.grid.shape)] ?? Number.NaN) >
+            threshold;
+        if (surface) surfaceVoxelCount += 1;
+      }
+    }
+  }
+
+  const queue = new Uint32Array(bounds.voxelCount);
+  let connectedComponentCount = 0;
+  let largestConnectedComponent = 0;
+  const plane = width * height;
+  for (let seed = 0; seed < occupancy.length; seed += 1) {
+    if (occupancy[seed] !== 1) continue;
+    connectedComponentCount += 1;
+    let head = 0;
+    let tail = 0;
+    queue[tail++] = seed;
+    occupancy[seed] = 2;
+
+    while (head < tail) {
+      const index = queue[head++] ?? 0;
+      const z = Math.floor(index / plane);
+      const remainder = index - z * plane;
+      const y = Math.floor(remainder / width);
+      const x = remainder - y * width;
+      const neighbors = [
+        x > 0 ? index - 1 : -1,
+        x + 1 < width ? index + 1 : -1,
+        y > 0 ? index - width : -1,
+        y + 1 < height ? index + width : -1,
+        z > 0 ? index - plane : -1,
+        z + 1 < depth ? index + plane : -1,
+      ];
+      for (const neighbor of neighbors) {
+        if (neighbor < 0 || occupancy[neighbor] !== 1) continue;
+        occupancy[neighbor] = 2;
+        queue[tail++] = neighbor;
+      }
+    }
+    largestConnectedComponent = Math.max(largestConnectedComponent, tail);
+  }
+
+  const boundingVoxelCount = bounds.empty
+    ? 0
+    : bounds.extent.reduce(
+        (product, extent) =>
+          product *
+          (Math.round(
+            extent /
+              config.grid.spacing /
+              (config.domainMode === 'octant' ? 2 : 1),
+          ) +
+            1),
+        1,
+      );
+  const solidVoxelCount = bounds.voxelCount;
+
+  return {
+    boundingBoxFillFraction:
+      boundingVoxelCount > 0 ? solidVoxelCount / boundingVoxelCount : 0,
+    surfaceVoxelCount,
+    surfaceToVolumeRatio:
+      solidVoxelCount > 0 ? surfaceVoxelCount / solidVoxelCount : 0,
+    surfaceComplexity:
+      solidVoxelCount > 0
+        ? (surfaceVoxelCount / solidVoxelCount ** (2 / 3)) *
+          (config.domainMode === 'octant' ? 2 : 1)
+        : 0,
+    directionalReach: measureDirectionalReach(phase, config, threshold),
+    connectedComponentCount,
+    largestConnectedComponentFraction:
+      solidVoxelCount > 0 ? largestConnectedComponent / solidVoxelCount : 0,
+  };
+}
+
+export function evaluateExpectedMorphology(
+  expected: SimulationPresetName,
+  transition: TransitionMorphologyMetrics,
+  depression: FaceCenterDepressionMetrics,
+  config: DerivedSimulationConfiguration,
+): MorphologyExpectation {
+  const failures: string[] = [];
+  const require = (condition: boolean, message: string) => {
+    if (!condition) failures.push(message);
+  };
+  const resolvedDepth = 3 * config.grid.spacing;
+
+  require(transition.largestConnectedComponentFraction >=
+    0.98, 'largest connected component must contain at least 98% of solid voxels');
+
+  if (expected === 'cube') {
+    require(transition.boundingBoxFillFraction >=
+      0.9, 'cube bounding-box fill must be at least 0.9');
+    require(depression.meanDepth <
+      resolvedDepth, 'cube must not have a three-cell mean face recession');
+  } else if (expected === 'hopper') {
+    require(transition.boundingBoxFillFraction <
+      0.9, 'hopper bounding-box fill must be below 0.9');
+    require(depression.meanDepth >=
+      resolvedDepth, 'hopper mean face recession must span at least three cells');
+    require(depression.faces.filter((face) => face.depth >= resolvedDepth)
+      .length >=
+      4, 'hopper must have resolved recession on at least four faces');
+  } else if (expected === 'fractal') {
+    require(transition.boundingBoxFillFraction <
+      0.8, 'fractal bounding-box fill must be below 0.8');
+    require(transition.surfaceComplexity >=
+      8, 'fractal surface complexity must be at least 8');
+    require(transition.directionalReach.occupiedBodyDiagonalArms >=
+      6, 'fractal must occupy at least six <111> arms');
+  } else {
+    require(transition.boundingBoxFillFraction <
+      0.65, 'dendritic bounding-box fill must be below 0.65');
+    require(transition.directionalReach.bodyDiagonalToFaceRatio >=
+      1.15, 'dendritic <111>/<100> reach ratio must be at least 1.15');
+    require(transition.directionalReach.occupiedBodyDiagonalArms >=
+      6, 'dendritic morphology must occupy at least six <111> arms');
+  }
+
+  return { expected, passed: failures.length === 0, failures };
+}
+
 export function measureMorphology(
   state: CpuSimulationState,
 ): MorphologyMetrics {
@@ -326,7 +733,11 @@ export function measureMorphology(
     solidificationTime: summarizeField(state.solidificationTime),
     solidVolume,
     bounds: measureSolidBounds(state.phase, state.config),
-    symmetry: measureSymmetry(state.phase, state.config.grid.shape),
+    symmetry: measureSymmetry(
+      state.phase,
+      state.config.grid.shape,
+      state.config.domainMode,
+    ),
     faceCenterDepression: measureFaceCenterDepression(
       state.phase,
       state.config,
