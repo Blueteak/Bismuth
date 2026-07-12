@@ -4,11 +4,18 @@
 
 Create a polished WebGPU visualizer that shows a newly generated bismuth hopper specimen growing live, then leaves the stopped result available for inspection. Establish numerical credibility with the published single-crystal model before extending it to a reference-driven, multi-nucleation hero cluster.
 
+Watching every stage of growth is a primary product feature, not a loading
+transition. While a run is active, the render mesh must be promoted
+continuously: target at least `30` mesh updates per second on the reference
+machine and treat less than `15` per second as a blocking regression. Every
+later milestone must preserve this behavior and validate end-to-end mesh
+promotion cadence, not only render-frame rate or extraction-kernel latency.
+
 The existing repository history and previous implementations are out of scope. This plan starts from the documented design only.
 
 ## Current status and next task
 
-Milestones 0A, 0B, 0C, and 1 are complete as of 2026-07-11. Milestone 1 closes around its scoped single-hopper objective: CPU/WebGPU agreement, deterministic finite fields, write-once birth time, resolved hopper recession, physical-domain refinement, a four-seed fast suite, and the complete recorded transition investigation. The browser reproduces the cube and hopper gates but not the paper's fractal and dendritic outcomes. The remaining adaptive-mesh, BDF2, multigrid, and Float64 differences are explicit fidelity limits, not hidden successes. Milestone 2 is in progress: analytic sphere and faceted-field references pass closed, connected, manifold, outward-winding topology gates, and a live `128^3` solver run promoted five distinct GPU marching-cubes meshes without phase-volume or mesh readback. Four warm extraction samples measured `1.2..3.9 ms` with a `2.55 ms` median on the reference browser and adapter. The next implementation task is controller integration across both solver texture parities, independent solver/extraction/render scheduling, lifecycle coverage, and the final facet/terrace visual gate; retain the Step 1 fast profiles as regression gates while extraction work proceeds.
+Milestones 0A, 0B, 0C, 1, and 2 are complete as of 2026-07-12. Milestone 1 closes around its scoped single-hopper objective: CPU/WebGPU agreement, deterministic finite fields, write-once birth time, resolved hopper recession, physical-domain refinement, a four-seed fast suite, and the complete recorded transition investigation. The browser reproduces the cube and hopper gates but not the paper's fractal and dendritic outcomes. The remaining adaptive-mesh, BDF2, multigrid, and Float64 differences are explicit fidelity limits, not hidden successes. Milestone 2 now closes with analytic topology and overflow gates, repeated live `128^3` tracking, controller-owned extraction from both solver texture parities into one last-valid mesh, continuous end-to-end mesh promotion, resize and disposal coverage, and a passing facet/terrace visual review. The corrected full run promoted `1021` meshes at `55.193 /s` average with a `31.7 ms` 95th-percentile interval. The earlier ten-checkpoint proof was insufficient and should have blocked closure; it confused render frames and kernel timing with visible mesh-update cadence. The next implementation task is Milestone 3 surface-age-driven bismuth material and presentation, which must preserve the `30 /s` target and `15 /s` blocking floor.
 
 ## Milestone sequence
 
@@ -134,13 +141,24 @@ Recorded Milestone 2 evidence:
 - CPU references for a sphere and max-norm faceted cube produced one connected closed surface, exactly two uses of every mesh edge, outward winding on every triangle, and the expected smooth/symmetric or exact faceted bounds.
 - The live solver fixture extracted a `128^3`, `t = 500` perturbed hopper directly from current GPU textures into `32068` triangles and `96204` promoted vertices with no overflow or WebGPU errors. Its durable screenshot preserves a recognizable recessed and terraced hopper; `535.8 ms` is the cold compile-plus-extraction checkpoint, not the pending steady-state cadence result.
 - The repeated fixture promoted and rendered distinct meshes at `t = 100`, `200`, `300`, `400`, and `500`, growing from `23808` to `96204` vertices without overflow. Each developer checkpoint remains visible for `500 ms`; this dwell is excluded from extraction timing. After excluding the first sample, warm queue-complete extraction measured `1.2..3.9 ms` with a `2.55 ms` median; this is extraction-only fixture timing, not render cadence or an end-to-end frame budget.
+- The corrected imperative controller completed `50000` steps using 49-step presentation batches and promoted a new shared last-valid mesh after every batch. It produced `1021` promotions at `55.193 /s` average, `17.0 ms` median, `31.7 ms` 95th-percentile, and `39.0 ms` maximum interval. Parity update counts were `511 / 510`, the renderer submitted `1115` frames, and no browser or WebGPU errors occurred.
+- The earlier ten-checkpoint controller proof did not satisfy continuous growth. Render-frame count, five-checkpoint display dwell, and `2.55 ms` extraction-kernel timing were incorrectly treated as adequate evidence even though most frames reused a stale mesh. The end-to-end numeric cadence gate was added before closure.
+- The retained live views pass the facet-quality gate: broad facets remain flat, major edges continuous, hopper recesses readable, and nested terraces visible without grid-pattern noise. Marching cubes remains the selected extractor; dual contouring is not justified by this gate.
 - Unit coverage fixes the standard corner and edge orders, the solid-side convention `phase <= 0.5`, threshold inclusion, canonical triangle counts, outward winding, physical interpolation, sentinel-aware surface age, cell-count derivation, uint32 scan validation, stable compaction, triangle-aligned capacity, indirect promotion, last-valid retention, and malformed-input rejection.
 
 Exit criteria:
 
-- The live mesh tracks the simulation without full-field CPU readback.
+- The live mesh tracks the simulation without full-field CPU readback, targets
+  at least `30` promotions per second on the reference machine, and never
+  falls below the blocking `15 /s` average or a `66.67 ms` 95th-percentile
+  interval.
 - Analytic-field topology, bounds, winding, normals, and overflow tests pass.
-- Extracted hopper geometry preserves recognizable facets and terraces at an acceptable cadence.
+- Extracted hopper geometry preserves recognizable facets and terraces while
+  passing the numeric continuous-growth cadence gate.
+
+Milestone 2 is complete. See
+`docs/evidence/milestone2-controller-integration.md` and its adjacent JSON
+summary for the final controller and visual-gate record.
 
 ### 3. Bismuth material and presentation
 
@@ -153,12 +171,15 @@ Add the intended final appearance while retaining deterministic visual tests.
 - Use the HDRI only for lighting/reflections; keep the background black.
 - Add one directional light aligned with the chosen environment for self-shadowing.
 - Implement the fixed camera distance, fixed target, orbit/zoom input, and gentle auto-orbit that stops after interaction.
+- Preserve continuous mesh promotion while material and camera work is active;
+  material compilation or shading must not reduce cadence below `15 /s`.
 
 Exit criteria:
 
 - Newly grown regions and older regions exhibit coherent age-based color variation.
 - The crystal reads as reflective metal rather than painted rainbow geometry.
 - Fixed-seed, fixed-camera screenshots are stable on the reference Windows test machine.
+- The material-enabled growth run retains the continuous-update cadence gate.
 
 ### 4. Public run lifecycle
 
@@ -173,11 +194,15 @@ Implement the agreed minimal experience.
 - Automatically stop when configured growth bounds reach a calibrated fraction of the domain, with a hard simulated-time guard.
 - Fade controls while inactive and restore them on pointer or keyboard activity.
 - Keep developer diagnostics separate from the public interface.
+- Keep the growing mesh visibly continuous through automatic start, Stop, and
+  Regenerate; UI state changes must not introduce sparse growth checkpoints.
 
 Exit criteria:
 
 - Page load, automatic start, manual stop, automatic completion, regeneration, camera interaction, resize, and device-loss handling pass browser tests.
 - Repeated regeneration does not leak GPU resources or degrade timing.
+- Active runs pass the `15 /s` mesh-promotion floor before and after repeated
+  regeneration.
 
 ### 5. Reference-driven hero cluster
 
@@ -190,12 +215,15 @@ Extend only after the single-crystal baseline is trustworthy.
 - Preserve deterministic run seeds while keeping them hidden from the public UI.
 - Compare cluster metrics and expert visual review against the reference set.
 - Permit both single-dominant and clustered outcomes if the reference set supports both.
+- Preserve continuous visible nucleation, competition, and intergrowth rather
+  than revealing cluster changes at sparse checkpoints.
 
 Exit criteria:
 
 - Differently oriented grains compete and intergrow through the simulation rather than overlap cosmetically.
 - Results commonly resemble the selected lab-grown reference class.
 - Added grain state fits established GPU memory and frame budgets.
+- Cluster growth retains the continuous mesh-promotion floor.
 
 ### 6. Performance and resolution selection
 
@@ -205,12 +233,16 @@ Resolve the intentionally deferred fidelity-versus-duration decision using evide
 - Run the benchmark on the RTX 5080 reference machine and record adapter/driver/browser details.
 - Select a default only after morphology and convergence comparisons.
 - Measure the target 25-60 second growth window without treating it as guaranteed until data exists.
+- Measure end-to-end mesh-promotion cadence under the final solver, material,
+  camera, shadow, and post-processing load.
 - If the target is missed, present measured alternatives before changing equations, resolution, or experience duration.
 
 Exit criteria:
 
 - A documented default configuration has numerical, visual, memory, and timing evidence.
 - Performance regressions have automated thresholds or clearly reported benchmark deltas.
+- The selected default targets `30 /s` and never falls below the `15 /s`
+  continuous-growth floor on the reference machine.
 
 ### 7. Production deployment
 
@@ -225,6 +257,8 @@ Exit criteria:
 
 - A clean Ubuntu EC2 instance can build or receive, start, health-check, and restart the application.
 - The public HTTPS origin initializes WebGPU and completes the browser smoke test.
+- The deployed production path preserves continuous growth and reports the
+  same end-to-end cadence gate as local reference validation.
 
 ## Cross-cutting quality gates
 
@@ -234,6 +268,8 @@ Exit criteria:
 - No multi-grain implementation before the single-crystal acceptance gate.
 - No public resolution selector until convergence and performance are understood.
 - No visual approval based solely on one attractive random run; use fixed seeds, metrics, and a reference set.
+- No milestone may replace continuous visible growth with sparse checkpoints,
+  precomputed reveals, or a high render-frame count over a stale mesh.
 
 ## Explicitly deferred decisions
 

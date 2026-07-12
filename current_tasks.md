@@ -1,7 +1,7 @@
 # Current Tasks
 
-Updated 2026-07-12. Milestone 1 is complete. Milestone 2 live GPU surface
-extraction is in progress.
+Updated 2026-07-12. Milestones 1 and 2 are complete. Milestone 3 bismuth
+material and presentation is in progress.
 
 Do not inspect deleted branches, caches, or repository history. Work from the
 current tree, the primary sources in `docs/`, and the durable local evidence in
@@ -9,7 +9,7 @@ current tree, the primary sources in `docs/`, and the durable local evidence in
 
 ## Current status
 
-Milestones 0A, 0B, 0C, and 1 are complete.
+Milestones 0A, 0B, 0C, 1, and 2 are complete.
 
 The Step 1 single-crystal implementation now includes:
 
@@ -28,19 +28,35 @@ The Step 1 single-crystal implementation now includes:
   coupled backward-Euler CPU experiment, and the complete recorded
   cube/hopper/fractal/dendritic investigation.
 
-The public route intentionally remains the Milestone 0C empty foundation
-scene. The simulation is exposed only through developer routes until Step 2
-supplies a GPU-resident surface.
+The public route intentionally remains the neutral foundation scene. The
+validated simulation and extraction paths remain developer-only until
+Milestone 3 supplies the bismuth material and presentation.
 
-Milestone 2 now has GPU classification, hierarchical prefix scans, active-cell
+For current progress review, `review.cmd` starts Vite and `review.ps1` defaults
+to `/__dev/live-controller`, the most advanced integrated solver-to-mesh view.
+Whenever the active mesh-generation or visualization testing flow moves to a
+new fixture, update the launcher default and the matching route notes in
+`README.md`, this handoff, and `docs/testing-and-validation.md`. Keep this
+developer review pointer separate from the public root until the final
+presentation is ready.
+
+Milestone 2 has GPU classification, hierarchical prefix scans, active-cell
 compaction, bounded vertex emission, phase-gradient normals, surface age,
 indirect promotion, overflow retention, analytic topology references, and a
-live solver-to-mesh fixture. Five `128^3` checkpoints at `t = 100..500`
-promoted and visibly rendered five distinct meshes without phase-volume or
-mesh readback. The developer fixture holds each checkpoint for `500 ms` so the
-growth sequence remains observable even on the reference GPU. The four warm
-extraction samples measured `1.2..3.9 ms` with a `2.55 ms` median on the
-reference browser and adapter.
+live solver-to-mesh fixture. The corrected imperative controller extracts and
+promotes after every bounded presentation batch instead of using sparse
+checkpoints. The retained `128^3` run completed `50000` steps with 49-step
+batches and `1021` mesh promotions over `18480.6 ms`: `55.193 /s` average,
+`17.0 ms` median, `31.7 ms` 95th-percentile, and `39.0 ms` maximum interval.
+Parity update counts were `511 / 510`; the renderer submitted `1115` frames
+without browser or WebGPU errors. Resize, in-flight disposal, and the final
+facet/terrace gate also pass, so dual contouring is not needed.
+
+The superseded ten-checkpoint controller proof did not validate continuous
+growth and should have blocked Milestone 2. It conflated render frames over a
+stale mesh and isolated extraction-kernel latency with end-to-end mesh
+promotion cadence. Future work must target `30` promotions per second and is
+blocked below `15 /s` average or above a `66.67 ms` 95th-percentile interval.
 
 ## Step 1 completion review
 
@@ -161,28 +177,35 @@ Do not add decorative spirals, stamped terraces, mesh noise, or post-processed
 offshoots. Those features require cited defect, orientation, multiphase, or
 bismuth-specific kinetic physics and are deferred in `docs/decisions.md`.
 
-## Current task: finish Milestone 2 surface extraction
+## Current task: Milestone 3 bismuth material and presentation
 
-The extraction core and repeated live tracking are implemented. Durable
-evidence is in `docs/evidence/milestone2-live-solver-extraction.md` and
-`docs/evidence/milestone2-live-tracking-summary.json`.
+Milestone 2 durable controller evidence is in
+`docs/evidence/milestone2-controller-integration.md` and
+`docs/evidence/milestone2-controller-integration-summary.json`. Preserve the
+neutral extraction fixture as the geometry regression surface while material
+work proceeds.
 
 The next implementation slice is:
 
-1. Integrate the solver and extractor into the imperative visualizer
-   controller without moving per-frame state into React.
-2. Handle both solver ping-pong texture parities while sharing one promoted
-   last-valid render mesh.
-3. Schedule solver, extraction, and rendering independently so warm extraction
-   cadence is not treated as frame cadence.
-4. Add controller-level lifecycle and resize coverage for the live mesh.
-5. Record the final facet/terrace visual gate before closing Milestone 2;
-   consider dual contouring only if marching cubes fails that gate.
+1. Define and unit test a documented monotonic surface-age to oxide-thickness
+   mapping with bounded deterministic spatial variation.
+2. Bind the promoted `normalAge.w` attribute into a Three.js physical node
+   material without changing simulation or extraction state.
+3. Establish fixed age samples and a fixed-camera developer material fixture
+   before tuning against lab-grown bismuth references.
+4. Keep the HDRI invisible against a black background and retain the one
+   directional self-shadow light.
+5. Measure end-to-end mesh promotion with the material enabled; preserve the
+   `30 /s` target and `15 /s` blocking floor.
+6. Record fixed-seed, fixed-camera screenshots on the reference hardware for
+   the newly grown, intermediate, and old surface-age bands.
 
-React must not own extraction or per-frame simulation state. The imperative
-visualizer controller owns the render loop and run-scoped GPU resources; the
-extraction layer owns classification, compaction, emission, capacity, and
-indirect draw state.
+React must not own material uniforms or per-frame camera state. The imperative
+visualizer controller owns render timing and run-scoped material state; the
+material layer reads geometry attributes but never alters simulation state.
+Watching each stage of growth is a cross-milestone requirement. Do not approve
+material, camera, lifecycle, cluster, performance, or deployment work that
+turns growth into sparse checkpoints, even if rendering itself remains smooth.
 
 ## Durable Step 1 evidence
 

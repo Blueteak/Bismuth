@@ -42,6 +42,8 @@
 | D-036 | Keep coupled backward Euler CPU-only and do not promote a production integrator or mature GPU run.                         | At two time steps and on two domains its converged effect scales first-order but consistently reduces diagonal/face reach.                           |
 | D-037 | Close Milestone 1 around the validated single-hopper objective after recording the complete transition investigation.      | Cube and hopper pass, while fractal and dendritic fail fixed gates; adaptive BDF2/Float64 reproduction is a separate fidelity expansion.             |
 | D-038 | Expose explicit internal seeds only in the developer morphology runner and retain a four-seed quick validation suite.      | Four distinct hopper seeds pass in under 16 seconds each without turning seeds into a public product control.                                        |
+| D-039 | Treat continuous live mesh promotion as a cross-milestone product gate: target `30 /s`, block below `15 /s`.               | Watching growth is a primary feature; render frames over a stale mesh and isolated extraction-kernel timings do not demonstrate continuous growth.   |
+| D-040 | Point the local review launcher at the most advanced integrated developer visualization until final presentation.          | Review should show current mesh-generation progress without prematurely exposing developer fixtures through the production root.                     |
 
 ## Deferred decisions
 

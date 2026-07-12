@@ -86,5 +86,6 @@ Every material change requires the strongest relevant evidence: numerical compar
 - Preserve unrelated user changes.
 - Update documentation alongside behavior changes.
 - Keep developer diagnostics removable from production builds or inaccessible through the public UI.
+- Keep the default `Path` in `review.ps1` pointed at the most advanced integrated mesh-generation or visualization fixture. When that testing flow changes, update the launcher plus `README.md`, `current_tasks.md`, and `docs/testing-and-validation.md` in the same change. Keep the public root separate until the final presentation is integrated.
 - Surface WebGPU capability failure clearly; do not silently fall back to a different simulation.
 - Keep Markdown and other agent-facing instruction files ASCII-only. After documentation changes, run `rg -n --pcre2 "[^\\x00-\\x7F]" AGENTS.md PLAN.md docs` and resolve every match.

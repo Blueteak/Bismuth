@@ -128,15 +128,28 @@ The future cluster model may add per-grain phase/order fields and orientation da
 
 ## Frame scheduling
 
-While running, a frame performs a bounded amount of work:
+While running, the controller performs bounded presentation iterations:
 
 1. Determine the permitted simulation-step batch.
 2. Dispatch phase and chemical-potential updates.
 3. Update completion summaries without full-field readback.
-4. At the configured cadence, classify and extract the current isosurface.
+4. After every completed presentation batch, classify, extract, and promote
+   the current isosurface.
 5. Update render uniforms and render the latest valid mesh.
 
-Render cadence and extraction cadence may differ. Simulation batching may adapt to measured GPU time, but must not change the numerical time step or equations silently.
+Render cadence and mesh-promotion cadence may differ, but active growth must
+target at least `30` promoted meshes per second on the reference machine and
+must not fall below `15 /s` average or exceed a `66.67 ms` 95th-percentile
+promotion interval. Rendering an old mesh at a high frame rate does not satisfy
+this contract.
+
+The number of numerical solver steps in one presentation batch is a
+performance parameter and may adapt to measured GPU time. It can be one step,
+and the retained `128^3` profile currently uses 49. Batch sizing must never
+change the numerical time step, equations, deterministic ordering, or final
+extraction. If later material, camera, cluster, or deployment work reduces the
+promotion rate, that milestone is blocked until the cadence is restored or the
+user approves a product change.
 
 Stopped runs dispatch no solver or extraction work. Camera and rendering remain active for inspection.
 

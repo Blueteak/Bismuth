@@ -39,6 +39,8 @@ export interface GpuSolverTextures {
   readonly solidificationTime: Storage3DTexture;
 }
 
+export type GpuSolverTextureParity = 0 | 1;
+
 export interface GpuFieldState {
   readonly phase: Float32Array;
   readonly chemicalPotential: Float32Array;
@@ -69,6 +71,8 @@ export interface GpuSingleCrystalSolver {
   readonly simulatedTime: number;
   readonly stepCount: number;
   readonly currentTextures: GpuSolverTextures;
+  readonly currentTextureParity: GpuSolverTextureParity;
+  readonly textureParities: readonly [GpuSolverTextures, GpuSolverTextures];
   initialize(): Promise<void>;
   step(steps?: number): Promise<SolverStepTimings>;
   readPhase(): Promise<GpuPhaseState>;
@@ -951,6 +955,18 @@ export function createGpuSingleCrystalSolver(
           chemicalPotential: resources.chemicalPotentialB,
           solidificationTime: resources.solidificationTimeB,
         };
+  const textureParities: readonly [GpuSolverTextures, GpuSolverTextures] = [
+    {
+      phase: resources.phaseA,
+      chemicalPotential: resources.chemicalPotentialA,
+      solidificationTime: resources.solidificationTimeA,
+    },
+    {
+      phase: resources.phaseB,
+      chemicalPotential: resources.chemicalPotentialB,
+      solidificationTime: resources.solidificationTimeB,
+    },
+  ];
 
   return {
     configuration: derived,
@@ -966,6 +982,10 @@ export function createGpuSingleCrystalSolver(
     get currentTextures() {
       return textures();
     },
+    get currentTextureParity() {
+      return activeA ? 0 : 1;
+    },
+    textureParities,
     async initialize() {
       assertUsable();
       if (isInitialized) {

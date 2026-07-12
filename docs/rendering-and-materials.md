@@ -57,14 +57,18 @@ renderer continues drawing the preceding complete mesh without CPU repair or
 mesh readback.
 
 Extraction cadence is independent from solver and render cadence. The first
-live tracking fixture extracts at five even-step checkpoints so the ping-pong
-solver returns to the same bound phase and solidification-time textures before
-every extraction. Production controller integration must bind both texture
-parities to candidates that share one promoted last-valid mesh; it must not
-rely on even batch sizes as a public run-lifecycle constraint. Queue-complete
-extraction timing excludes the small validation-summary reads and all
-rendering work. The first sample is reported separately from warm samples
-because browser and driver pipeline caches can survive page reloads.
+live tracking fixture used five even-step checkpoints only to validate repeated
+GPU extraction. It is not a production cadence model. The controller binds
+both texture parities to candidates that share one promoted last-valid mesh
+and now extracts after every bounded presentation batch. The retained `128^3`
+profile uses 49 solver steps per mesh update, can be configured down to one,
+and always extracts the final short batch.
+
+Active growth targets `30` promoted meshes per second and blocks below `15 /s`
+average or above a `66.67 ms` 95th-percentile interval. Render frames that
+reuse the previous mesh do not count. Queue-complete extraction-kernel timing
+excludes rendering and is useful for capacity planning, but only end-to-end
+promotion intervals validate continuous growth.
 
 The production loop must not copy the volume or generated mesh to JavaScript.
 
@@ -90,11 +94,21 @@ Evaluate it using:
 
 If it fails this gate after the solver is converged, prototype feature-preserving dual contouring. Do not sharpen the result by altering the scientific field or applying an unexplained normal quantization effect.
 
+The Milestone 2 retained `128^3` views pass this gate. Broad facets remain
+flat, major edges remain continuous, face-center recesses and nested terraces
+are readable, and no grid-pattern noise is visible. The remaining rounded
+transitions follow the resolved scalar field and marching-cubes interpolation;
+they do not justify dual contouring before material validation.
+
 ## Normals
 
 Derive initial normals from the phase gradient at the isosurface. Compare interpolation and filtering choices against facet readability and temporal stability. Normal treatment may be rendering-specific, but must not imply geometry that is absent from the extracted surface.
 
 ## Bismuth PBR material
+
+Material work must preserve the continuous-growth cadence. Expensive node
+graphs, shadows, tone mapping, or camera effects cannot turn growth into sparse
+mesh checkpoints; measure promotion rate with the final material enabled.
 
 Use a Three.js physical node material with:
 

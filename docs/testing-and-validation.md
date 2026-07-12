@@ -289,9 +289,45 @@ interpolation, and triangle-aligned capacity planning. `npm run test:gpu`
 rejects missing or failed classification, compaction, or emission results in
 addition to its existing compute, solver, and indirect-draw proofs. Analytic
 sphere/faceted topology, repeated live tracking, and warm extraction cadence
-are complete. Controller integration across both solver texture parities,
-lifecycle coverage, and the final facet/terrace visual gate remain pending
-later Milestone 2 slices.
+are complete.
+
+The first controller continuation completed `50000` steps but promoted only
+ten meshes. Its `1030` render frames mostly reused stale geometry. That result
+proved parity routing, last-valid retention, resize, and disposal, but it did
+not prove continuous visible growth and should have blocked Milestone 2. The
+five-checkpoint fixture's `500 ms` inspection dwell and the `2.55 ms` warm
+kernel median also did not measure end-to-end mesh cadence. The missing numeric
+gate allowed the review error.
+
+The corrected controller extracts after every 49-step presentation batch and
+always extracts the final short batch. The full `50000`-step run produced
+`1021` promotions over `18480.6 ms`: `55.193 /s` average, `17.0 ms` median,
+`31.7 ms` 95th-percentile, and `39.0 ms` maximum interval. Parity update counts
+were `511 / 510`; the controller submitted `1115` frames and reported no
+browser or WebGPU errors. Unit coverage includes every-batch promotion,
+one-step configurability, ordered cadence metrics, and disposal with in-flight
+work. The retained views pass the facet/terrace gate, so Milestone 2 is complete
+without dual contouring. See
+[the controller integration record](evidence/milestone2-controller-integration.md)
+and its adjacent JSON summary.
+
+### Current progress review route
+
+The double-clickable `review.cmd` launcher runs `review.ps1`, starts Vite, and
+defaults to `/__dev/live-controller`. This is the current most advanced
+integrated mesh-generation view: the retained solver, GPU extraction, mesh
+promotion, and imperative rendering controller run together. The launcher does
+not use the production Express root because development fixtures are
+tree-shaken from that build and the public presentation is not assembled yet.
+
+Whenever the active mesh-generation or visualization validation flow moves to
+a newer integration fixture, update the default `Path` in `review.ps1` in the
+same change. Also update the route notes in `README.md` and `current_tasks.md`
+so the double-click review always opens the project's current visual progress.
+Do not expose a developer fixture through the production root to accomplish
+this; switch the launcher to the public route only when the final presentation
+has actually integrated the current simulation, extraction, material, and
+lifecycle paths.
 
 ### Validation tiers and iteration budget
 
@@ -665,6 +701,11 @@ GPU screenshots are environment-sensitive. Review and update baselines only on t
 - Resize preserves a valid canvas and camera projection.
 - Repeated runs dispose/reset resources without increasing active GPU allocations or listeners.
 - Device loss and initialization failure show an honest error state.
+- Active growth measures promoted-mesh intervals, targets `30 /s`, and fails
+  below `15 /s` average or above a `66.67 ms` 95th-percentile interval.
+- Material, camera interaction, Stop/Regenerate, multi-grain growth, and
+  repeated runs retain the same cadence gate; render-frame rate alone cannot
+  satisfy it.
 
 ## Performance benchmarks
 
@@ -678,6 +719,8 @@ Separate timings for:
 - Vertex emission.
 - Shadow and main rendering.
 - End-to-end visible generation duration.
+- End-to-end promoted-mesh rate, median interval, 95th-percentile interval,
+  maximum interval, and parity update counts.
 
 Benchmark candidate grids, initially including `128^3`, `192^3`, and `256^3` when memory permits. Report memory estimates and actual adapter limits.
 

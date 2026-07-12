@@ -7,5 +7,6 @@ test-results/
 .npm-cache/
 *.log
 
-docs/evidence/
-
+docs/evidence/*
+!docs/evidence/milestone2-controller-integration.md
+!docs/evidence/milestone2-controller-integration-summary.json

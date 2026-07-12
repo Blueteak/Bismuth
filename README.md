@@ -1,6 +1,6 @@
 # Bismuth Visualizer
 
-A browser-based real-time visualizer for physically motivated bismuth hopper-crystal growth. Milestone 1 is complete for its scoped single-hopper objective: it includes a deterministic CPU reference, a full-volume TSL/WebGPU phase-field solver, write-once solidification time, developer morphology diagnostics, a grid-refined hopper, and a four-seed fast suite. The recorded paper-transition investigation reproduces cube and hopper but not the fractal and dendritic gates. The public route intentionally remains the Milestone 0C foundation scene until Milestone 2 adds live GPU surface extraction.
+A browser-based real-time visualizer for physically motivated bismuth hopper-crystal growth. Milestones 1 and 2 are complete: the retained single-hopper solver feeds GPU marching cubes continuously through an imperative controller across both solver texture parities, with no production field or mesh readback. The reference controller run promoted `1021` meshes at `55.193 /s`; future milestones target `30 /s` and block below `15 /s` because watching every stage of growth is a primary product feature. The recorded paper-transition investigation reproduces cube and hopper but not the fractal and dendritic gates. The public route remains the neutral foundation while Milestone 3 adds the surface-age-driven bismuth material and presentation.
 
 ## Prerequisites
 
@@ -17,6 +17,17 @@ npm.cmd run dev
 ```
 
 Open the local URL printed by Vite.
+
+For a one-step review of the most advanced integrated visualization, double-
+click `review.cmd`. It starts Vite and currently opens
+`http://127.0.0.1:5173/__dev/live-controller`, where the live solver feeds GPU
+marching cubes through the imperative visualizer controller. This review route
+is developer-only; the public root remains the neutral foundation until the
+final presentation is integrated.
+
+Whenever mesh-generation or visualization work moves to a newer integration
+fixture, update the default `Path` in `review.ps1` and keep this section,
+`current_tasks.md`, and `docs/testing-and-validation.md` aligned with it.
 
 ## Validation commands
 

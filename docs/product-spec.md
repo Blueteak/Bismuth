@@ -4,6 +4,21 @@
 
 The Bismuth Visualizer is a desktop-browser experience that generates and displays a unique, physically motivated bismuth hopper specimen growing in real time. Watching the growth is a primary feature, not a loading transition. The stopped specimen must remain visually convincing under interactive inspection.
 
+## Continuous-growth contract
+
+Every meaningful stage of nucleation, faceting, hopper recession, terracing,
+competition, and intergrowth must appear through the live mesh. While growth
+is active, target at least `30` mesh promotions per second on the reference
+machine. Less than `15` promotions per second, or a 95th-percentile interval
+above `66.67 ms`, is a blocking product regression.
+
+Render-frame rate is not a substitute for this measurement: frames that reuse
+an old mesh do not make growth continuous. Extraction-kernel timing is also
+insufficient by itself; validate the end-to-end interval from one promoted
+render mesh to the next. Material, lighting, camera, controls, multi-grain
+extensions, performance selection, and deployment must all preserve this
+contract.
+
 ## Visual reference class
 
 Use photographs of real, lab-grown bismuth hopper specimens as visual ground truth. The familiar colorful hopper forms are typically produced from high-purity molten bismuth; uncommon native bismuth specimens are not the target morphology.
@@ -74,6 +89,8 @@ The desired visible duration is approximately 25-60 seconds. This remains a targ
 ## Product success criteria
 
 - Growth visibly produces hopper depressions, terraces, facets, competition, and intergrowth rather than revealing a prefabricated mesh.
+- Growth remains continuous at or above the documented mesh-promotion floor;
+  it never advances through a small set of visible checkpoints.
 - Final specimens resemble the curated lab-grown bismuth reference class across many seeds.
 - Metallic reflections and surface-age color variation read as bismuth and thin-film oxidation, not painted gradients.
 - The first run, Stop, completion, Regenerate, orbit, and zoom are immediately understandable.
