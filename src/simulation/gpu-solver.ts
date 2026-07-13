@@ -24,7 +24,6 @@ import {
 } from 'three/tsl';
 import {
   deriveSimulationConfiguration,
-  farFieldChemicalPotentialAt,
   type DerivedSimulationConfiguration,
   type SimulationConfiguration,
   type Vec3,
@@ -41,30 +40,6 @@ export interface GpuSolverTextures {
 
 export type GpuSolverTextureParity = 0 | 1;
 
-export interface GpuFieldState {
-  readonly phase: Float32Array;
-  readonly chemicalPotential: Float32Array;
-  readonly solidificationTime: Float32Array;
-  readonly simulatedTime: number;
-  readonly stepCount: number;
-}
-
-export interface GpuPhaseState {
-  readonly phase: Float32Array;
-  readonly simulatedTime: number;
-  readonly stepCount: number;
-}
-
-export interface SolverStepTimings {
-  readonly steps: number;
-  /** CPU-side async submission overhead; these are not GPU timestamp queries. */
-  readonly phaseMilliseconds: number;
-  readonly chemicalPotentialMilliseconds: number;
-  readonly solidificationTimeMilliseconds: number;
-  /** Wall time through the final queue completion for the whole step batch. */
-  readonly totalMilliseconds: number;
-}
-
 export interface GpuSingleCrystalSolver {
   readonly configuration: DerivedSimulationConfiguration;
   readonly initialized: boolean;
@@ -74,21 +49,8 @@ export interface GpuSingleCrystalSolver {
   readonly currentTextureParity: GpuSolverTextureParity;
   readonly textureParities: readonly [GpuSolverTextures, GpuSolverTextures];
   initialize(): Promise<void>;
-  step(steps?: number): Promise<SolverStepTimings>;
-  readPhase(): Promise<GpuPhaseState>;
-  readFields(): Promise<GpuFieldState>;
+  step(steps?: number): Promise<void>;
   dispose(): void;
-}
-
-interface TextureReadbackBackend {
-  copyTextureToBuffer(
-    texture: Storage3DTexture,
-    x: number,
-    y: number,
-    width: number,
-    height: number,
-    depthSlice: number,
-  ): Promise<ArrayBufferView>;
 }
 
 interface SolverResourceSet {
@@ -379,7 +341,7 @@ function createSolverResources(
         gradient.dot(crystalAxisY),
         gradient.dot(crystalAxisZ),
       );
-      const gradientSquared = crystalGradient.dot(crystalGradient);
+      const gradientSquared = gradient.dot(gradient);
       const qx = crystalGradient.x
         .mul(crystalGradient.x)
         .add(gradientSquared.mul(epsilonSquared))
@@ -396,22 +358,20 @@ function createSolverResources(
         .div(max(qx, minimumAnisotropyDenominator))
         .add(float(1).div(max(qy, minimumAnisotropyDenominator)))
         .add(float(1).div(max(qz, minimumAnisotropyDenominator)));
-      const derivative = vec3(
-        crystalGradient.x
-          .div(max(qx, minimumAnisotropyDenominator))
-          .add(crystalGradient.x.mul(epsilonSquared).mul(inverseSum)),
-        crystalGradient.y
-          .div(max(qy, minimumAnisotropyDenominator))
-          .add(crystalGradient.y.mul(epsilonSquared).mul(inverseSum)),
-        crystalGradient.z
-          .div(max(qz, minimumAnisotropyDenominator))
-          .add(crystalGradient.z.mul(epsilonSquared).mul(inverseSum)),
-      ).mul(qx.add(qy).add(qz));
-
       return crystalAxisX
-        .mul(derivative.x)
-        .add(crystalAxisY.mul(derivative.y))
-        .add(crystalAxisZ.mul(derivative.z));
+        .mul(crystalGradient.x.div(max(qx, minimumAnisotropyDenominator)))
+        .add(
+          crystalAxisY.mul(
+            crystalGradient.y.div(max(qy, minimumAnisotropyDenominator)),
+          ),
+        )
+        .add(
+          crystalAxisZ.mul(
+            crystalGradient.z.div(max(qz, minimumAnisotropyDenominator)),
+          ),
+        )
+        .add(gradient.mul(epsilonSquared).mul(inverseSum))
+        .mul(qx.add(qy).add(qz));
     });
 
     const authorCenteredDivergenceAt = Fn(([coordinate]: [Ivec3Node]) => {
@@ -640,9 +600,8 @@ function createSolverResources(
             parameters.interfaceWidth * parameters.interfaceWidth,
           ),
         )
-        .sub(bulkDriving)
-        .mul(parameters.mobility);
-      return oldPhase.add(phaseRate.mul(timeStep));
+        .sub(bulkDriving);
+      return oldPhase.add(phaseRate.mul(parameters.mobility).mul(timeStep));
     });
 
     return Fn(() => {
@@ -883,44 +842,6 @@ function createSolverResources(
   };
 }
 
-async function readScalarTexture(
-  renderer: WebGPURenderer,
-  texture: Storage3DTexture,
-  shape: readonly [number, number, number],
-): Promise<Float32Array> {
-  const backend = renderer.backend as unknown as TextureReadbackBackend;
-  const [width, height, depth] = shape;
-  const values = new Float32Array(width * height * depth);
-  const bytesPerRow =
-    Math.ceil((width * Float32Array.BYTES_PER_ELEMENT) / 256) * 256;
-  const floatsPerAlignedRow = bytesPerRow / Float32Array.BYTES_PER_ELEMENT;
-
-  for (let z = 0; z < depth; z += 1) {
-    const view = await backend.copyTextureToBuffer(
-      texture,
-      0,
-      0,
-      width,
-      height,
-      z,
-    );
-    const layer = new Float32Array(
-      view.buffer,
-      view.byteOffset,
-      view.byteLength / Float32Array.BYTES_PER_ELEMENT,
-    );
-
-    for (let y = 0; y < height; y += 1) {
-      for (let x = 0; x < width; x += 1) {
-        values[x + width * (y + height * z)] =
-          layer[y * floatsPerAlignedRow + x] ?? Number.NaN;
-      }
-    }
-  }
-
-  return values;
-}
-
 export function createGpuSingleCrystalSolver(
   renderer: WebGPURenderer,
   device: GPUDevice,
@@ -1005,28 +926,17 @@ export function createGpuSingleCrystalSolver(
         throw new Error('GPU solver step count must be a positive integer.');
       }
 
-      let phaseMilliseconds = 0;
-      let chemicalPotentialMilliseconds = 0;
-      let solidificationTimeMilliseconds = 0;
-      const totalStartedAt = performance.now();
-
       for (let index = 0; index < steps; index += 1) {
-        const phaseStartedAt = performance.now();
         await renderer.computeAsync(
           activeA ? resources.phaseAToB : resources.phaseBToA,
         );
-        phaseMilliseconds += performance.now() - phaseStartedAt;
 
-        const chemicalPotentialStartedAt = performance.now();
         await renderer.computeAsync(
           activeA
             ? resources.chemicalPotentialAToB
             : resources.chemicalPotentialBToA,
         );
-        chemicalPotentialMilliseconds +=
-          performance.now() - chemicalPotentialStartedAt;
 
-        const solidificationTimeStartedAt = performance.now();
         resources.solidificationTimeValue.value =
           (currentStep + 1) * derived.grid.timeStep;
         await renderer.computeAsync(
@@ -1034,8 +944,6 @@ export function createGpuSingleCrystalSolver(
             ? resources.solidificationTimeAToB
             : resources.solidificationTimeBToA,
         );
-        solidificationTimeMilliseconds +=
-          performance.now() - solidificationTimeStartedAt;
 
         activeA = !activeA;
         currentStep += 1;
@@ -1043,60 +951,6 @@ export function createGpuSingleCrystalSolver(
       }
 
       await device.queue.onSubmittedWorkDone();
-      return {
-        steps,
-        phaseMilliseconds,
-        chemicalPotentialMilliseconds,
-        solidificationTimeMilliseconds,
-        totalMilliseconds: performance.now() - totalStartedAt,
-      };
-    },
-    async readFields() {
-      assertUsable();
-      if (!isInitialized) {
-        throw new Error('Initialize the GPU solver before reading fields.');
-      }
-
-      await device.queue.onSubmittedWorkDone();
-      const current = textures();
-      const [phase, chemicalPotential, solidificationTime] = await Promise.all([
-        readScalarTexture(renderer, current.phase, derived.grid.shape),
-        readScalarTexture(
-          renderer,
-          current.chemicalPotential,
-          derived.grid.shape,
-        ),
-        readScalarTexture(
-          renderer,
-          current.solidificationTime,
-          derived.grid.shape,
-        ),
-      ]);
-
-      return {
-        phase,
-        chemicalPotential,
-        solidificationTime,
-        simulatedTime: currentTime,
-        stepCount: currentStep,
-      };
-    },
-    async readPhase() {
-      assertUsable();
-      if (!isInitialized) {
-        throw new Error('Initialize the GPU solver before reading phase.');
-      }
-
-      await device.queue.onSubmittedWorkDone();
-      return {
-        phase: await readScalarTexture(
-          renderer,
-          textures().phase,
-          derived.grid.shape,
-        ),
-        simulatedTime: currentTime,
-        stepCount: currentStep,
-      };
     },
     dispose() {
       if (isDisposed) {
@@ -1106,21 +960,4 @@ export function createGpuSingleCrystalSolver(
       resources.dispose();
     },
   };
-}
-
-export function describeFarBoundary(
-  configuration: DerivedSimulationConfiguration,
-): readonly [number, number] {
-  const [width, height, depth] = configuration.grid.shape;
-  const spacing = configuration.grid.spacing;
-  const minimum: Vec3 = [
-    -((width - 1) * spacing) / 2,
-    -((height - 1) * spacing) / 2,
-    -((depth - 1) * spacing) / 2,
-  ];
-  const maximum: Vec3 = minimum.map((value) => -value) as unknown as Vec3;
-  return [
-    farFieldChemicalPotentialAt(configuration, minimum),
-    farFieldChemicalPotentialAt(configuration, maximum),
-  ];
 }

@@ -2,7 +2,6 @@ import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 import { App } from './App';
 import { getInjectedCapabilityState } from './app/capability-state';
-import { getRuntimeSummary } from './diagnostics';
 import './styles.css';
 
 const rootElement = document.getElementById('root');
@@ -14,53 +13,10 @@ if (!rootElement) {
 const applicationRoot: HTMLElement = rootElement;
 
 async function startApplication(): Promise<void> {
-  if (
-    import.meta.env.DEV &&
-    window.location.pathname === '/__dev/webgpu-proof'
-  ) {
-    const { mountGpuProofFixture } = await import('./dev/gpu-proof-fixture');
-    mountGpuProofFixture(applicationRoot);
-    return;
-  }
-
-  if (
-    import.meta.env.DEV &&
-    window.location.pathname === '/__dev/single-crystal'
-  ) {
-    const { mountSingleCrystalFixture } =
-      await import('./dev/single-crystal-fixture');
-    mountSingleCrystalFixture(applicationRoot);
-    return;
-  }
-
-  if (
-    import.meta.env.DEV &&
-    window.location.pathname === '/__dev/live-extraction'
-  ) {
-    const { mountLiveExtractionFixture } =
-      await import('./dev/live-extraction-fixture');
-    mountLiveExtractionFixture(applicationRoot);
-    return;
-  }
-
-  if (
-    import.meta.env.DEV &&
-    window.location.pathname === '/__dev/live-controller'
-  ) {
-    const { mountLiveControllerFixture } =
-      await import('./dev/live-controller-fixture');
-    mountLiveControllerFixture(applicationRoot);
-    return;
-  }
-
   if (import.meta.env.DEV && window.location.pathname === '/__dev/material') {
     const { mountMaterialFixture } = await import('./dev/material-fixture');
     mountMaterialFixture(applicationRoot);
     return;
-  }
-
-  if (import.meta.env.DEV) {
-    console.info('[Bismuth] Milestone 0C foundation', getRuntimeSummary());
   }
 
   createRoot(applicationRoot).render(

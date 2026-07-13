@@ -4,6 +4,8 @@ export type GridShape = readonly [number, number, number];
 
 export type SimulationPresetName = 'cube' | 'hopper' | 'fractal' | 'dendritic';
 
+export type CrystalSymmetry = 'cubic';
+
 export type PhaseOperator = 'conservative-flux' | 'author-centered';
 
 export type DomainMode = 'full' | 'octant';
@@ -53,6 +55,7 @@ export interface PerturbationConfiguration {
 
 export interface SimulationConfiguration {
   readonly preset: SimulationPresetName;
+  readonly crystalSymmetry: CrystalSymmetry;
   readonly phaseOperator: PhaseOperator;
   readonly domainMode: DomainMode;
   readonly parameters: PhaseFieldParameters;
@@ -133,6 +136,7 @@ function paperPreset(
 ): SimulationConfiguration {
   return {
     preset,
+    crystalSymmetry: 'cubic',
     phaseOperator: 'conservative-flux',
     domainMode: 'full',
     parameters: { ...PAPER_CONSTANTS, liquidDiffusivity },
@@ -202,19 +206,17 @@ function maximumStableTimeStep(config: SimulationConfiguration): number {
   const dimensions = 3;
   const epsilon = parameters.anisotropyRegularization;
   const surfaceEnergyNormalization = parameters.surfaceEnergyScale;
-  // At a cubic facet normal, the Hessian of A^2 / 2 has one normal and two
-  // identical transverse eigenvalues. The transverse stiffness grows as
-  // 1 / epsilon, so bounding A itself is not a valid explicit-step bound.
+  // Exact trace at a cubic facet normal. The transverse stiffness grows as
+  // 1 / epsilon, so bounding A itself is insufficient.
   const axisRoot = Math.sqrt(1 + epsilon * epsilon);
   const axisAnisotropy = axisRoot + 2 * epsilon;
   const normalStiffness = axisAnisotropy * axisAnisotropy;
   const transverseStiffness =
     axisAnisotropy *
     ((epsilon * epsilon) / axisRoot + 1 / epsilon + 2 * epsilon);
+  const anisotropyTrace = normalStiffness + 2 * transverseStiffness;
   const phaseDiffusionTrace =
-    parameters.mobility *
-    surfaceEnergyNormalization *
-    (normalStiffness + 2 * transverseStiffness);
+    parameters.mobility * surfaceEnergyNormalization * anisotropyTrace;
   const phaseDiffusionEigenvalue =
     (4 * phaseDiffusionTrace) / (grid.spacing * grid.spacing);
   const deltaConcentration =
@@ -267,6 +269,11 @@ export function validateSimulationConfiguration(
   ) {
     throw new RangeError(
       `Unknown phase operator: ${String(config.phaseOperator)}.`,
+    );
+  }
+  if (config.crystalSymmetry !== 'cubic') {
+    throw new RangeError(
+      `Unknown crystal symmetry: ${String(config.crystalSymmetry)}.`,
     );
   }
   if (config.domainMode !== 'full' && config.domainMode !== 'octant') {
@@ -472,6 +479,7 @@ export function createSimulationConfiguration(
   }
   const config: SimulationConfiguration = {
     preset,
+    crystalSymmetry: base.crystalSymmetry,
     phaseOperator: overrides.phaseOperator ?? base.phaseOperator,
     domainMode: overrides.domainMode ?? base.domainMode,
     parameters: { ...base.parameters, ...parameterOverrides },

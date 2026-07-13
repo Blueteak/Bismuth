@@ -6,13 +6,7 @@ import tseslint from 'typescript-eslint';
 
 export default tseslint.config(
   {
-    ignores: [
-      'dist',
-      'dist-server',
-      'node_modules',
-      'playwright-report',
-      'test-results',
-    ],
+    ignores: ['dist', 'dist-server', 'node_modules', 'test-results'],
   },
   eslint.configs.recommended,
   ...tseslint.configs.recommendedTypeChecked.map((config) => ({
@@ -38,12 +32,6 @@ export default tseslint.config(
         projectService: true,
         tsconfigRootDir: import.meta.dirname,
       },
-    },
-  },
-  {
-    files: ['tests/e2e/**/*.ts'],
-    rules: {
-      '@typescript-eslint/no-confusing-void-expression': 'off',
     },
   },
 );

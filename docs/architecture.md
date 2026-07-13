@@ -1,182 +1,92 @@
 # Architecture
 
-## Overview
+## Runtime shape
 
-The application is a client-side WebGPU simulation and renderer wrapped in a small React interface. Express serves production assets but does not participate in simulation or generation.
+The browser owns all simulation and rendering. Express only serves the built
+application and `/healthz`.
 
-```mermaid
-flowchart LR
-    UI["React UI and run controls"] --> Controller["Visualizer controller"]
-    Controller --> Sim["Phase-field simulation"]
-    Sim --> Fields["GPU 3D fields"]
-    Fields --> Extract["GPU surface extraction"]
-    Extract --> Mesh["Indirect GPU mesh"]
-    Fields --> Material["Surface-age material inputs"]
-    Mesh --> Renderer["Three.js WebGPU renderer"]
-    Material --> Renderer
-    Controller --> Renderer
-    Diagnostics["Developer diagnostics and tests"] -. bounded readback .-> Fields
+```text
+React shell -> imperative visualizer controller
+                  |-> simulation compute
+                  |-> surface extraction
+                  |-> promoted GPU mesh
+                  |-> material and renderer
 ```
 
-## Runtime ownership
+The public application requires WebGPU. Unsupported or failed initialization
+must produce an honest UI state, never a hidden CPU or WebGL simulation.
 
-### React application
+## Ownership
 
-Owns:
+### React
 
-- Loading and unsupported states.
-- Public action label and accessibility.
-- Developer-panel mounting in development builds.
-- Canvas host sizing and high-level error presentation.
-
-Does not own:
-
-- The animation loop.
-- GPU field objects.
-- Per-frame camera or mesh state.
-- Simulation stepping.
+React owns loading/error presentation, public controls, accessibility, and
+coarse run-state display. It does not own the render loop, camera transforms,
+simulation fields, GPU buffers, or per-frame uniforms.
 
 ### Visualizer controller
 
-An imperative controller attached to one canvas owns:
+The controller owns the canvas, renderer, scene, camera, render scheduling,
+run lifecycle, solver/extractor orchestration, resize, and disposal. Public UI
+events call coarse controller methods; high-frequency state stays imperative.
 
-- Three.js renderer, scene, camera, controls, environment, and light.
-- Simulation, extraction, and material subsystem instances.
-- Run state transitions.
-- Frame scheduling and extraction cadence.
-- Resource reset, disposal, resize, visibility, and device-loss handling.
+### Simulation
 
-React communicates with the controller through a narrow command/event interface rather than reaching into Three.js objects.
+The simulation layer owns equations, configuration validation, boundaries,
+initial conditions, deterministic randomness, field textures, time stepping,
+and completion checks. Candidate 2A is isolated from the generic cubic solver
+until its model is ready for production integration.
 
-### Simulation subsystem
+### Extraction
 
-Owns:
+The extraction layer classifies marching-cubes cells, scans and compacts active
+work, emits vertices/normals/surface age, enforces capacity, and updates
+indirect draw state. Overflow retains the last valid mesh.
 
-- Validated simulation configuration.
-- Deterministic run seed.
-- Phase and chemical-potential ping-pong resources.
-- Solidification-time field.
-- TSL compute nodes and uniform state.
-- Boundary conditions, time integration, and completion metrics.
+### Rendering
 
-### Extraction subsystem
+The rendering layer owns WebGPU capability setup, the environment, lights,
+materials, tone/exposure choices, and the surface-age-to-oxide mapping. It may
+read extracted attributes but never writes simulation state.
 
-Owns:
+## GPU resource rules
 
-- Marching-cubes lookup data.
-- Active-cell and triangle-count buffers.
-- Prefix-sum scratch buffers.
-- Vertex, normal, surface-age, and indirect-draw buffers.
-- Capacity and overflow state.
+- Keep production fields and meshes GPU-resident.
+- Small summaries may be read for diagnostics; full volumes and meshes may not
+  be read every frame or exposed as a product path.
+- Allocate run-scoped resources once where practical and reuse them.
+- Double-buffer solver fields and promotion targets when in-flight work can
+  overlap.
+- Dispose renderer, textures, buffers, observers, listeners, and run state on
+  regeneration, device loss, or teardown.
 
-### Rendering subsystem
+## Scheduling
 
-Owns:
-
-- Buffer geometry bound to compute-generated storage buffers.
-- Physical node material and oxide mapping.
-- Black background, HDRI environment, and directional light.
-- Tone mapping, exposure, antialiasing, shadows, and camera controls.
-
-## Conceptual interfaces
-
-Keep public TypeScript interfaces small and serializable where practical.
-
-```ts
-type RunState = 'loading' | 'running' | 'stopped' | 'unsupported' | 'error';
-
-interface VisualizerCommands {
-  stop(): void;
-  regenerate(): void;
-  dispose(): void;
-}
-
-interface VisualizerEvent {
-  state: RunState;
-  reason?: 'manual' | 'complete' | 'device-lost' | 'failure';
-}
-
-interface EnvironmentPreset {
-  id: string;
-  hdriUrl: string;
-  environmentRotation: number;
-  exposure: number;
-  sunDirection: [number, number, number];
-  sunIntensity: number;
-  sunColor: string;
-}
-```
-
-Simulation configuration and diagnostics must use separate types so developer-only options cannot leak accidentally into the public control API.
-
-## GPU resource model
-
-Initial single-crystal resources:
-
-| Resource               | Intended representation      | Purpose                       |
-| ---------------------- | ---------------------------- | ----------------------------- |
-| Phase A/B              | 3D floating storage textures | Ping-pong phase fraction      |
-| Chemical potential A/B | 3D floating storage textures | Ping-pong transport field     |
-| Solidification time    | 3D floating storage texture  | First threshold-crossing time |
-| Extraction counts/scan | Storage buffers              | Active-cell compaction        |
-| Mesh attributes        | Storage buffer attributes    | GPU-generated surface         |
-| Indirect draw data     | Indirect storage buffer      | Triangle draw count           |
-
-Use 32-bit floats for the scientific baseline. A lower-precision path requires separate numerical evidence and a recorded decision.
-
-The future cluster model may add per-grain phase/order fields and orientation data. Do not allocate or design those resources into the first milestone beyond keeping subsystem boundaries extensible.
-
-## Frame scheduling
-
-While running, the controller performs bounded presentation iterations:
-
-1. Determine the permitted simulation-step batch.
-2. Dispatch phase and chemical-potential updates.
-3. Update completion summaries without full-field readback.
-4. After every completed presentation batch, classify, extract, and promote
-   the current isosurface.
-5. Update render uniforms and render the latest valid mesh.
-
-Render cadence and mesh-promotion cadence may differ, but active growth must
-target at least `30` promoted meshes per second on the reference machine and
-must not fall below `15 /s` average or exceed a `66.67 ms` 95th-percentile
-promotion interval. Rendering an old mesh at a high frame rate does not satisfy
-this contract.
-
-The number of numerical solver steps in one presentation batch is a
-performance parameter and may adapt to measured GPU time. It can be one step,
-and the retained `128^3` profile currently uses 49. Batch sizing must never
-change the numerical time step, equations, deterministic ordering, or final
-extraction. If later material, camera, cluster, or deployment work reduces the
-promotion rate, that milestone is blocked until the cadence is restored or the
-user approves a product change.
-
-Stopped runs dispatch no solver or extraction work. Camera and rendering remain active for inspection.
-
-The transition into stopped state is ordered: prevent new solver batches, perform one final extraction from the latest valid field, then publish `stopped`. If that extraction fails, retain the last valid mesh and publish an error reason through diagnostics rather than drawing invalid geometry.
+Simulation, mesh promotion, and rendering are related but separate cadences.
+A render frame over a stale mesh is not visible growth. The controller advances
+bounded solver batches, extracts/promotes their latest field, and renders the
+last valid mesh while work continues. React reconciliation is never part of
+that loop.
 
 ## Run lifecycle
 
-```mermaid
-stateDiagram-v2
-    [*] --> Loading
-    Loading --> Running: resources ready / auto-start
-    Loading --> Unsupported: no usable WebGPU adapter
-    Loading --> Error: initialization failure
-    Running --> Stopped: Stop
-    Running --> Stopped: completion threshold
-    Running --> Error: unrecoverable failure
-    Stopped --> Running: Regenerate
-    Error --> Loading: retry or reload
+```text
+loading -> growing -> stopped
+             |          |
+             +--Stop----+
+                        +--Regenerate--> loading/growing
 ```
 
-Regenerate resets all run-scoped fields, counters, random state, extraction counts, and material age state. Reuse stable pipelines and environment resources when safe.
+Automatic completion and manual Stop share the same stopped state. Stopped
+runs remain orbitable but cannot resume. Regenerate resets or recreates all
+run-scoped resources and chooses a new internal deterministic seed.
 
-## Failure handling
+## Developer and production surfaces
 
-- Report unsupported WebGPU explicitly.
-- Label GPU resources and compute stages for useful validation messages.
-- Detect non-finite summaries and extraction overflow before presenting corrupt output.
-- On overflow, keep the last valid mesh, stop the run, and expose details in developer diagnostics.
-- Treat device loss as a stopped/error state; do not pretend the run can resume from unavailable GPU state.
-- Dispose all listeners, controls, textures, buffers, and renderer-owned resources on teardown.
+`/__dev/material` is the single integrated development view. It is loaded only
+in development builds and is not a second product UI. The public root stays
+neutral until accepted bismuth morphology and lifecycle work are integrated.
+
+The production server serves Vite's hashed assets and the application shell
+from absolute paths, exposes `/healthz`, and stays stateless behind trusted
+HTTPS termination.

@@ -265,6 +265,10 @@ export function createFoundationVisualizerController(
   };
 }
 
+/**
+ * Generic cubic Step 1 regression configuration. This is not the accepted
+ * bismuth product morphology; Milestone 1B must supply that configuration.
+ */
 function createLiveSimulationConfiguration(
   gridSize: number,
 ): SimulationConfiguration {

@@ -1,97 +1,70 @@
 # Bismuth Visualizer
 
-A browser-based real-time visualizer for physically motivated bismuth hopper-crystal growth. Milestones 1 and 2 are complete: the retained single-hopper solver feeds GPU marching cubes continuously through an imperative controller across both solver texture parities, with no production field or mesh readback. Milestone 3 now has an initial surface-age-driven physical bismuth material on the developer fixture; its corrected reference run promoted `1021` meshes at `53.692 /s`, above the `30 /s` target and `15 /s` blocking floor. The recorded paper-transition investigation reproduces cube and hopper but not the fractal and dendritic gates. The public route remains the neutral foundation while material calibration, camera behavior, and final presentation continue.
+A browser-based WebGPU study of physically motivated bismuth hopper-crystal
+growth. The intended product shows continuous growth into a metallic,
+thin-film-iridescent specimen rather than revealing a prebuilt mesh.
 
-## Prerequisites
+The public root is intentionally still a neutral foundation scene. The active
+scientific task is a bismuth-specific one-nucleus model; the existing cubic
+hopper is useful regression scaffolding but is not accepted product geometry.
+Candidate 1's rhombohedral remapping was rejected. Candidate 2A's thermal and
+free-surface isolation is the current direction, and no Candidate 2 3D
+morphology has been accepted.
 
-- Node.js 24.12.0 (see `.nvmrc`)
-- npm 11.6.2
-- The Codex in-app browser with hardware WebGPU for GPU tests and benchmarks
-- The user-provided `hdri.jpg` at the repository root (integrated in 0C without modifying the source file)
+## Product contract
 
-## Install and run
+- Desktop Chrome or Edge with hardware WebGPU; no silent fallback.
+- The first generation starts after required resources are ready.
+- The sole primary action is bottom-center: `Stop` while growing and
+  `Regenerate` after stopping or completion. A stopped run cannot resume.
+- The user may orbit and zoom a frozen or growing specimen.
+- No public export, persistence, seed, parameter, resolution, timeline, or
+  sharing controls.
+- Rendering uses GPU marching cubes, metallic PBR, the repository-root
+  `hdri.jpg`, and surface-age-driven oxide iridescence against black.
+
+## Setup
+
+Requires Node.js `24.x` and npm.
 
 ```powershell
-npm.cmd ci
+npm.cmd install
 npm.cmd run dev
 ```
 
-Open the local URL printed by Vite.
+`review.cmd` starts the development server and opens `/__dev/material`, the
+single retained integrated review surface. It still displays the generic
+regression geometry, not approved bismuth morphology.
 
-For a one-step review of the most advanced integrated visualization, double-
-click `review.cmd`. It starts Vite and currently opens
-`http://127.0.0.1:5173/__dev/material`, where the live solver, GPU extraction,
-continuous mesh promotion, and surface-age-driven physical bismuth material
-run together. This review route is developer-only; the neutral
-`/__dev/live-controller` route remains the Milestone 2 geometry regression
-surface, and the public root remains the neutral foundation until the final
-presentation is integrated.
-
-Whenever mesh-generation or visualization work moves to a newer integration
-fixture, update the default `Path` in `review.ps1` and keep this section,
-`current_tasks.md`, and `docs/testing-and-validation.md` aligned with it.
-
-## Validation commands
-
-Use the browser-independent fast loop during ordinary code iteration:
+Production-shaped local serving:
 
 ```powershell
-npm.cmd run check:fast
+npm.cmd run build
+npm.cmd start
 ```
 
-Before a handoff, run the baseline code-quality and production-build gate:
+## Checks
 
 ```powershell
-npm.cmd run check:baseline
+npm.cmd test                 # fast deterministic unit tests
+npm.cmd run check:fast       # tests and TypeScript
+npm.cmd run check:baseline   # full browser-free handoff gate
 ```
 
-Add only the checks that match the subsystem changed:
+The automated suite does not launch a browser or require a GPU. Use the review
+surface for relevant visual or GPU-pipeline changes; collect hardware-specific
+measurements only when performance or adapter behavior is the task.
 
-```powershell
-npm.cmd run test:e2e                    # UI or capability-state changes
-npm.cmd run test:gpu                    # GPU solver, extraction, or rendering
-npm.cmd run validate:morphology:quick # Solver physics or configuration changes
-npm.cmd run benchmark                 # Performance investigations only
-```
+## Repository map
 
-`check:fast` runs the unit/CPU-reference suite and strict TypeScript checks.
-`check:baseline` adds lint, formatting, and both production builds. It does not
-start a standalone development/production server or browser and intentionally
-excludes hardware and scientific promotion gates. The unit suite still uses
-short-lived loopback listeners for its Express contract cases.
+- `src/simulation`: generic hopper runtime plus active Candidate 2A work.
+- `src/extraction`: GPU marching cubes and CPU-checkable layout helpers.
+- `src/rendering`: environment, material, oxide, and WebGPU capability code.
+- `src/visualizer`: imperative live controller and scheduling.
+- `server`: minimal Express static server and `/healthz`.
+- `PLAN.md` and `current_tasks.md`: milestone sequence and immediate handoff.
+- `docs/`: focused architecture, simulation, validation, and reference notes.
 
-`test:e2e` starts one temporary Vite server and Chrome. Its current scope is the
-GPU-independent loading and unsupported shell integration; add it for UI,
-capability, or browser-shell changes. `test:gpu`, the morphology commands, and
-`benchmark` start a temporary local fixture and wait for a report from the
-Codex in-app browser. Open the printed fixture URL in that browser. The fixture
-fails if it cannot obtain a hardware adapter, if Three.js selects a fallback
-backend, if its numerical or morphology gate fails, or if WebGPU reports an
-uncaptured error.
-
-The `256^3` morphology gates, four-seed suite, transition controls, source A/B
-runs, and coupled CPU experiment are promotion or investigation tools rather
-than routine checks. Their exact commands and required ordering are documented
-in `docs/testing-and-validation.md`.
-
-The production server uses `PORT=3000` by default and exposes `GET /healthz`.
-
-- `test:gpu` compares the `9^3` CPU and WebGPU single-crystal fields in addition to the Milestone 0B compute and indirect-draw proofs. Its latest report is `test-results/gpu/latest.json`.
-- `validate:morphology:quick` is the routine per-edit solver screen. It runs the deterministic perturbed hopper at `128^3`, `dx = 2`, `dt = 0.01`, and `t = 500`, and it enforces both its calibrated metric envelope and a hard `25000 ms` fixture deadline. Its report is `test-results/gpu/latest-morphology-quick.json`.
-- `validate:morphology:reference` runs the paired perturbed `256^3`, `dx = 1` regression gate. It is intentionally outside the quick-loop budget and is required when promoting a scientific solver change. Its report is `test-results/gpu/latest-morphology-reference.json`.
-- `validate:morphology` runs the unperturbed published hopper acceptance control at `256^3`, `dx = 1`, and `t = 500`. Its report is `test-results/gpu/latest-morphology-acceptance.json`.
-- Each `validate:morphology:seed:*` command runs one retained perturbed `128^3` hopper under the same `25000 ms` deadline and writes a seed-specific report. All four recorded runs complete in `14.85..15.32 s`; `validate:morphology:seeds:compare` verifies their configuration, hopper gates, connectivity, timing, and distinct summaries.
-- `validate:transition:control` and `validate:transition:quick` are the calibrated `D_L = 4`, `t = 350` temporal pair at `128^3`, `dx = 2`. They compare `dt = 0.01` with `dt = 0.005`; both enforce a hard `25000 ms` fixture deadline.
-- `validate:transition:reference` is the one-time `256^3`, `dx = 1`, `dt = 0.005`, `t = 350` spatial pair for that screen. It is intentionally outside the quick-loop budget.
-- `validate:transition:compare` reads the three latest transition reports, checks scale-aware spatial correlation, writes `test-results/gpu/latest-dl4-screen-comparison.json`, and reports whether the temporal signal merits a mature refinement run.
-- `validate:transition:cube` and `validate:transition:fractal` are one-time full-domain conservative outcome controls, not per-edit tests. The `:source` variants repeat them with the developer-only author-centered stencil. The fractal commands currently exit nonzero because the recorded candidates miss the fixed complexity gate; `validate:transition:summarize` verifies that retained conclusion without rerunning the expensive controls.
-- `validate:coupling` runs the developer-only `D_L = 4` split-explicit versus coupled-backward-Euler CPU experiment on `17^3` and `25^3` octants at both `dt = 0.01` and `dt = 0.005` through `t = 0.2`. It enforces nonlinear residual, per-step field, boundary, and `25000 ms` setup-plus-matrix deadline gates and writes `test-results/cpu/latest-coupling-experiment.json`.
-- A physics-perturbed validation run can use the same runner with `--perturbed`; perturbations are smooth deterministic changes to initial or far-field conditions, not changes to the final geometry.
-
-Example perturbed checkpoint:
-
-```powershell
-node scripts/run-browser-gpu-test.mjs --morphology --perturbed --expected=hopper --high-resolution --grid=256 --steps=50000 --dt=0.01 --mu=0.04
-```
-
-The accepted Step 1 checkpoint and model limits are recorded in `docs/simulation-model.md` and `docs/testing-and-validation.md`. The implemented cubic model is a generic hopper baseline; it does not yet represent bismuth-specific rhombohedral facets, screw-dislocation spirals, twins, or multiple grain orientations.
+The scientific constraints and next implementation gate are in
+[`docs/simulation-model.md`](docs/simulation-model.md) and
+[`current_tasks.md`](current_tasks.md).
