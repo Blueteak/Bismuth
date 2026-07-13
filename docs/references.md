@@ -60,14 +60,33 @@ product model.
   removal" (2015): <https://doi.org/10.1016/j.jcrysgro.2015.02.028>
 
   Supports treating heat removal as a boundary-value problem at the
-  trijunction rather than a local artistic growth multiplier.
+  trijunction and requiring a solid/liquid surface-flux jump for a finite
+  growth wedge rather than a local artistic growth multiplier.
+
+- N. Bagheri-Sadeghi and B. T. Helenbrook, "Effects of the inert phase on
+  solidification near a triple-phase line" (2024):
+  <https://doi.org/10.1016/j.jcrysgro.2023.127438>
+
+  Source for separate solid-inert and liquid-inert heat balances, temperature
+  continuity, and one Stefan latent-heat jump at a three-phase line.
 
 - M. Albani et al., "Competition Between Kinetics and Thermodynamics During
   the Growth of Faceted Crystal by Phase Field Modeling" (2019):
   <https://doi.org/10.1002/pssb.201800518>
 
-  A possible surface-incorporation construction if local `beta(n)` cannot
-  reproduce the isolated facet/edge signal; it is not calibrated to bismuth.
+  Source for Candidate 2B's surface-adatom continuity, tangential chemical
+  potential flux, and orientation-dependent incorporation time. Its examples
+  are dimensionless or calibrated to other materials; it provides neither
+  bismuth coefficients nor a melt-air-crystal trijunction law.
+
+- O. Weinstein and S. Brandon, "Dynamics of partially faceted melt/crystal
+  interfaces I: Computational approach and single step-source calculations"
+  (2004): <https://doi.org/10.1016/j.jcrysgro.2004.04.108>
+
+  Source for step-flow velocity, macroscopic two-dimensional nucleation
+  kinetics, and analogous outer-boundary step sources on concave melt-growth
+  interfaces. Candidate 2C's deterministic layer clock is a derived isolation;
+  this paper does not establish heterogeneous bismuth trijunction nucleation.
 
 ## Specimen references
 

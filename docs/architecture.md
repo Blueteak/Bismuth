@@ -34,8 +34,11 @@ events call coarse controller methods; high-frequency state stays imperative.
 
 The simulation layer owns equations, configuration validation, boundaries,
 initial conditions, deterministic randomness, field textures, time stepping,
-and completion checks. Candidate 2A is isolated from the generic cubic solver
-until its model is ready for production integration.
+and completion checks. Candidate 2A, Candidate 2B, and Candidate 2C remain
+isolated from the generic cubic solver. Candidate 2C owns its faceted
+thermal-step state and deterministic observational scalar reconstruction. The
+scalar may be exposed to development extraction, but it never feeds back into
+simulation or acts as a production CPU fallback.
 
 ### Extraction
 
@@ -86,6 +89,14 @@ run-scoped resources and chooses a new internal deterministic seed.
 `/__dev/material` is the single integrated development view. It is loaded only
 in development builds and is not a second product UI. The public root stays
 neutral until accepted bismuth morphology and lifecycle work are integrated.
+
+The development snapshot bridge is model-neutral. In the next Candidate 2C
+review it receives each retained observational scalar checkpoint, uploads it
+through a storage buffer into a 3D storage texture, and uses the existing GPU
+classifier, compaction, vertex emission, last-valid promotion, and indirect
+draw path. The authoritative faceted state remains separate, and only the
+small extraction summary is read back. The bridge neither reads a full GPU
+field nor inserts the CPU solver into the production controller.
 
 The production server serves Vite's hashed assets and the application shell
 from absolute paths, exposes `/healthz`, and stays stateless behind trusted

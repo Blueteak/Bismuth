@@ -14,8 +14,15 @@ const applicationRoot: HTMLElement = rootElement;
 
 async function startApplication(): Promise<void> {
   if (import.meta.env.DEV && window.location.pathname === '/__dev/material') {
-    const { mountMaterialFixture } = await import('./dev/material-fixture');
-    mountMaterialFixture(applicationRoot);
+    const mode = new URLSearchParams(window.location.search).get('mode');
+    if (mode === 'material') {
+      const { mountMaterialFixture } = await import('./dev/material-fixture');
+      mountMaterialFixture(applicationRoot);
+    } else {
+      const { mountCandidate2CMorphologyFixture } =
+        await import('./dev/candidate2c-morphology-fixture');
+      mountCandidate2CMorphologyFixture(applicationRoot);
+    }
     return;
   }
 

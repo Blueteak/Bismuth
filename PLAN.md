@@ -13,19 +13,45 @@ initial material path exist. They are infrastructure, not product approval.
 Milestone 1B blocks later presentation work until one initial site produces a
 connected, deeply open, stepped bismuth hopper from cited physics.
 
-Candidate 1 is closed and rejected. Candidate 2A is the active one-domain,
-thermal/free-surface path. Its next implementation slice is:
+Candidate 1 is closed and rejected. Candidate 2A is the one-domain
+thermal/free-surface path. Its variational operator, normalization/stability
+bound, surface seed, critical-size measure, and rotated planar refinement are
+validated. The first fixed 3D screen was numerically healthy but failed as a
+`non-hopper`: the center remained ahead of the rim and opening depth stayed
+zero throughout growth.
 
-1. Insert independent surface-energy `gamma(n)` and kinetic `beta(n)` laws
-   into a variational anisotropic phase operator.
-2. Derive its normalization and explicit stability bound.
-3. Define a consistent surface-attached diffuse or pre-relaxed seed and a
-   critical-size measure.
-4. Pass rotated planar-front grid and time refinement.
-5. Only then run a cheap 3D morphology screen.
+Candidate 2B validates a generic nonlocal surface-incorporation signal but is
+deferred because direct bismuth evidence favors interface-reaction and layer
+growth. Candidate 2C now proves the conditional geometry: if discrete ledges
+are born at an outer boundary and flow inward, they generate nested terraces
+and a persistent rim-over-core opening with exact swept-volume accounting.
+Candidate 2A also supports the source-backed solid/liquid surface heat-flux
+jump while retaining one phase velocity and one latent-heat update.
 
-No twin, step, defect, or orientation field is authorized unless the
-one-domain isolation or reference evidence demonstrates that it is necessary.
+An exact-seed frozen pulse confirms the flux-jump direction but rejects its
+surface rim localization. A separate resolved opening projection shows that
+the intended thermal component exists at the solid/liquid interface, while the
+smooth variational phase field heals the terrace overwhelmingly faster. Smooth
+Candidate 2A is therefore closed as the terrace carrier; explicit ledges remain
+owned by Candidate 2C.
+
+Candidate 2C now couples its six-facet outer-source/inward-flow loops to the
+phase-specific free-surface heat supply in a closed three-dimensional thermal
+control volume. The signed contact-line flux jump selects the source, actual
+local undercooling drives the cited step and layer laws, and the same exact
+swept volume supplies latent heat. Its source null, reversal, conservation,
+nested-topology, and independent grid/time refinement gates pass.
+
+A Candidate 2C-owned observational scalar carrier reconstructs those
+authoritative loops and layers as one closed extraction field without feeding
+back into growth or using Candidate 2A as a terrace carrier. Its analytic
+volume, facet support, connectivity, topology, capacity, and resolution gates
+pass. Candidate 2C passed its first fixed rejection screen as a mechanism
+candidate. Screen-level spatial refinement, several internal seeds, coefficient and
+source calibration, and fixed-view reference review still block morphology
+acceptance and production integration. The screen-level temporal arm passes;
+spatial refinement remains. Twins, defects, and extra orientations remain
+conditional.
 
 ## Milestones
 
