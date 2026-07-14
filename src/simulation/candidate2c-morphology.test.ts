@@ -16,7 +16,9 @@ import {
   sampleCandidate2CFacetedMorphology,
 } from './candidate2c-morphology';
 import {
+  CANDIDATE2C_FACETED_MORPHOLOGY_SPACE_REFINEMENT,
   CANDIDATE2C_FACETED_MORPHOLOGY_TIME_REFINEMENT,
+  createCandidate2CFacetedMorphologySpaceRefinedConfiguration,
   createCandidate2CFacetedMorphologyTimeRefinedConfiguration,
 } from './candidate2c-morphology-refinement';
 
@@ -265,7 +267,7 @@ function meshSignedVolume(positions: readonly ExtractionVec3[]): number {
 }
 
 describe('Candidate 2C observational scalar carrier', () => {
-  it('fixes the aligned 1600/3200-step cadence and carrier capacity', () => {
+  it('fixes the aligned temporal and spatial screen protocols', () => {
     const carrier = CANDIDATE2C_FACETED_MORPHOLOGY_CARRIER;
     const screen = CANDIDATE2C_FACETED_MORPHOLOGY_SCREEN;
     expect(carrier.shape).toEqual([158, 42, 158]);
@@ -311,6 +313,39 @@ describe('Candidate 2C observational scalar carrier', () => {
       refinedConfiguration;
     expect(refinedTimeStep).toBe(baseTimeStep / 2);
     expect(refinedFrozenConfiguration).toEqual(baseFrozenConfiguration);
+
+    const spaceRefinement = CANDIDATE2C_FACETED_MORPHOLOGY_SPACE_REFINEMENT;
+    expect(spaceRefinement.base.checkpointSteps).toEqual(
+      screen.checkpointSteps,
+    );
+    expect(spaceRefinement.refined.checkpointSteps).toEqual(
+      screen.checkpointSteps,
+    );
+    expect(spaceRefinement.refined.timeStep).toBe(screen.timeStep);
+    expect(spaceRefinement.refinedShape).toEqual([160, 96, 160]);
+    expect(spaceRefinement.refinedSpacing).toBe(0.1875);
+    expect(spaceRefinement.gates).toEqual({
+      maximumTimeAlignmentError: 1e-12,
+      maximumDiscreteTerraceDifference: 1,
+      maximumOpeningDepthDifferenceInSteps: 1,
+      maximumLayerPhaseDifference: 0.25,
+      maximumBirthTimeDifference: 0.1,
+      maximumMatchedLoopOffsetDifference: 0.1,
+      maximumContinuousDifference: 0.15,
+      maximumLedgerResidual: 1e-10,
+    });
+    const spaceConfiguration =
+      createCandidate2CFacetedMorphologySpaceRefinedConfiguration();
+    expect(spaceConfiguration.shape).toEqual([160, 96, 160]);
+    expect(spaceConfiguration.spacing).toBe(0.1875);
+    expect(spaceConfiguration.timeStep).toBe(screen.timeStep);
+    expect(
+      spaceConfiguration.shape.map((size) => size * spaceConfiguration.spacing),
+    ).toEqual(
+      screenConfiguration.shape.map(
+        (size) => size * screenConfiguration.spacing,
+      ),
+    );
   });
 
   it('preserves analytic volume, exact plateaus, and every loop support', () => {

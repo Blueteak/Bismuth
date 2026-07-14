@@ -1,7 +1,6 @@
 import {
   CANDIDATE2A_FREE_SURFACE_FLUX_ISOLATION,
   candidate2AFreeSurfaceBiotNumber,
-  candidate2AFreeSurfaceHeatFlux,
   type Candidate2AFreeSurfaceBoundary,
 } from './candidate2a';
 import {
@@ -196,6 +195,39 @@ export interface Candidate2CFacetedThermalDiagnosticResult {
   readonly gates: Candidate2CFacetedThermalGates;
 }
 
+export type Candidate2CFacetedThermalRobinRefinementClassification =
+  'passes-first-order-isolation' | 'fails-robin-refinement';
+
+export interface Candidate2CFacetedThermalRobinRefinementSample {
+  readonly spacing: number;
+  readonly contactLineTemperature: number;
+  readonly surfaceFluxJump: number;
+  readonly continuumFluxError: number;
+}
+
+export interface Candidate2CFacetedThermalRobinRefinementGates {
+  readonly equalSourceNull: boolean;
+  readonly contrastReverses: boolean;
+  readonly monotoneConvergence: boolean;
+  readonly successiveErrorReductionPasses: boolean;
+  readonly refinedPairPasses: boolean;
+  readonly fineContinuumPasses: boolean;
+}
+
+export interface Candidate2CFacetedThermalRobinRefinementResult {
+  readonly classification: Candidate2CFacetedThermalRobinRefinementClassification;
+  readonly samples: readonly Candidate2CFacetedThermalRobinRefinementSample[];
+  readonly continuumContactLineTemperature: number;
+  readonly continuumSurfaceFluxJump: number;
+  readonly coarseToMediumFluxDifference: number;
+  readonly mediumToFineFluxDifference: number;
+  readonly fineContinuumFluxDifference: number;
+  readonly successiveErrorReductionRatios: readonly [number, number];
+  readonly equalSurfaceFluxJump: number;
+  readonly reverseSurfaceFluxJump: number;
+  readonly gates: Candidate2CFacetedThermalRobinRefinementGates;
+}
+
 const BASE_SHAPE = Object.freeze([80, 48, 80] as const);
 const BASE_SPACING = 0.375;
 const BASE_CENTER_XZ = Object.freeze([15, 15] as const);
@@ -247,6 +279,15 @@ export const CANDIDATE2C_FACETED_THERMAL_GATES = Object.freeze({
   minimumFacetInradiusCells: 10,
   resolvedOffsetCutoff: BASE_SPACING,
   maximumLayerPhaseDifference: 0.15,
+});
+
+/** Fixed before the three-spacing Robin face result is evaluated. */
+export const CANDIDATE2C_FACETED_THERMAL_ROBIN_REFINEMENT = Object.freeze({
+  spacings: Object.freeze([0.375, 0.1875, 0.09375] as const),
+  screenMaximumContinuousDifference: 0.15,
+  minimumSuccessiveErrorReductionRatio: 1.5,
+  maximumRefinedPairFluxDifference: 0.1,
+  maximumFineContinuumFluxDifference: 0.1,
 });
 
 type Point2 = readonly [number, number];
@@ -1035,9 +1076,33 @@ export interface Candidate2CFacetedThermalContactLineSource {
   readonly outerSolidSourceSelected: boolean;
 }
 
-interface Candidate2CFacetedThermalSurfaceTrace {
+export interface Candidate2CFacetedThermalSurfaceTrace {
   readonly temperature: number;
+  /** Diffusivity-normalized outward heat flux. */
   readonly outwardHeatFlux: number;
+}
+
+export function candidate2CFacetedThermalRobinFaceTrace(
+  cellTemperature: number,
+  spacing: number,
+  biotNumber: number,
+  ambientTemperature: number,
+): Candidate2CFacetedThermalSurfaceTrace {
+  if (
+    !Number.isFinite(cellTemperature) ||
+    !Number.isFinite(ambientTemperature)
+  ) {
+    throw new RangeError('Robin face temperatures must be finite.');
+  }
+  assertFinitePositive('spacing', spacing);
+  assertFiniteNonnegative('biotNumber', biotNumber);
+  const halfCellBiot = (biotNumber * spacing) / 2;
+  const temperature =
+    (cellTemperature + halfCellBiot * ambientTemperature) / (1 + halfCellBiot);
+  return {
+    temperature,
+    outwardHeatFlux: biotNumber * (temperature - ambientTemperature),
+  };
 }
 
 /**
@@ -1055,19 +1120,12 @@ function reconstructedSurfaceTrace(
     orderParameter,
     configuration.freeSurface,
   );
-  const halfCellBiot = (biotNumber * configuration.spacing) / 2;
-  const temperature =
-    (cellTemperature +
-      halfCellBiot * configuration.freeSurface.ambientTemperature) /
-    (1 + halfCellBiot);
-  return {
-    temperature,
-    outwardHeatFlux: candidate2AFreeSurfaceHeatFlux(
-      orderParameter,
-      temperature,
-      configuration.freeSurface,
-    ),
-  };
+  return candidate2CFacetedThermalRobinFaceTrace(
+    cellTemperature,
+    configuration.spacing,
+    biotNumber,
+    configuration.freeSurface.ambientTemperature,
+  );
 }
 
 function stepFrontTemperature(
@@ -1483,6 +1541,121 @@ function compareArms(
 
 function normalizedDifference(left: number, right: number): number {
   return Math.abs(left - right) / Math.max(1, Math.abs(left), Math.abs(right));
+}
+
+function candidate2CRobinContactLineForBiotPair(
+  spacing: number,
+  solidBiotNumber: number,
+  liquidBiotNumber: number,
+): { readonly temperature: number; readonly surfaceFluxJump: number } {
+  const solid = candidate2CFacetedThermalRobinFaceTrace(
+    INITIAL_TEMPERATURE,
+    spacing,
+    solidBiotNumber,
+    AMBIENT_TEMPERATURE,
+  );
+  const liquid = candidate2CFacetedThermalRobinFaceTrace(
+    INITIAL_TEMPERATURE,
+    spacing,
+    liquidBiotNumber,
+    AMBIENT_TEMPERATURE,
+  );
+  return {
+    temperature: (solid.temperature + liquid.temperature) / 2,
+    surfaceFluxJump: solid.outwardHeatFlux - liquid.outwardHeatFlux,
+  };
+}
+
+/**
+ * Isolates the spacing dependence of the conservative half-cell Robin trace.
+ * It does not alter the morphology screen or authorize coefficient tuning.
+ */
+export function runCandidate2CFacetedThermalRobinRefinement(): Candidate2CFacetedThermalRobinRefinementResult {
+  const protocol = CANDIDATE2C_FACETED_THERMAL_ROBIN_REFINEMENT;
+  const solidBiotNumber =
+    CANDIDATE2A_FREE_SURFACE_FLUX_ISOLATION.solidBiotNumber;
+  const liquidBiotNumber =
+    CANDIDATE2A_FREE_SURFACE_FLUX_ISOLATION.liquidBiotNumber;
+  const continuumContactLineTemperature = INITIAL_TEMPERATURE;
+  const continuumSurfaceFluxJump =
+    (solidBiotNumber - liquidBiotNumber) *
+    (INITIAL_TEMPERATURE - AMBIENT_TEMPERATURE);
+  const samples = protocol.spacings.map((spacing) => {
+    const contact = candidate2CRobinContactLineForBiotPair(
+      spacing,
+      solidBiotNumber,
+      liquidBiotNumber,
+    );
+    return {
+      spacing,
+      contactLineTemperature: contact.temperature,
+      surfaceFluxJump: contact.surfaceFluxJump,
+      continuumFluxError: normalizedDifference(
+        contact.surfaceFluxJump,
+        continuumSurfaceFluxJump,
+      ),
+    } satisfies Candidate2CFacetedThermalRobinRefinementSample;
+  });
+  const coarse = samples[0]!;
+  const medium = samples[1]!;
+  const fine = samples[2]!;
+  const coarseToMediumFluxDifference = normalizedDifference(
+    coarse.surfaceFluxJump,
+    medium.surfaceFluxJump,
+  );
+  const mediumToFineFluxDifference = normalizedDifference(
+    medium.surfaceFluxJump,
+    fine.surfaceFluxJump,
+  );
+  const fineContinuumFluxDifference = normalizedDifference(
+    fine.surfaceFluxJump,
+    continuumSurfaceFluxJump,
+  );
+  const successiveErrorReductionRatios = [
+    coarse.continuumFluxError / medium.continuumFluxError,
+    medium.continuumFluxError / fine.continuumFluxError,
+  ] as const;
+  const equal = candidate2CRobinContactLineForBiotPair(
+    medium.spacing,
+    EQUAL_BIOT_NUMBER,
+    EQUAL_BIOT_NUMBER,
+  );
+  const reverse = candidate2CRobinContactLineForBiotPair(
+    medium.spacing,
+    liquidBiotNumber,
+    solidBiotNumber,
+  );
+  const gates: Candidate2CFacetedThermalRobinRefinementGates = {
+    equalSourceNull: Math.abs(equal.surfaceFluxJump) <= 1e-12,
+    contrastReverses:
+      Math.abs(reverse.surfaceFluxJump + medium.surfaceFluxJump) <= 1e-12,
+    monotoneConvergence:
+      coarse.continuumFluxError > medium.continuumFluxError &&
+      medium.continuumFluxError > fine.continuumFluxError,
+    successiveErrorReductionPasses: successiveErrorReductionRatios.every(
+      (ratio) => ratio >= protocol.minimumSuccessiveErrorReductionRatio,
+    ),
+    refinedPairPasses:
+      mediumToFineFluxDifference <= protocol.maximumRefinedPairFluxDifference,
+    fineContinuumPasses:
+      fineContinuumFluxDifference <=
+      protocol.maximumFineContinuumFluxDifference,
+  };
+  return {
+    classification: Object.values(gates).every(Boolean)
+      ? 'passes-first-order-isolation'
+      : 'fails-robin-refinement',
+    samples,
+    continuumContactLineTemperature,
+    continuumSurfaceFluxJump,
+    coarseToMediumFluxDifference,
+    mediumToFineFluxDifference,
+    fineContinuumFluxDifference,
+    successiveErrorReductionRatios,
+    equalSurfaceFluxJump: equal.surfaceFluxJump,
+    reverseSurfaceFluxJump: reverse.surfaceFluxJump,
+    gates,
+  };
 }
 
 function compareRefinement(

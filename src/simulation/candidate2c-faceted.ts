@@ -1,4 +1,9 @@
-import { bismuthSlowFacetNormals } from './candidate2a';
+/**
+ * Retired Candidate 2C mechanism scaffold. Its equal six-support carrier is
+ * incompatible with the Candidate 2D target and must not be imported by an
+ * active product-generation path.
+ */
+import { snBiPyramidFacetNormals } from './candidate2a';
 import {
   crystalAxesFromEuler,
   type EulerOrientation,
@@ -207,7 +212,7 @@ export function createCandidate2CFacetedFrame(
   const tangentU = basis[0];
   const tangentV = basis[1];
   const planeNormal = basis[2];
-  const projected = bismuthSlowFacetNormals(configuration.orientation).map(
+  const projected = snBiPyramidFacetNormals(configuration.orientation).map(
     (facetNormal) => {
       const axial = dot3(facetNormal, planeNormal);
       return normalize3([

@@ -2,499 +2,404 @@
 
 ## Product boundary
 
-The goal is a physically motivated, single-site bismuth hopper with a deep open
-recession, nested terraces, coherent bismuth facets, and plausible asymmetry.
-The accepted model must generate those traits during growth. Mesh carving,
-stamped terraces, decorative spirals/noise, or overlapping cosmetic crystals
-cannot satisfy the gate.
+The product target is not a generic hopper, a hexagonal bismuth plate, or the
+three-sided pyramid observed in eutectic Sn-Bi solder. It is the family of
+bulk, iridescent bismuth hopper specimens supplied in `crystal_references/`.
+The model must visibly generate that habit during growth from one connected
+site. A connected specimen is not assumed to be one crystallographic domain;
+direct bismuth evidence and the supplied references allow twins, branching,
+and intergrown sectors.
 
-The code currently contains four separate scientific tracks:
+Generic crystal algorithms may remain numerical or extraction scaffolding.
+They may never define product geometry, facet directions, calibration, or
+morphology acceptance. Mesh carving, stamped terraces, decorative spirals,
+noise, smooth bowls, and overlapping cosmetic crystals cannot satisfy the
+gate.
 
-- A completed generic cubic alloy hopper used only as runtime and extraction
-  scaffolding.
-- Candidate 2A, closed as a terrace carrier but retained for its sourced
-  free-surface heat boundary and conservative thermal definitions.
-- Candidate 2B, a deferred sharp-surface incorporation isolation.
-- Candidate 2C, the active faceted thermal-step track with an observational 3D
-  scalar carrier, not yet calibrated or accepted as bismuth morphology.
+## Ground-truth target set
 
-Candidate 1's direct rhombohedral remapping is rejected and removed. It used
-lattice translations as surface-energy generators, selected the wrong facet
-family, retained cubic calibration, and produced boundary-limited elongation.
-Do not restore or retune it.
+The user designated these four files as the visual morphology authority on
+2026-07-13. Preserve the image bytes. Their hashes make the reviewed target set
+unambiguous; changing a file requires an explicit target revision.
 
-## Generic cubic scaffold
+| File                                                               |      Pixels | SHA-256                                                            | Primary target evidence                                  |
+| ------------------------------------------------------------------ | ----------: | ------------------------------------------------------------------ | -------------------------------------------------------- |
+| [`crystal_small_1.jpg`](../crystal_references/crystal_small_1.jpg) | 1024 x 1024 | `dbcf1b49fa3a12f8944f95bbd49183b7b560a1c5c3b716c03cdf373b6b7ab061` | One dominant deep hopper, continuous winding ledges      |
+| [`crystal_small_2.jpg`](../crystal_references/crystal_small_2.jpg) | 1024 x 1024 | `c6c70580a0ab3b57afbbf4792de6018024763265bcb6f4d3e8e988f31c0a7d7a` | Offset opening, interrupted and asymmetric bands         |
+| [`crystal_small_3.jpg`](../crystal_references/crystal_small_3.jpg) |   946 x 946 | `3608fc058f0454f387b7e3963d89e6b236a28ca6764dba407d946ce675140200` | Intergrown sectors and strongly varied ledge widths      |
+| [`crystal_small_4.jpg`](../crystal_references/crystal_small_4.jpg) | 1588 x 1588 | `719707a2cf1ebd9125fb3d2e5c356c2b5a58205b538b19180f3fe5ff2ffd09d0` | Branched connected structure and irregular nested ledges |
 
-The baseline follows Bollada, Jimack, and Mullis (2023). Its convention is
-`phi = 0` solid and `phi = 1` liquid. The retained local functions are:
+The photographs establish visible morphology, not crystallographic indices,
+purity, domain count, or a defect mechanism. `Rhombohedral` has two distinct
+uses here:
 
-```text
-Omega(phi) = 1/2 phi^2 (1 - phi)^2
-g(phi) = 3 phi^2 - 2 phi^3
-D(phi) = phi D_L + (1 - phi) D_S
-```
+- Ambient elemental bismuth has the rhombohedral A7 crystal structure.
+- The target has a visually rectilinear or rhombohedral-pyramidal macroscopic
+  habit.
 
-The browser uses explicit phase and chemical-potential updates, a regularized
-cubic anisotropy, shared conservative face fluxes, exact `Delta g` source
-integration, deterministic smooth initial/far-field perturbations, and a
-write-once solidification-time texture. The active regression preset uses
-`D_L = 1/12`, `D_S / D_L = 1e-4`, `epsilon = 0.02`, `mu_infinity = 0.04`, and
-the source-code normalization `1 / [3 (1 + epsilon)^2]`.
+The first fact does not derive the second. Do not map the unit cell directly
+into an outer support shape or attach Miller indices to photographed faces
+without target-matched evidence.
 
-This implementation deliberately omits the source solver's adaptive mesh,
-Float64 storage, implicit variable-step BDF2 history, and multigrid solve. The
-paper's wider cube/fractal/dendritic transition study is closed for this
-project: cube and hopper were reproduced, while fractal and dendritic were
-not. Those outcomes are not product gates and their experiment harnesses are
-not retained.
+## Observable morphology contract
 
-## Candidate 2A thermal model
+Every accepted candidate must reproduce all of these target traits:
 
-Candidate 2A starts from Karma and Rappel's pure-melt thermal phase field. Its
-convention is `psi = +1` solid, `psi = -1` liquid, with dimensionless
-temperature `u = (T - T_M) / (L / c_p)`:
+- A dominant blocky, rectilinear, or visually rhombohedral-pyramidal sector;
+  projected ledges commonly make approximately right-angle turns.
+- A deep open hopper recession with a strong rim-over-core relationship.
+- Many stepped bands joined into a continuous winding or spiral-like path
+  across successive elevations, not merely two or three complete rings.
+- Uneven terrace widths, offsets, interruptions, partial fronts, and visible
+  asymmetry while the solid remains connected.
+- A single dominant sector matching references 1 and 2 at the first gate.
+- Connected branching or intergrowth matching references 3 and 4 at the later
+  multi-sector gate.
 
-```text
-tau(n) dot(psi) = W(n)^2 laplacian(psi)
-                  + [psi - lambda u (1 - psi^2)] (1 - psi^2)
-dot(u) = D laplacian(u) + dot(psi) / 2
-```
+The word `spiral` describes the visible winding topology only. No current
+target-matched primary source proves that a screw dislocation causes the
+macroscopic bands. Until that changes, use `winding ledge` in model claims and
+treat screw-dislocation, twin-plane, repeated-nucleation, and edge-driven
+sources as competing mechanisms.
 
-The thin-interface isolation uses:
+These habits are explicit rejection outcomes:
 
-```text
-a1 = 0.8839
-a2 = 0.6267
-d0 = a1 W / lambda
-beta = a1 [tau / (lambda W) - a2 W / D]
-```
+- a regular six-sided or hexagonal plate;
+- a simple three-sided Sn-Bi pyramid;
+- a generic cube or six-face cubic hopper;
+- complete concentric or homothetic closed rings;
+- a shallow central dimple or smooth bowl;
+- perfect repeated symmetry used to substitute for irregular ledge growth;
+- generic dendrites, compounds, films, nanorods, or decorative intergrowths.
 
-The fixed melt-air plane applies a finite-volume Robin heat-removal boundary:
+Iridescent oxide color is a rendering target. It never supplies shape or hides
+a failed growth model.
 
-```text
-Bi(psi) = Bi_liquid + h(psi) (Bi_solid - Bi_liquid)
-partial_n u = -Bi(psi) (u - u_air)
-u_ghost = u_surface - dx Bi(psi) (u_surface - u_air)
-```
+## Source-import gate
 
-Here `h(psi) = 1/2 + 3 psi / 4 - psi^3 / 4`. Omitting `Bi_solid` makes it equal
-to `Bi_liquid` and exactly preserves the former boundary. Distinct values
-represent the source-backed solid-air versus liquid-air heat-flux jump. This
-boundary changes heat flux; it never stamps or multiplies local phase growth.
-Turning the boundary off removes its excess contact-line signal in the
-isolated deterministic case. A fixed uncalibrated contrast passes equal-value
-null, contrast reversal, boundary-enthalpy balance, and grid-refinement checks;
-it is not enabled in the fixed 3D screen.
+Before a source changes an equation, facet, boundary, coefficient, or
+acceptance rule, record these fields in `docs/references.md`:
 
-Candidate 2A defines surface energy `gamma(n)` independently from attachment
-kinetics `beta(n)`. Its slow directions use the observed `{1-102}` hexagonal
-family, equivalent to `{110}` in the rhombohedral cell, derived as reciprocal
-plane normals from the corrected 298 K lattice constants. Current contrast
-values are dimensionless discriminators, not calibrated bismuth properties.
+1. composition and purity;
+2. growth phase and route;
+3. specimen scale and dimensional constraint;
+4. observed external habit;
+5. single-domain, twinned, polycrystalline, or unknown state;
+6. exact allowed claim and forbidden inference.
 
-The former hard maximum over facet alignments was not differentiable where two
-facet branches tied. Candidate 2A now uses the smooth even family response
+Classify the result as target-shape evidence, target-process evidence,
+mechanism-only, numerical-only, or incompatible. Only target-shape evidence
+may define product geometry. A mismatch does not make a source useless, but it
+forces the imported claim into an isolated mechanism or numerical test. No
+chain of several mismatched papers can be combined to imply a target-matched
+habit.
 
-```text
-S(n) = sum_k (n . m_k)^6 / sum_k (m_0 . m_k)^6
-a(n) = gamma(n) / gamma_ref = 1 - epsilon_gamma S(n)
-W(n) = W0 a(n)
-```
+## Candidate decisions
 
-The reference scale is explicit; it is not replaced by an angular average.
-For `p = grad(psi)`, `n = p / |p|`, and
-`A(p) = |p| a(p / |p|)`, the implemented gradient energy and its complete
-variational flux are
+### Generic cubic scaffold
 
-```text
-F_grad = W0^2 A(p)^2 / 2
-Q(p) = partial F_grad / partial p
-     = W0^2 [a^2 p + |p| a (I - n n^T) grad_n a]
-```
+Bollada, Jimack, and Mullis model a cubic binary-alloy hopper driven by solute
+transport. It remains regression scaffolding for solver, controller, and
+extraction behavior. Elemental bismuth has no solute-rejection field of that
+kind, and the generic cubic carrier cannot enter product morphology review.
 
-`Q(0) = 0`. The discrete operator takes a forward gradient and its exact
-backward-adjoint divergence, so its phase update is the discrete energy
-gradient rather than an anisotropy multiplier applied to a separate
-Laplacian. The directional relaxation time is solved from Karma and Rappel's
-finite-width kinetic relation:
+### Candidate 1 - rejected
 
-```text
-tau(n) = lambda W(n) [beta(n) / a1 + a2 W(n) / D]
-```
+The direct rhombohedral remapping used lattice translations as surface-energy
+generators, retained generic calibration, and produced a boundary-limited
+body. The rhombohedral unit cell does not authorize that macroscopic habit.
 
-The fixed isolation law has a positive numerical energy-Hessian envelope with
-maximum normalized stiffness `Lambda_A <= 1.3`. With `d` active dimensions,
-spacing `dx`, `|psi| <= 1`, and a declared temperature envelope `|u| <= U`,
-the explicit phase limit is
+### Candidate 2A - mechanism evidence only
 
-```text
-L_R = 2 + 8 lambda U / (3 sqrt(3))
-dt_phase = 2 tau_min / [4 d W0^2 Lambda_A / dx^2 + L_R]
-```
+The thermal phase-field path established conservative pure-melt enthalpy,
+variational anisotropy, and a phase-specific free-surface heat boundary. Its
+first 3D screen stayed connected and finite but grew the center ahead of the
+rim, producing no hopper opening. A resolved discriminator then showed smooth
+phase-field healing overwhelming the opening drive. Candidate 2A cannot carry
+discrete target ledges.
 
-The heat limit also includes the Robin boundary eigenvalue. Configuration uses
-`0.8 min(dt_phase, dt_heat)` and rejects a larger time step before a run.
+Its former `bismuthSlowFacetNormals` name was incorrect in scope. The function
+is now `snBiPyramidFacetNormals`: its `{1-102}` family comes from microscopic,
+polycrystalline Sn-Bi pyramids and is retained only for old evidence. It must
+not define Candidate 2D.
 
-The reference capillary length and stationary three-dimensional critical
-Wulff scale are
+### Candidate 2B - generic mechanism evidence only
 
-```text
-d0_ref = a1 W0 / lambda
-R_gamma,* = 2 d0_ref / Delta
-```
+The surface-adatom isolation demonstrates that nonlocal tangential transport
+can create a perimeter-over-core signal. Its deposited-faceted-crystal source
+is neither bulk melt growth nor bismuth calibration, so it cannot set the
+target habit or active coefficients.
 
-A surface-attached Candidate 2 seed begins as an anisotropically diffuse
-hemisphere on `y = 0`, then relaxes at zero thermal drive with the same phase
-energy. A Lagrange multiplier preserves the diffuse solid-volume functional
-`h(psi) = 1/2 + 3 psi / 4 - psi^3 / 4`. The no-through phase flux supplies the
-model's neutral contact condition; a different contact angle would require a
-sourced surface free energy. This is Candidate 2 initialization, not the
-generic cubic seed calibration.
+### Candidate 2C - rejected product habit
 
-Flux differentiation, the stiffness envelope, seed energy/volume behavior,
-and rotated planar-front grid/time refinement now pass deterministic checks.
-A cheap 3D screen may therefore test whether one initial site stays connected,
-clear of the five non-free-surface boundaries, and develops an increasingly
-deep dominant opening. A screen pass is only permission to promote; it is not
-final morphology acceptance.
+Candidate 2C successfully demonstrated exact swept-volume/latent accounting,
+a conservative reduced cold-content driver, deterministic explicit ledges,
+and a visible CPU-carrier-to-WebGPU extraction seam. Those are reusable
+patterns, not morphology approval.
 
-The first fixed screen failed as `non-hopper`. The converged seed and coupled
-fields stayed finite; the solid remained one connected surface-attached
-component, final far-boundary clearance was `4.5`, and diffuse maturity reached
-`1.1259`. However, opening depth was zero at every 100-step checkpoint. At the
-final checkpoint the central height was `10.6472` and the rim height was
-`8.2587`, so the center advanced faster than the rim. Local `gamma(n)`, local
-`beta(n)`, and Robin heat removal are therefore insufficient in this isolation
-to produce the required recession. The next model change must first explain
-that directional incorporation failure outside the 3D screen.
+The carrier was incompatible with the target by construction:
 
-### Frozen thermal pulse and resolved opening force
+- three Sn-Bi `{1-102}` directions were projected into the display plane;
+- each opposite direction was added and every support was assigned the same
+  inradius, guaranteeing a centered regular hexagon;
+- every ledge used one scalar offset against all six supports, guaranteeing
+  complete concentric homothetic loops;
+- whole loops were born and advanced uniformly, so no step head, interrupted
+  front, unequal edge speed, or continuous winding path could exist;
+- the scalar carrier extruded a polygon base plus complete annular prisms, not
+  sloped rhombohedral-pyramidal hopper faces.
 
-The failed 3D screen left two different possible defects: the phase-specific
-surface heat flux could point the wrong way, or the smooth phase field could
-erase a correctly driven terrace. The mechanism discriminator separates them
-without evolving or displaying a supplied hollow.
+Candidate 2C is therefore closed despite its valid numerical proof. Its direct
+GPU reconstruction task is canceled. The evidence fixture is available only
+through `?mode=candidate2c-evidence` and must remain labeled as retired.
 
-It first reuses the exact converged 3D seed, freezes `psi`, resets `u = 0`, and
-advances only heat diffusion for `t = 0.5`. The three symmetric Robin pairs are
+## Direct bismuth constraints for Candidate 2D
 
-```text
-equal:    Bi_liquid = 1.125, Bi_solid = 1.125
-forward:  Bi_liquid = 0.25,  Bi_solid = 2
-reverse:  Bi_liquid = 2,     Bi_solid = 0.25
-```
+The current source audit establishes a narrower set of defensible constraints:
 
-Signed distance to the seed's `h(psi) = 0.5` free-surface contour defines the
-same contact, solid-rim, liquid-exterior, and core samples in every arm. The
-equal arm is the exact null. Forward and reverse surface temperature jumps
-have the expected opposite signs, and the maximum normalized heat-ledger
-residual is `1.16e-7`. However, the forward surface localization measure
-`U_core - U_rim` is `-0.0631`; the core is colder than the rim. The reverse arm
-changes it to `+0.1331`. The fixed pulse is therefore classified
-`contrast-not-rim-localized`, not promoted.
+- Frawley, Maurer, and Childs used `99.999+%` bulk bismuth and reported a
+  supercooling-dependent sequence from prismatic to hopper, triplanar, and
+  branched growth. Many hopper dendrites were twinned, but their twin-plane
+  claim concerns prismatic daughter growth from a twinned hopper surface. This
+  is direct evidence for material, bulk-melt route, a hopper regime, branching,
+  and a possible local twin contribution; it does not show that a twin formed
+  the hopper or index every target face.
+- Steger and Price grew four macroscopic three-dimensional bismuth hoppers
+  downward from an upper melt-surface nucleation point. Section outlines became
+  irregular and convoluted through depth. This supports a complex connected
+  bulk carrier, not a surface step law or coefficient set.
+- Tokoro, Sugawara, and Watanabe directly observed faceted, sometimes stepwise
+  advance in pure-Bi melt-regrown thin films. This supports discrete step
+  kinetics as a mechanism, not the bulk outer habit.
+- Wagner and Brown reported high-purity bismuth crystals apparently growing
+  from a supercooled melt with the aid of a deformation twin. They proposed
+  that a twin terminating at a faceted interface can form a re-entrant step.
+  Their accessible record is qualitative, discusses prismatic products, warns
+  that the necessary conditions may be insufficient, and supplies no
+  recurrence law or coefficient. This makes one local twin-source isolation
+  credible, not a hopper or winding model.
+- No current matching primary source demonstrates that the target's winding
+  macroscopic ledges are generated by a screw dislocation.
 
-The second discriminator injects one diagnostic outer ring into the same seed.
-Its height is `2 W`, and its radial support has a `W` rise, `2 W` plateau, and
-`W` fall. A resolved core tangent is subtracted so the opening mode `m` is
-first-order neutral under the diffuse solid-volume functional:
+The full applicability matrix and links live in `docs/references.md`.
 
-```text
-m = partial_H psi_ring - alpha partial_H psi_core
-sum h'(psi_terrace) m = 0
+## Candidate 2D target-habit ledge model
 
-P_X = sum [m F_X / tau] / sum m^2
-F_total = F_variational + F_thermal
-```
+Candidate 2D begins with observable topology and keeps its unresolved source
+mechanism explicit. It is a replacement carrier, not Candidate 2C with four
+supports.
 
-Positive `P_X` amplifies rim-over-core opening; negative `P_X` heals it. The
-forward contrast adds a positive `1.65e-6` opening-rate component, so its phase
-drive sign at the resolved solid/liquid interface is not reversed. But the
-variational projection is `-0.10544`, the complete forward thermal projection
-is only `+1.18e-5`, and the total remains `-0.10543`. Smooth phase-field healing
-is about `8,900` times the whole thermal contribution and about `64,000` times
-the contrast-only contribution. The reversed arm also heals.
+### Required state
 
-This diagnostic closes smooth Candidate 2A as the carrier of discrete hopper
-terraces at the resolved scale. It does not reject Candidate 2A's conservative
-thermal boundary or bulk enthalpy field. Those can supply Candidate 2C, whose
-explicit step state must carry ledge birth and propagation without being
-converted into stamped 3D geometry.
+The smallest single-sector state must contain:
 
-## Candidate 2B surface-incorporation isolation
+- a sloped rectilinear or visually rhombohedral-pyramidal outer envelope with
+  independently configurable support planes and no assumed Miller indices;
+- an ordered ledge path made of explicit partial segments;
+- one or more step heads with position, direction, elevation, birth source,
+  and deterministic local advance;
+- approximately right-angle direction changes without requiring a closed loop;
+- incomplete or interrupted fronts and per-segment advancement;
+- one connected swept-solid representation and exact accumulated area, volume,
+  and latent-energy ledgers.
 
-Albani et al.'s sharp-surface model evolves surface adatom density `N` through
+Changing six supports to four is insufficient. Candidate 2C's loop ordinal,
+area formula, birth clock, perimeter-averaged temperature, topology checks, and
+annular scalar all assume a complete homothetic loop and must not be reused as
+Candidate 2D geometry.
+
+For step height `h` and actual newly swept planar region `Delta A`, the only
+allowed geometry-to-energy coupling is
 
 ```text
-dot(N) = div_s [M grad_s(mu)] + F - v
-v = (mu - mu_eq) / tau(n)
-```
-
-With quasi-stationary adatom density, this becomes
-
-```text
-v = div_s [M grad_s(mu)] + F
-mu = mu_eq + tau(n) v
-```
-
-Candidate 2B tests this nonlocal construction on a planar unfolded
-side-top-side surface. It sets `mu_eq = 0`, uses constant `M`, and applies zero
-tangential chemical-potential flux at the two open ends. Eliminating `v` gives
-the finite-volume elliptic problem
-
-```text
-mu / tau - M d2(mu) / ds2 = F
-```
-
-The endpoint condition is a conservative local isolation choice, not an
-Albani trijunction law. The paper supplies no melt-air-crystal trijunction
-condition and no bismuth calibration.
-
-The fixed discriminator borrows Figure 9's dimensionless values `F = 0.5`,
-`tau_side = 10`, `tau_top = 1`, and `M = 0.1`, on a top facet wider than
-`sqrt(M tau_top)`. Figure 9 uses a directional incident flux; the isolation
-deliberately applies uniform supply to every unfolded facet so only
-incorporation contrast and tangential redistribution create the signal.
-Before evaluation, the screen required at least `5%` top-rim excess,
-supply-balance error no larger than `1e-12`, equation residual no larger than
-`1e-11`, and less than `1%` absolute signal change under aligned grid
-refinement. It passes: normalized rim excess is `1.2040`, balance error is
-`1.18e-13`, and residual is `5.72e-13`. Zero mobility or isotropic `tau`
-removes the signal, reversing the contrast reverses it, and scaling uniform
-supply leaves the normalized signal unchanged.
-
-This result explains a possible perimeter-over-core mechanism without carving
-a hollow or retuning local Candidate 2A anisotropies. It does not authorize a
-3D run. Albani's `F` and `v` already describe material-driven normal motion,
-while Candidate 2A's phase rate already describes thermally driven normal
-motion and releases latent heat. An additive phase-rate correction would
-double-count growth. Direct bismuth evidence favors interface-reaction and
-layer growth, so Candidate 2B is retained as a deferred mechanism rather than
-the active coupling path.
-
-## Candidate 2C outer-source facet steps
-
-Pure-bismuth melt observations report stepwise advance on faceted interfaces,
-and time-resolved Sn-Bi observations infer surface nucleation of new layers,
-slow `{1-102}` attachment, and faster surface/trijunction tips than a buried
-tip. Candidate 2C therefore tests explicit layer birth and inward step flow
-instead of another smooth local kinetic multiplier.
-
-Weinstein and Brandon give step propagation
-
-```text
-v_step = beta_step DeltaT
-V_facet = h v_step c_step = beta_step |tan(theta)| DeltaT
-```
-
-and approximate their macroscopic defect-free two-dimensional nucleation law
-as
-
-```text
-V_2DN = B DeltaT exp(-A / DeltaT).
-```
-
-Candidate 2C derives a deterministic layer clock `V_2DN / h`, emits circular
-ledges at an outer boundary, moves each ledge inward with `v_step`, and removes
-it at a center sink. That clock is an isolation closure, not a literal
-nucleation-event equation from the paper. The paper's outer source is an
-analogous concave silicon/ampoule configuration and does not establish a
-bismuth melt-air source.
-
-For facet radius `R`, step height `h`, and active step radius `r_i`, the
-reconstructed height and exact swept volume are
-
-```text
-H(r) = h [completed_layers + count(r_i <= r)]
-V = pi h [completed_layers R^2 + sum_i (R^2 - r_i^2)].
-```
-
-The fixed dimensionless isolation has `R = 4`, `h = 0.25`,
-`beta_step = 1`, `B = 0.25`, `A = 1`, and uniform `DeltaT = 1`. At `t = 6`
-it has two active ledges at radii `0.7183` and `3.4366`, giving a two-step
-opening and swept volume `15.4520`. Source-off immobility, exact constant and
-linear-undercooling trajectories, center completion, the fractional birth
-clock, volume/latent geometry ledgers, profile quadrature, and time refinement
-pass deterministic checks.
-
-This proves the conditional geometry only: outer-born inward ledges can create
-nested recession. A second radial isolation now couples that mechanism to a
-conservative annular thermal field:
-
-```text
-dot(u) = D (1 / r) partial_r [r partial_r u] + latent_step_source
-partial_r u(R) = -k_rim [u(R) - u_air]
-```
-
-Each finite-volume face exchanges equal and opposite heat between adjacent
-annuli. Here `k_rim` has inverse radial-length units; it is not a conventional
-dimensionless Biot number. This prescribed outer Robin sink is the only
-external term. Every ledge displacement from `r_old` to `r_new` returns
-
-```text
-Delta V = pi h (r_old^2 - r_new^2)
+Delta V = h Delta A
 Delta Q_latent = L Delta V
 ```
 
-to the overlapped annular thermal cells. Thus the same motion supplies geometry
-and latent heat. Starting uniformly at melting temperature, the fixed gate at
-`t = 1.5` produces core temperature `-0.0512` and rim temperature `-0.5090`;
-the rim source emits 11 active terraces, opening depth is `1.1`, and swept
-volume is `7.0787`. Removing the outer heat flux leaves the field at melting
-temperature and emits no layer. Cumulative external heat `-20.5201` and latent
-heat `+7.0787` close the finite-volume energy ledger, while radial and time
-errors decrease independently and remain inside the predeclared `15%`
-envelope. A step-motion Courant bound is enforced, and newborn zero-area
-ledges do not count toward opening depth until they move inward by one cell.
+`Delta A` must be derived from the advanced path segments, including clipped
+corners and partial fronts. It cannot be inferred from a loop count or stamped
+profile. A reduced cold-content driver may be reused only if this same
+`Delta V` pays back latent heat exactly once.
 
-The cold-rim toy therefore passes its numerical conservation gate, but not the
-physical coupling gate. It prescribes the source location and uses a
-unit-depth radial capacity. It remains predecessor evidence only; the active
-path does not revolve or stamp this profile.
+### Representation checkpoint and rejected carrier
 
-### Faceted thermal coupling and scalar carrier
-
-The active Candidate 2C coupling uses a fixed, closed, cell-centered 3D
-thermal domain. There is no fitted effective depth. For thermal cell `i`,
-interior face `f`, and surface phase `p` in `{solid, liquid}`, the discrete
-energy update is
+The first Candidate 2D implementation uses four cyclic support planes with
+independent offsets. For active side `i`, let `O0` and `O1` be the endpoints
+of its current outer support edge and `I0` and `I1` the endpoints after moving
+only that support inward by the active terrace width. At normalized head
+progress `p`, the advancing front is
 
 ```text
-E_i = V_i u_i
-
-Delta E_i = Delta t sum_f D (A_f / d_f) (u_j - u_i)
-            - Delta t sum_p D kappa_eff,p A_i,p (u_i - u_air)
-            + L Delta V_s,i
-
-kappa_eff,p = kappa_p / (1 + kappa_p dx / 2).
+O(p) = (1 - p) O0 + p O1
+I(p) = (1 - p) I0 + p I1
 ```
 
-The last denominator is the half-cell resistance between the stored cell
-center and the Robin face. Internal exchanges are equal and opposite. Exact
-solid/liquid cut areas partition every free-surface cell, while `Delta V_s,i`
-is the same swept faceted-prism volume used by the step geometry. It is
-rasterized over its actual vertical cell overlaps and deposited once; no
-Candidate 2A phase update supplies a second latent source.
+and the actual new partial region is the clipped trapezoid
+`[O0, O(p), I(p), I0]`. The declared head is `O(p)`, so it lies on the same
+front that defines swept area. When the side completes, `O1 -> I1` becomes a
+forward corner connector and `I1` is the next side's start. This produces one
+continuous open route without the backtracking connectors or corner crossings
+created by projecting a full-strip tangent extreme onto the inner edge.
 
-At the exact outer polygon, a local linear finite-volume reconstruction gives
-the shared cell trace. Its two one-sided Robin face values and outward fluxes
-are
+Polygon area is evaluated directly with the shoelace formula. Each advance
+independently accumulates `Delta A`, `h Delta A`, and `L h Delta A`; global
+values are sums of the per-ledge ledgers rather than recomputed aliases. The
+development scalar unions those non-overlapping patch prisms with a closed
+four-plane sloped base. This carrier is extraction-only and does not feed back
+into ledge state.
+
+The representation passes continuity, non-self-contact, partition invariance,
+per-ledge conservation, connected-solid, open-core, and extraction-refinement
+checks. It is rejected as product morphology. Time-staggered copies of one
+prescribed planar route create only four visible elevations and a broad,
+shallow terrace stack over a flat central floor. The result does not have the
+deep rim-over-core structure or many persistent bands in references 1 and 2.
+Increasing height, births, widths, camera contrast, or material response would
+only tune prescribed geometry and is forbidden as a Candidate 2D fix.
+
+The reusable result is narrower: the compact state and model-neutral
+extraction seam can represent partial fronts correctly. The next candidate
+must make a declared local source state generate the 3D ledge supply and must
+pass morphology before this carrier is considered for production residency.
+
+### Twin-plane local-source checkpoint
+
+The twin-plane discriminator represents a local two-dimensional section, not
+a target-shaped sector. Two facet rays meet at a shared interface vertex. A
+solid-interior sample selects which angular sector is solid, so the intersection
+is re-entrant only when that sector exceeds `pi`. A nondegenerate twin segment
+must lie in the solid and have exactly one endpoint at the interface vertex.
+Wagner/Brown supplies qualitative eligibility criteria; the explicit
+two-dimensional angle and segment tests below are this project's local
+operationalization:
 
 ```text
-u_Gamma,p = [u_c + (kappa_p dx / 2) u_air]
-            / [1 + kappa_p dx / 2]
-q_Gamma,p = D kappa_p (u_Gamma,p - u_air)
-J_Gamma = mean_Gamma(q_Gamma,solid - q_Gamma,liquid).
+g_twin = faceted
+         and twin_present
+         and twin_terminates_at_interface
+         and twin_lies_in_solid
+         and growth_direction_lies_in_liquid
+         and solid_angle > pi
 ```
 
-`J_Gamma > 0` selects the outer solid source. Equal coefficients make this
-excess source exactly zero, and coefficient reversal reverses its sign; the
-reverse arm suppresses births rather than inventing step dissolution. The
-actual contact undercooling, not the flux or a solid/liquid temperature
-difference, is supplied to the cited two-dimensional nucleation law:
+The paper supplies no kinetic equation. The isolation therefore declares the
+dimensionless project closure
 
 ```text
-Delta T_Gamma = max(0, -mean(u_Gamma,solid, u_Gamma,liquid))
-dot(N_layer) = B Delta T_Gamma exp(-A / Delta T_Gamma) / h.
+dx/dt = mu g_twin max(theta, 0)
+Delta A = ell Delta x
+Delta V = h Delta A
+Delta Q_latent = L Delta V
+C theta = C theta_0 + Q_removed - Q_latent
 ```
 
-Each explicit six-facet loop retains an ordinal layer. Its inward velocity is
-`beta_step Delta T_i`, where `Delta T_i` is reconstructed and averaged on that
-loop's own vertical step-front slab. A completed oldest loop becomes one full
-layer without moving the remaining fronts between slabs. Birth times,
-fractional clock phase, strict nesting, and crossings remain explicit
-diagnostics; fractional clock progress creates no partial geometry or latent
-heat.
+Here `ell` is the independent out-of-section length of the local twin/facet
+intersection. The eligibility rays live only in the perpendicular section;
+`Delta A` is the facet strip swept by extruding front travel along `ell`, not a
+same-section rectangle crossing the solid sector. `theta` is signed local
+thermal driving and `mu` is not a measured bismuth mobility. Signed
+heat-removal impulses provide the external term, and the reduced ODE is
+integrated in closed form between an impulse and front completion. Reversed
+driving stops the growth-only front; no unsupported dissolution law is
+implied.
 
-The observational scalar is a deterministic view of that authoritative state.
-With outer polygon `P_0`, active inner polygons `P_j`, completed count `N`, and
-one closed base layer, its solid set is
+The frozen positive arm emits exactly one front at the computed twin/facet
+intersection, advances it parallel to the twin through the local facet strip,
+and closes swept-area, volume, latent, and cold-content ledgers independently.
+Removing the twin, moving it off the interface, placing it outside the solid,
+pointing its continuation back into solid, changing the solid sector to a
+non-re-entrant corner, removing faceting, setting zero driving, or reversing
+thermal driving yields no event and no swept volume. Arbitrary elapsed-time
+partitioning preserves the same physical and ledger state, and a signed
+heat-addition reversal stalls an already emitted front without changing its
+accumulated volume.
+
+For the mandatory 3D closeout, the extraction-only carrier is exactly the
+swept strip. With source point `p`, unit growth direction `g`, observational
+in-section perpendicular `n = (-g_y, g_x)`, and out-of-section axis `e_z`, its
+solid set is
 
 ```text
-S = P_0 x [0, (1 + N) h]
-    union_j (P_0 minus P_j)
-            x [(1 + N + j) h, (2 + N + j) h].
+p + u g + v n + w e_z
+0 <= u <= x, |v| <= h/2, |w| <= ell/2
 ```
 
-The signed union level is mapped to `+1` solid and `-1` liquid across a fixed
-extraction-only transition band. This band is not a phase-field interface
-width, and the scalar never changes heat, steps, or the swept-volume ledger.
-The fixed carrier resolves `h` with four samples, preserves the reciprocal
-facet frame and analytic volume, encloses at most eight total layers, and has
-a predeclared GPU vertex capacity. The first screen advances the same reduced
-model to its fixed evaluation time in 1600 numerical steps and retains step 0,
-every 100 steps, and the final step.
+The perpendicular `n` only embeds the two-dimensional isolation in the fixed
+review volume; it is not a sourced crystallographic normal. The carrier adds
+no base, hopper body, ledge recurrence, or target-shaped mask. Its analytic
+volume is therefore exactly `x h ell`, the same volume already paid by the
+source ledger. Source-null, zero-driving, and initially reversed states map to
+an empty scalar. A post-emission reversal maps to the unchanged accumulated
+strip because the model declares growth arrest rather than dissolution.
 
-The fixed 1600-step Candidate 2C screen is complete. It retained step 0 and
-every 100-step checkpoint through step 1600 for 17 GPU extractions. All
-thermal-step and observational-scalar values remained finite, the explicit
-terrace state reported no crossings, and GPU marching cubes reported neither
-capacity overflow nor uncaptured WebGPU errors. At the final checkpoint there
-were six active terraces and three resolved terraces, opening depth was
-`0.75`, and the extracted mesh contained `333636` vertices and `111212`
-triangles. The normalized energy residual was `1.6281e-13`, and raster geometry
-relative error was `1.49e-15`. The predeclared classification is
-`hopper-mechanism-candidate`.
+This passes the local eligibility and null/reversal isolation only. The
+accessible evidence provides no self-perpetuation law, so the implementation
+deliberately emits one event and cannot test recurring or multi-twin supply.
+Persistent winding from a twin source remains unresolved, and target-source
+promotion is unsupported at the current evidence boundary. This does not
+physically falsify twin-mediated growth. The one-front state must not be
+connected to the rejected winding carrier or promoted as target geometry. Its
+diagnostic 3D closeout passes source-state, scalar, and WebGPU extraction
+checks but visibly fails all four references: one strip contains no hopper
+opening, recurring elevations, winding ledges, or intergrowth.
+Edge/free-surface supply is the next evidence-backed exploration;
+screw-dislocation supply remains on hold.
 
-This result shows that one fixed uncalibrated Candidate 2C configuration and
-discretization survives the observational-scalar and production GPU-extraction
-path while retaining a resolved open terrace sequence. It does not establish a
-bismuth trijunction nucleation law, calibrate the heat-transfer or kinetic
-coefficients or step height, demonstrate screen-level spatial or internal-seed
-robustness, or accept product morphology. The next scientific boundary was
-time-only refinement with the screened physical configuration and source
-closure held fixed.
+### Competing source mechanisms
 
-Before inspecting the half-time-step arm, the screen-level temporal envelope
-is fixed as follows. The `1600`-step and `3200`-step arms must align at the same
-17 physical times within `1e-12`. Emitted, completed, active, and resolved
-terrace counts, opening depth, birth ordinals, and final topology must match
-exactly at aligned checkpoints. Maximum layer-clock drift is `0.15` layer,
-maximum matched birth-time drift is `0.05`, and maximum matched loop-offset
-drift is `5%` of facet inradius. Contact temperature, flux jump, cumulative
-external heat, analytic and rasterized swept volume, and cumulative latent heat
-may each differ by at most `5%` under `|a-b| / max(1, |a|, |b|)`. Both arms
-must remain finite, crossing-free, and classified
-`hopper-mechanism-candidate`; normalized energy, raster-geometry, and latent
-ledger residuals must remain at or below `1e-10`. These tolerances are frozen
-before the refined result and do not authorize coefficient tuning.
+Candidate 2D must isolate these alternatives before combining any of them:
 
-The half-time-step arm passes that envelope. Both arms remain
-`hopper-mechanism-candidate`; emitted, completed, active, and resolved terrace
-counts and opening depth match at every checkpoint, birth/completion ordering
-is unchanged, and no crossing occurs. Maximum physical-time misalignment is
-`4.4853e-14`, layer-clock drift is `3.6576e-4`, matched birth-time drift is
-`7.3131e-5`, normalized loop-offset drift is `2.9994e-5`, and the largest
-continuous-state difference is `4.1061e-4`. The largest normalized ledger
-residual is `1.1475e-12`. Both final arms have six active terraces, three
-resolved terraces, and opening depth `0.75`. GPU marching cubes extracts the
-17 refined checkpoints at steps 0, 200, ..., 3200 without overflow or
-uncaptured WebGPU errors; the final mesh remains `333636` vertices and
-`111212` triangles. This establishes screen-level temporal robustness only;
-spatial refinement, internal seeds, calibration, and product morphology remain
-open.
+| Hypothesis                           | Current evidence                                                                                        | Required discriminator                                                                                                                              |
+| ------------------------------------ | ------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Twin-plane re-entrant source         | One local source passes; recurring or multi-twin supply remains unresolved                              | Promotion remains unsupported without target-matched persistent winding dynamics                                                                    |
+| Screw-dislocation source             | Generic hopper/spiral literature and different-regime Bi evidence only                                  | A target-matched source or result must link one persistent step head to the macroscopic winding ledge                                               |
+| Repeated two-dimensional nucleation  | Generic step-flow and different-specimen Sn-Bi evidence                                                 | Independent births must still form one connected winding sequence rather than complete rings                                                        |
+| Edge/free-surface-driven step supply | Wire-seeded bulk-Bi growth from an upper surface plus generic finite-wedge reasoning; no recurrence law | Active next isolation: one real seeded contact line may emit one conservative local front; persistent births and route selection remain unsupported |
 
-## Bismuth acceptance gate
+Failure of one hypothesis is evidence about that mechanism, not permission to
+blend the others until the result looks right.
 
-Predeclare numeric envelopes before tuning. At minimum assess:
+## Candidate 2D acceptance gates
 
-- normalized dominant-opening depth and projected/solid fill;
-- connected nested terrace contours and their continuity;
-- agreement with supported facet directions;
-- robust maturity relative to the seed, not one longest ray;
-- one dominant connected component and adequate boundary clearance;
-- stability under grid/time refinement and several internal seeds.
+The first fixed-view carrier comparison was rejected without changing its
+predeclared thresholds. Freeze a new numeric schedule before inspecting each
+source-driven candidate.
 
-Fixed-view reference review is required for final morphology, but an attractive
-image cannot override failed numerical or physical gates.
+Every scientific slice concludes with a deterministic 3D generation and
+fixed-view comparison beside all four target images, including slices rejected
+by a source, conservation, topology, or morphology gate. References 1 and 2
+remain the formal single-sector acceptance pair. References 3 and 4 are
+mandatory regression context until branching/intergrowth becomes active, at
+which point their traits become formal acceptance gates.
 
-## Conditional physics
+Every single-sector proof against references 1 and 2 must test:
 
-High-purity bismuth may use twin-plane re-entrant growth, and real specimens
-may contain multiple domains, dislocations, convection, or finite-reservoir
-effects. None is assumed in advance. Add a twin, step, defect, orientation,
-transport, or surface-incorporation field only when a primary source or an
-isolated failure shows what the field must explain. A twin is at least two
-orientation domains at one site, not a scalar decoration.
+- projected outer-frame classification and explicit rejection of stable
+  sixfold or three-sided symmetry;
+- normalized opening depth and rim-over-core height;
+- ledge-path continuity across elevations, non-self-intersection, and number of
+  direction changes;
+- distribution of terrace widths and offsets, including at least one partial
+  or interrupted front;
+- connected solid, monotonic swept volume, exact latent-energy closure, and
+  adequate domain clearance;
+- time/grid refinement of the actual path state and extraction carrier;
+- a fixed-view image comparison in which appearance cannot override failed
+  topology or conservation.
+
+Only after that gate passes may Candidate 2D add connected sector branching or
+intergrowth and compare it with references 3 and 4. Multiple orientations need
+a documented domain or twin representation with shared transport; they cannot
+be overlapping cosmetic meshes.
+
+## Reusable runtime boundary
+
+The GPU marching-cubes classifier, compaction, vertex emission, normals,
+surface age, capacity handling, indirect drawing, imperative controller, and
+model-neutral development snapshot bridge remain valid infrastructure. The
+public root stays neutral. Candidate 2D may use the CPU snapshot bridge for one
+fixed development proof, but production still requires compact GPU-resident
+state and no recurring full-volume upload or readback.
 
 ## Numerical rules
 
@@ -503,7 +408,9 @@ orientation domains at one site, not a scalar decoration.
 - Keep internal randomness seeded and deterministic.
 - Do not hide instability with unreviewed clamping, smoothing, remeshing, or
   artistic post-processing.
-- Record deliberate departures from cited models here, near the equations
+- Keep scientific failure separate from harness, extraction, or WebGPU
+  failure.
+- Record deliberate departures from a compatible source near the equations
   they affect; do not preserve run transcripts as documentation.
-- Repeat source review only when an equation, constant, boundary, or scientific
-  assumption changes.
+- Repeat the source audit whenever an equation, coefficient, facet, boundary,
+  domain assumption, or morphology claim changes.

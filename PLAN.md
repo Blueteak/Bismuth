@@ -10,48 +10,58 @@ GPU, and renders age-driven metallic iridescence.
 
 The generic cubic solver, live GPU extraction, continuous controller, and
 initial material path exist. They are infrastructure, not product approval.
-Milestone 1B blocks later presentation work until one initial site produces a
-connected, deeply open, stepped bismuth hopper from cited physics.
+Milestone 1B blocks later presentation work until one initial site visibly
+produces the specific bulk bismuth hopper family in `crystal_references/` at a
+production-plausible cadence.
 
-Candidate 1 is closed and rejected. Candidate 2A is the one-domain
-thermal/free-surface path. Its variational operator, normalization/stability
-bound, surface seed, critical-size measure, and rotated planar refinement are
-validated. The first fixed 3D screen was numerically healthy but failed as a
-`non-hopper`: the center remained ahead of the rim and opening depth stayed
-zero throughout growth.
+Candidate 2C is closed as product morphology. Its regular six-support outline,
+complete concentric loops, and `{1-102}` frame came from a microscopic
+polycrystalline Sn-Bi pyramid study and project-derived geometry, not the
+rectilinear, deeply recessed, winding-ledged bulk hopper target. Its exact
+volume/energy ledger and successful WebGPU extraction seam remain useful
+mechanism evidence only.
 
-Candidate 2B validates a generic nonlocal surface-incorporation signal but is
-deferred because direct bismuth evidence favors interface-reaction and layer
-growth. Candidate 2C now proves the conditional geometry: if discrete ledges
-are born at an outer boundary and flow inward, they generate nested terraces
-and a persistent rim-over-core opening with exact swept-volume accounting.
-Candidate 2A also supports the source-backed solid/liquid surface heat-flux
-jump while retaining one phase velocity and one latent-heat update.
+Candidate 2D is the active target-locked path. It starts from the supplied
+specimens and directly matching bulk elemental-bismuth evidence. Papers about
+alloys, thin films, vapor growth, other materials, or generic phase fields may
+support isolated mechanisms or numerics only after their mismatch is recorded;
+they may never set product geometry, facet directions, coefficients, or
+morphology acceptance.
 
-An exact-seed frozen pulse confirms the flux-jump direction but rejects its
-surface rim localization. A separate resolved opening projection shows that
-the intended thermal component exists at the solid/liquid interface, while the
-smooth variational phase field heals the terrace overwhelmingly faster. Smooth
-Candidate 2A is therefore closed as the terrace carrier; explicit ledges remain
-owned by Candidate 2C.
+The first Candidate 2D slice proved that compact explicit fronts can maintain
+an open non-self-intersecting route, exact swept-volume accounting, one
+connected scalar, extraction refinement, and visibly changing production
+WebGPU meshes without importing Candidate 2C geometry. Its fixed-view habit is
+rejected: four time-staggered copies of the same prescribed route form a broad
+shallow terrace stack, not the deep many-banded sectors in references 1 and 2.
+That carrier remains representation evidence only and must not be tuned into
+product morphology.
 
-Candidate 2C now couples its six-facet outer-source/inward-flow loops to the
-phase-specific free-surface heat supply in a closed three-dimensional thermal
-control volume. The signed contact-line flux jump selects the source, actual
-local undercooling drives the cited step and layer laws, and the same exact
-swept volume supplies latent heat. Its source null, reversal, conservation,
-nested-topology, and independent grid/time refinement gates pass.
+The twin-plane re-entrant isolation now passes its local eligibility,
+null/reversal, geometry, and conservation checks. It emits one front parallel
+to a twin terminating at a re-entrant faceted interface. The audited source
+provides no recurrence or winding law, and the isolation never emits a second
+step by design. Recurring or multi-twin supply remains unresolved, and
+target-source promotion is unsupported at the current evidence boundary. Its
+required 3D closeout extracts only the exact swept one-front prism, leaves the
+source-null and reversed controls empty, and preserves the emitted volume when
+driving reverses. The fixed view visibly rejects that strip against all four
+targets because it has no hopper opening, recurring elevations, winding
+ledges, or intergrowth. This does not physically falsify twin-mediated growth.
+The one-front result is closed as mechanism evidence only and must not be wired
+into the prescribed winding carrier.
 
-A Candidate 2C-owned observational scalar carrier reconstructs those
-authoritative loops and layers as one closed extraction field without feeding
-back into growth or using Candidate 2A as a terrace carrier. Its analytic
-volume, facet support, connectivity, topology, capacity, and resolution gates
-pass. Candidate 2C passed its first fixed rejection screen as a mechanism
-candidate. Screen-level spatial refinement, several internal seeds, coefficient and
-source calibration, and fixed-view reference review still block morphology
-acceptance and production integration. The screen-level temporal arm passes;
-spatial refinement remains. Twins, defects, and extra orientations remain
-conditional.
+The next Candidate 2D exploration must isolate edge/free-surface-driven supply.
+Audit the exact source claim before choosing its state law, preserve explicit
+null and reversed-driving failures, and do not provide a target-shaped path,
+birth schedule, or complete rings. Screw-dislocation supply remains
+unselected. Branching and intergrowth from references 3 and 4 remain a later
+boundary, not decorative overlapping meshes.
+
+Twin-plane re-entrant growth, screw-dislocation supply, repeated layer
+nucleation, and edge-driven step flow are competing Candidate 2D mechanisms.
+The visible winding pattern is required, but no defect mechanism is assumed
+until target-matched evidence or a discriminating implementation supports it.
 
 ## Milestones
 
@@ -73,17 +83,39 @@ Marching-cubes classification, compaction, vertex emission, normals, surface
 age, bounded promotion, and the controller-owned live path are implemented.
 Full-volume production readback remains prohibited.
 
-### Bismuth-specific single crystal - current
+### Target-locked bismuth hopper - current
 
 Exit criteria:
 
-- The model uses documented bismuth crystallography and growth mechanisms.
-- One initial site produces a connected, deep opening with nested continuous
-  terraces and coherent facet directions.
-- The morphology survives sensible grid/time refinement and several internal
-  deterministic seeds without boundary contact.
+- Every morphology-defining claim passes the documented specimen-match audit.
+- One initial site produces a connected, deep rectilinear or visually
+  rhombohedral-pyramidal hopper with a continuous winding ledge sequence.
+- Terrace turns are approximately right-angled in projection; spacing,
+  persistence, and center position are naturally uneven rather than concentric.
+- Explicit ledge paths remain deterministic, non-self-intersecting, and
+  coupled to one exact swept-volume and latent-energy ledger.
+- The carrier rejects a regular hexagonal plate, a three-sided Sn-Bi pyramid,
+  complete homothetic rings, a smooth bowl, and generic cubic hopper geometry.
+- A single-sector proof matches references 1 and 2 before multi-sector
+  branching/intergrowth is tested against references 3 and 4.
+- The selected thermal or source driver closes its declared balance and remains
+  stable across predeclared schedules.
+- The extraction carrier preserves volume, connectedness, path topology,
+  capacity, and sensible extraction-grid refinement without feeding back into
+  growth.
 - Acceptance does not depend on post-processed or decorative geometry.
-- The live extracted result remains visibly continuous at an acceptable rate.
+- No Candidate 2D scientific slice is complete until its frozen deterministic
+  run produces an honestly derived 3D result through the integrated WebGPU
+  review path and is compared at the fixed view with all four ground-truth
+  images. Failure remains visible and labeled; the review cannot be repaired
+  with a retired carrier, fallback source, camera/material retuning, or
+  decorative geometry.
+- Compact Candidate 2D state produces visibly changing meshes through the
+  production WebGPU extraction and indirect-draw path. A production-shaped
+  cadence gate must pass before morphology acceptance; a CPU full-volume
+  upload is development proof only.
+- Several deterministic source schedules and a fixed-view reference review
+  preserve the deep hopper character before coefficients are promoted.
 
 ### Material, camera, and public lifecycle - next
 
@@ -117,3 +149,4 @@ server-side solver is required.
 - No public controls beyond the documented contract without approval.
 - No tuning of numerical gates after seeing a candidate result.
 - No artistic geometry used to compensate for missing physics.
+- No generic or different-specimen crystal algorithm may define product habit.

@@ -190,11 +190,11 @@ function rotateByOrientation(
 }
 
 /**
- * Explicit normals for the observed Bi {1-102} hexagonal family, equivalent
- * to {110} in the rhombohedral cell. These are reciprocal-plane normals, not
- * direct lattice translations used as support-function generators.
+ * Explicit normals for the {1-102} family reported for microscopic
+ * polycrystalline Sn-Bi pyramids. This different-specimen hypothesis is
+ * retained for Candidate 2A evidence only and must not define Candidate 2D.
  */
-export function bismuthSlowFacetNormals(
+export function snBiPyramidFacetNormals(
   orientation: EulerOrientation = { x: 0, y: 0, z: 0 },
 ): readonly [Vec3, Vec3, Vec3] {
   const { a, c } = BISMUTH_HEXAGONAL_LATTICE_298K;
@@ -698,7 +698,7 @@ export function deriveCandidate2AThermalConfiguration(
   config: Candidate2AThermalConfiguration,
 ): DerivedCandidate2AThermalConfiguration {
   validateCandidate2AThermalConfiguration(config);
-  const facetNormals = bismuthSlowFacetNormals(config.orientation);
+  const facetNormals = snBiPyramidFacetNormals(config.orientation);
   const minimumRelaxationTime = minimumCandidate2ARelaxationTime(
     config.interfaceWidth,
     config.couplingLambda,

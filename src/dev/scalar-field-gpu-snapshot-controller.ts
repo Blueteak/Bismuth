@@ -34,6 +34,11 @@ import {
   type WebGpuSession,
 } from '../rendering/webgpu-capability';
 import type { ScalarFieldSnapshot } from '../simulation/scalar-field-snapshot';
+import {
+  createOrbitCameraController,
+  type CameraOrbitCommands,
+  type OrbitCameraController,
+} from '../visualizer/orbit-camera-controller';
 
 const DEFAULT_VERTEX_CAPACITY = 650_001;
 const DEFAULT_DISPLAY_SPAN = 5.4;
@@ -48,7 +53,7 @@ export interface ScalarFieldGpuSnapshotResult {
   readonly overflow: boolean;
 }
 
-export interface ScalarFieldGpuSnapshotController {
+export interface ScalarFieldGpuSnapshotController extends CameraOrbitCommands {
   readonly ready: Promise<WebGpuDiagnostics>;
   readonly errors: readonly string[];
   show(state: ScalarFieldSnapshot): Promise<ScalarFieldGpuSnapshotResult>;
@@ -226,6 +231,7 @@ export function createScalarFieldGpuSnapshotController(
   let extractor: ReturnType<typeof createGpuSurfaceExtractor> | undefined;
   let scene: Scene | undefined;
   let camera: PerspectiveCamera | undefined;
+  let orbitCamera: OrbitCameraController | undefined;
   let geometry: BufferGeometry | undefined;
   let material: MeshStandardNodeMaterial | undefined;
   let width = canvas.clientWidth;
@@ -276,6 +282,12 @@ export function createScalarFieldGpuSnapshotController(
     camera.name = labels.camera;
     camera.position.set(6.2, 4.8, 6.4);
     camera.lookAt(0, -0.35, 0);
+    orbitCamera = createOrbitCameraController(
+      camera,
+      canvas,
+      new Vector3(0, -0.35, 0),
+      render,
+    );
     const light = new DirectionalLight(0xe8f5ff, 4.2);
     light.position.copy(new Vector3(0.7, 1, 0.45).normalize());
     scene.add(light);
@@ -327,6 +339,25 @@ export function createScalarFieldGpuSnapshotController(
 
   return {
     ready,
+    stepDegrees: 45,
+    orbitLeft45() {
+      return orbitCamera!.orbitLeft45();
+    },
+    orbitRight45() {
+      return orbitCamera!.orbitRight45();
+    },
+    orbitUp45() {
+      return orbitCamera!.orbitUp45();
+    },
+    orbitDown45() {
+      return orbitCamera!.orbitDown45();
+    },
+    reset() {
+      return orbitCamera!.reset();
+    },
+    getPose() {
+      return orbitCamera!.getPose();
+    },
     get errors() {
       return session ? [...session.errors] : [];
     },
@@ -359,6 +390,7 @@ export function createScalarFieldGpuSnapshotController(
     dispose() {
       if (disposed) return;
       disposed = true;
+      orbitCamera?.dispose();
       extractor?.dispose();
       bridge?.dispose();
       geometry?.dispose();
@@ -371,6 +403,7 @@ export function createScalarFieldGpuSnapshotController(
       session = undefined;
       scene = undefined;
       camera = undefined;
+      orbitCamera = undefined;
     },
   };
 }

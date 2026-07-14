@@ -43,6 +43,11 @@ import {
   type LiveControllerMeshUpdate,
   type LiveMeshUpdateCadence,
 } from './live-controller-scheduler';
+import {
+  createOrbitCameraController,
+  type CameraOrbitCommands,
+  type OrbitCameraController,
+} from './orbit-camera-controller';
 
 const initialEnvironmentPreset = validateEnvironmentPreset({
   id: 'initial-studio-jpg',
@@ -74,7 +79,7 @@ export interface FoundationDiagnostics {
   };
 }
 
-export interface VisualizerController {
+export interface VisualizerController extends CameraOrbitCommands {
   readonly ready: Promise<FoundationDiagnostics>;
   resize(width: number, height: number, devicePixelRatio: number): void;
   dispose(): void;
@@ -146,6 +151,7 @@ export function createFoundationVisualizerController(
   let environmentTexture: Texture | undefined;
   let scene: Scene | undefined;
   let camera: PerspectiveCamera | undefined;
+  let orbitCamera: OrbitCameraController | undefined;
   let width = canvas.clientWidth;
   let height = canvas.clientHeight;
   let devicePixelRatio = window.devicePixelRatio;
@@ -183,6 +189,12 @@ export function createFoundationVisualizerController(
       camera.name = 'Bismuth foundation camera';
       camera.position.set(0, 0, 6);
       camera.lookAt(0, 0, 0);
+      orbitCamera = createOrbitCameraController(
+        camera,
+        canvas,
+        new Vector3(0, 0, 0),
+        render,
+      );
 
       const light = new DirectionalLight(
         initialEnvironmentPreset.sunColor,
@@ -229,6 +241,8 @@ export function createFoundationVisualizerController(
         },
       };
     } catch (error) {
+      orbitCamera?.dispose();
+      orbitCamera = undefined;
       environmentTexture?.dispose();
       environmentTexture = undefined;
       session?.dispose();
@@ -239,6 +253,25 @@ export function createFoundationVisualizerController(
 
   return {
     ready,
+    stepDegrees: 45,
+    orbitLeft45() {
+      return orbitCamera!.orbitLeft45();
+    },
+    orbitRight45() {
+      return orbitCamera!.orbitRight45();
+    },
+    orbitUp45() {
+      return orbitCamera!.orbitUp45();
+    },
+    orbitDown45() {
+      return orbitCamera!.orbitDown45();
+    },
+    reset() {
+      return orbitCamera!.reset();
+    },
+    getPose() {
+      return orbitCamera!.getPose();
+    },
     resize(nextWidth, nextHeight, nextDevicePixelRatio) {
       if (disposed) {
         return;
@@ -255,6 +288,8 @@ export function createFoundationVisualizerController(
       }
 
       disposed = true;
+      orbitCamera?.dispose();
+      orbitCamera = undefined;
       environmentTexture?.dispose();
       environmentTexture = undefined;
       session?.dispose();
@@ -322,6 +357,7 @@ export function createLiveVisualizerController(
   let environmentTexture: Texture | undefined;
   let scene: Scene | undefined;
   let camera: PerspectiveCamera | undefined;
+  let orbitCamera: OrbitCameraController | undefined;
   let solver: GpuSingleCrystalSolver | undefined;
   let extractorPair:
     ReturnType<typeof createGpuSurfaceExtractorPair> | undefined;
@@ -371,6 +407,7 @@ export function createLiveVisualizerController(
       return;
     }
     cleanedUp = true;
+    orbitCamera?.dispose();
     extractorPair?.dispose();
     solver?.dispose();
     geometry?.dispose();
@@ -385,6 +422,7 @@ export function createLiveVisualizerController(
     session = undefined;
     scene = undefined;
     camera = undefined;
+    orbitCamera = undefined;
   };
 
   const settleCompletion = (updates: readonly LiveControllerMeshUpdate[]) => {
@@ -437,6 +475,12 @@ export function createLiveVisualizerController(
       camera.name = 'Bismuth live extraction controller camera';
       camera.position.set(4.2, 3.1, 4.6);
       camera.lookAt(0, 0, 0);
+      orbitCamera = createOrbitCameraController(
+        camera,
+        canvas,
+        new Vector3(0, 0, 0),
+        render,
+      );
 
       const light = new DirectionalLight(
         initialEnvironmentPreset.sunColor,
@@ -585,6 +629,25 @@ export function createLiveVisualizerController(
   return {
     ready,
     completion,
+    stepDegrees: 45,
+    orbitLeft45() {
+      return orbitCamera!.orbitLeft45();
+    },
+    orbitRight45() {
+      return orbitCamera!.orbitRight45();
+    },
+    orbitUp45() {
+      return orbitCamera!.orbitUp45();
+    },
+    orbitDown45() {
+      return orbitCamera!.orbitDown45();
+    },
+    reset() {
+      return orbitCamera!.reset();
+    },
+    getPose() {
+      return orbitCamera!.getPose();
+    },
     resize(nextWidth, nextHeight, nextDevicePixelRatio) {
       if (disposed) {
         return;

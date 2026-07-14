@@ -1,5 +1,10 @@
+/**
+ * Retired Candidate 2C observational carrier. Complete homothetic loops are
+ * evidence for the extraction seam, not acceptable Candidate 2D morphology.
+ */
 import {
   candidate2CFacetedLoopPolygon,
+  type Candidate2CFacetedConfiguration,
   type Candidate2CFacetedFrame,
   type Candidate2CFacetedVec2,
 } from './candidate2c-faceted';
@@ -22,17 +27,18 @@ export type Candidate2CFacetedMorphologyVec3 = readonly [
  * Thermal fields are deliberately excluded so aligned checkpoints can be kept
  * for GPU review without retaining full CPU volumes.
  */
-export type Candidate2CFacetedMorphologyState = Pick<
-  Candidate2CFacetedThermalState,
-  | 'configuration'
-  | 'activeLoopOffsets'
-  | 'completedLayers'
-  | 'emittedLayers'
-  | 'integratedSolidVolume'
-  | 'loopCrossingDetected'
-  | 'time'
-  | 'step'
->;
+export interface Candidate2CFacetedMorphologyState {
+  readonly configuration: Candidate2CFacetedConfiguration & {
+    readonly frame: Candidate2CFacetedFrame;
+  };
+  readonly activeLoopOffsets: readonly number[];
+  readonly completedLayers: number;
+  readonly emittedLayers: number;
+  readonly integratedSolidVolume: number;
+  readonly loopCrossingDetected: boolean;
+  readonly time: number;
+  readonly step: number;
+}
 
 const GRID_SPACING = 0.0625;
 const GRID_SHAPE = Object.freeze([158, 42, 158] as const);

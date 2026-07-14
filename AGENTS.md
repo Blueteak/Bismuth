@@ -39,8 +39,22 @@ through React or read back full production fields/meshes.
 ## Scientific and product guardrails
 
 - Transcribe model equations and constants from cited sources, not memory.
-- The generic cubic hopper is regression scaffolding, not a bismuth product
-  model. Candidate 1 is rejected. Candidate 2A is the active direction.
+- The four files in `crystal_references/` are the visual morphology authority:
+  bulk bismuth hopper specimens with rectilinear or rhombohedral-pyramidal
+  sectors, deep recesses, and winding stepped ledges. Candidate 2D is the
+  active direction.
+- Every Candidate 2D scientific slice, including a failed or mechanism-only
+  slice, ends with an honest deterministic 3D generation on the integrated
+  review route and a fixed-camera comparison beside all four files in
+  `crystal_references/`. Render the state the slice actually produced,
+  including sparse, stalled, or empty outcomes; never add fallback or
+  decorative geometry to make the review presentable.
+- The generic cubic hopper and Candidates 2A through 2C are evidence or
+  regression scaffolding, not product habits. No generic crystal algorithm or
+  different-specimen paper may set target geometry, facets, or acceptance.
+- Classify every scientific source by composition, growth route, scale,
+  specimen habit, and domain state before importing a claim. A mismatch may
+  support an isolated mechanism only; it cannot validate product morphology.
 - Do not add decorative hollows, terraces, spirals, noise, or overlapping
   crystals to conceal a model failure.
 - Keep randomness deterministic internally. Grid spacing and time step are
@@ -53,8 +67,9 @@ through React or read back full production fields/meshes.
 ## Working style
 
 Only write tests when they protect critical math, state transitions, data
-layout, or a reproduced bug. Routine hardware-specific GPU testing is not a
-required gate. Use the smallest relevant checks from
+layout, or a reproduced bug. Routine hardware matrices are not required, but
+one local WebGPU 3D review is required to close every Candidate 2D scientific
+slice. Use the smallest relevant checks from
 `docs/testing-and-validation.md`; use screenshots only for visual changes.
 
 Keep patches scoped, preserve unrelated user changes, and update only the

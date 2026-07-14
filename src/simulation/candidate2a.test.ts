@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import {
   advanceCandidate2ATemperature,
   bismuthKineticCoefficient,
-  bismuthSlowFacetNormals,
+  snBiPyramidFacetNormals,
   bismuthSurfaceEnergy,
   CANDIDATE2A_FACET_ISOLATION_PARAMETERS,
   CANDIDATE2A_FREE_SURFACE_FLUX_ISOLATION,
@@ -250,8 +250,8 @@ function frozenSurfaceTemperatureContrast(
 }
 
 describe('Candidate 2A thermal/free-surface isolation', () => {
-  it('constructs the observed {1-102} hexagonal facet family explicitly', () => {
-    const normals = bismuthSlowFacetNormals();
+  it('constructs the Sn-Bi pyramid {1-102} facet hypothesis explicitly', () => {
+    const normals = snBiPyramidFacetNormals();
     expect(normals).toHaveLength(3);
     for (const normal of normals) {
       expect(Math.hypot(...normal)).toBeCloseTo(1, 12);
@@ -261,7 +261,7 @@ describe('Candidate 2A thermal/free-surface isolation', () => {
   });
 
   it('keeps surface energy and attachment kinetics independent', () => {
-    const facetNormals = bismuthSlowFacetNormals();
+    const facetNormals = snBiPyramidFacetNormals();
     const facet = facetNormals[0];
     const offFacet = [0, 0, 1] as const;
     const facetGamma = bismuthSurfaceEnergy(
@@ -311,7 +311,7 @@ describe('Candidate 2A thermal/free-surface isolation', () => {
   });
 
   it('uses the gradient-energy derivative as the complete phase flux', () => {
-    const facetNormals = bismuthSlowFacetNormals();
+    const facetNormals = snBiPyramidFacetNormals();
     const gradient: Vec3 = [0.37, -0.61, 1.13];
     const interfaceWidth = 0.8;
     const flux = candidate2APhaseFlux(gradient, interfaceWidth, facetNormals);
@@ -438,7 +438,7 @@ describe('Candidate 2A thermal/free-surface isolation', () => {
   });
 
   it('certifies the fixed phase-stiffness envelope over the unit sphere', () => {
-    const facetNormals = bismuthSlowFacetNormals();
+    const facetNormals = snBiPyramidFacetNormals();
     const directions: Vec3[] = [
       [1, 0, 0],
       [0, 1, 0],

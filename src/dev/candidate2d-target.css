@@ -1,0 +1,298 @@
+.candidate2d-target-shell {
+  box-sizing: border-box;
+  width: 100%;
+  height: 100%;
+  padding: clamp(1rem, 2vw, 2rem);
+  overflow: auto;
+  color: #eef2f4;
+  background:
+    radial-gradient(circle at 9% 0%, rgb(44 98 113 / 28%), transparent 34%),
+    radial-gradient(circle at 92% 100%, rgb(91 53 82 / 24%), transparent 38%),
+    #030506;
+}
+
+.candidate2d-target-header,
+.candidate2d-proof-grid,
+.candidate2d-diagnostics,
+.candidate2d-boundary {
+  width: min(100%, 108rem);
+  margin-right: auto;
+  margin-left: auto;
+}
+
+.candidate2d-target-header {
+  display: flex;
+  align-items: end;
+  justify-content: space-between;
+  gap: 2rem;
+  margin-bottom: clamp(0.8rem, 1.5vw, 1.35rem);
+}
+
+.candidate2d-target-eyebrow {
+  margin: 0 0 0.3rem;
+  color: #76d9eb;
+  font-size: 0.67rem;
+  font-weight: 720;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+}
+
+.candidate2d-target-header h1 {
+  margin: 0;
+  font-size: clamp(1.65rem, 2.8vw, 2.8rem);
+  font-weight: 520;
+  letter-spacing: -0.04em;
+}
+
+.candidate2d-target-status {
+  max-width: 37rem;
+  margin: 0;
+  color: #a9b3ba;
+  font-size: 0.76rem;
+  line-height: 1.55;
+  text-align: right;
+}
+
+.candidate2d-proof-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.55fr) repeat(2, minmax(0, 0.72fr));
+  gap: clamp(0.55rem, 1vw, 0.9rem);
+  min-height: 25rem;
+  height: clamp(25rem, 57vh, 42rem);
+}
+
+.candidate2d-generated-card,
+.candidate2d-target-card {
+  position: relative;
+  min-width: 0;
+  height: 100%;
+  margin: 0;
+  overflow: hidden;
+  border: 1px solid rgb(255 255 255 / 13%);
+  background: #080b0d;
+  box-shadow: 0 1.5rem 4rem rgb(0 0 0 / 32%);
+}
+
+.candidate2d-generated-canvas,
+.candidate2d-target-card img {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.candidate2d-generated-canvas {
+  background: #010305;
+}
+
+.candidate2d-target-card img {
+  object-fit: cover;
+}
+
+.candidate2d-generated-label,
+.candidate2d-target-card figcaption {
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  padding: 2.2rem 0.8rem 0.75rem;
+  background: linear-gradient(transparent, rgb(0 0 0 / 90%));
+  pointer-events: none;
+}
+
+.candidate2d-generated-label strong,
+.candidate2d-generated-label span,
+.candidate2d-target-card strong,
+.candidate2d-target-card span {
+  display: block;
+}
+
+.candidate2d-generated-label strong,
+.candidate2d-target-card strong {
+  font-size: 0.68rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.candidate2d-generated-label span,
+.candidate2d-target-card span {
+  margin-top: 0.18rem;
+  color: #b3bec4;
+  font-size: 0.67rem;
+  line-height: 1.35;
+}
+
+.candidate2d-diagnostics {
+  position: relative;
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 1px;
+  margin-top: 0.65rem;
+  overflow: hidden;
+  border: 1px solid rgb(255 255 255 / 10%);
+  background: rgb(255 255 255 / 9%);
+}
+
+.candidate2d-diagnostics > div:not(.candidate2d-progress) {
+  padding: 0.55rem 0.7rem 0.62rem;
+  background: #080b0d;
+}
+
+.candidate2d-diagnostics strong,
+.candidate2d-diagnostics span {
+  display: block;
+}
+
+.candidate2d-diagnostics strong {
+  color: #f2f5f6;
+  font-size: 0.8rem;
+  font-weight: 620;
+}
+
+.candidate2d-diagnostics span {
+  margin-top: 0.08rem;
+  color: #78858d;
+  font-size: 0.58rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.candidate2d-progress {
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  height: 2px;
+  background: rgb(255 255 255 / 7%);
+}
+
+.candidate2d-progress span {
+  width: var(--progress, 0%);
+  height: 100%;
+  margin: 0;
+  background: linear-gradient(90deg, #5fd0e5, #c784b5);
+  transition: width 160ms linear;
+}
+
+.candidate2d-boundary {
+  display: grid;
+  grid-template-columns: 1fr 1fr minmax(17rem, 0.8fr);
+  gap: clamp(0.8rem, 1.4vw, 1.35rem);
+  margin-top: clamp(0.8rem, 1.4vw, 1.25rem);
+  padding-top: clamp(0.8rem, 1.4vw, 1.25rem);
+  border-top: 1px solid rgb(255 255 255 / 11%);
+}
+
+.candidate2d-boundary > div > strong,
+.candidate2d-boundary > div > span {
+  display: block;
+}
+
+.candidate2d-boundary > div > strong {
+  color: #eff3f4;
+  font-size: 0.65rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.candidate2d-boundary > div > span {
+  margin-top: 0.3rem;
+  color: #89969e;
+  font-size: 0.66rem;
+  line-height: 1.5;
+}
+
+.candidate2d-later-targets {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.45rem;
+}
+
+.candidate2d-later-targets figure {
+  min-width: 0;
+  margin: 0;
+}
+
+.candidate2d-later-targets img {
+  display: block;
+  width: 100%;
+  aspect-ratio: 1.7;
+  object-fit: cover;
+  border: 1px solid rgb(255 255 255 / 10%);
+  opacity: 0.62;
+}
+
+.candidate2d-later-targets figcaption {
+  margin-top: 0.25rem;
+  color: #7f8b92;
+  font-size: 0.55rem;
+  line-height: 1.35;
+}
+
+@media (max-width: 1040px) {
+  .candidate2d-proof-grid {
+    grid-template-columns: minmax(0, 1.35fr) repeat(2, minmax(0, 0.82fr));
+    min-height: 21rem;
+    height: 50vh;
+  }
+
+  .candidate2d-boundary {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .candidate2d-later-targets {
+    grid-column: 1 / -1;
+  }
+}
+
+@media (max-width: 720px) {
+  .candidate2d-target-header {
+    display: block;
+  }
+
+  .candidate2d-target-status {
+    margin-top: 0.65rem;
+    text-align: left;
+  }
+
+  .candidate2d-proof-grid {
+    grid-template-columns: 1fr 1fr;
+    height: auto;
+  }
+
+  .candidate2d-generated-card {
+    grid-column: 1 / -1;
+    height: 26rem;
+  }
+
+  .candidate2d-target-card {
+    height: 19rem;
+  }
+
+  .candidate2d-diagnostics {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .candidate2d-boundary {
+    grid-template-columns: 1fr;
+  }
+
+  .candidate2d-later-targets {
+    grid-column: auto;
+  }
+}
+
+@media (max-width: 480px) {
+  .candidate2d-proof-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .candidate2d-generated-card,
+  .candidate2d-target-card {
+    grid-column: auto;
+    height: 23rem;
+  }
+
+  .candidate2d-diagnostics {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}

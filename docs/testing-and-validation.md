@@ -29,13 +29,12 @@ large command catalog for one-off experiments.
 | ----------------------------- | ------------------------------------------------ |
 | Pure refactor or docs         | Typecheck or focused check; ASCII scan for docs  |
 | Equation/configuration math   | Focused deterministic numerical unit tests       |
-| Candidate 2 operator/seed     | Analytic or planar refinement tests              |
-| Candidate 2 mechanism probe   | Frozen heat ledger and resolved force projection |
-| Candidate 2 surface transport | Balance, direction, and grid refinement tests    |
-| Candidate 2 facet steps       | Event, swept-volume, and refinement tests        |
-| Candidate 2 radial heat       | Source null, enthalpy, and refinement tests      |
-| Candidate 2 faceted heat      | Source reversal, 3D ledger, topology, refinement |
-| Candidate 2 scalar carrier    | Contour, volume, connectivity, resolution        |
+| Source or facet claim         | Specimen-match audit before implementation       |
+| Candidate 2D ledge path       | Continuity, turns, step heads, no self-crossing  |
+| Candidate 2D swept geometry   | Exact area, volume, and latent-energy accounting |
+| Candidate 2D carrier          | Opening, connectedness, topology, resolution     |
+| Candidate 2D mechanism        | Isolated source null/reversal and failure mode   |
+| Candidate 2D scientific slice | Frozen 3D run and all-four-reference comparison  |
 | Extraction/layout             | Analytic CPU topology/layout tests               |
 | Scheduler/lifecycle           | Deterministic controller scheduling tests        |
 | Material/oxide mapping        | Focused math tests and visual review if visible  |
@@ -48,9 +47,10 @@ unless the change directly concerns that behavior.
 
 ## Visual and WebGPU review
 
-The product still requires hardware WebGPU. That does not make hardware tests
-a routine development gate. For changes to pipelines, resource ownership, or
-appearance, use the single `/__dev/material` surface and confirm:
+The product still requires hardware WebGPU. A hardware matrix is not a routine
+development gate, but one current-desktop WebGPU run is mandatory at the end
+of every Candidate 2D scientific slice. Use the single `/__dev/material`
+surface and confirm:
 
 - WebGPU initializes or fails honestly;
 - growth visibly updates rather than rendering a stale mesh;
@@ -58,21 +58,53 @@ appearance, use the single `/__dev/material` surface and confirm:
 - resize and disposal do not produce visible or console errors;
 - changed appearance is captured at a fixed view when comparison matters.
 
+Left-drag orbits and the wheel zooms on every 3D canvas. Browser automation
+may use `window.__BISMUTH_CAMERA__`: `orbitLeft45()`, `orbitRight45()`,
+`orbitUp45()`, and `orbitDown45()` move in deterministic 45 degree increments,
+`getPose()` reports the current transform, and `reset()` restores the frozen
+camera. Always reset before a fixed-view morphology capture; alternate angles
+are inspection evidence, not morphology retuning.
+
+### Per-slice 3D closeout
+
+1. Freeze the deterministic seed or initial state, configuration, resolution,
+   checkpoint times, camera, lighting/material, and comparison layout before
+   viewing the result.
+2. Render only geometry derived from that slice's state through
+   `/__dev/material`. Capture fixed early, middle, and final checkpoints, or
+   the honest stalled or empty result when growth does not occur.
+3. Keep all four files from `crystal_references/` visible beside the generated
+   result. References 1 and 2 are the current single-sector acceptance gate;
+   references 3 and 4 remain mandatory regression context until connected
+   branching/intergrowth becomes active, when their traits become formal
+   gates.
+4. Label source/mechanism, conservation, extraction, and morphology outcomes
+   independently. A failed slice still completes this review and remains
+   failed.
+5. Never use a retired carrier, fallback mechanism, target mask,
+   camera/material retune, or decorative fill to hide a failed slice.
+
 Collect adapter/browser/timing details only when diagnosing an adapter issue or
 making a performance decision.
 
-For the Candidate 2C morphology review, `/__dev/material` must compare the
-fixed `1600`-step scalar screen with the half-time-step `3200`-step arm at 17
-aligned physical times. It must evaluate the authoritative thermal-step state
-first and skip GPU work on failure. On a pass it uploads only the refined
-observational fields to the existing GPU marching-cubes path at steps 0, 200,
-..., and 3200. The review must keep one fixed camera, extraction grid,
-isovalue, and capacity across checkpoints, report GPU overflow honestly, and
-retain only lightweight metric summaries and carrier projections.
-`?mode=material` selects the oxide-material fixture. Successful extraction
-validates the review seam, not bismuth calibration or morphology. This bridge
-does not make the Candidate 2C CPU solver a production fallback or authorize a
-full-field GPU readback.
+`/__dev/material` defaults to the current Candidate 2D twin-source closeout
+beside all four references. It reports source isolation, scalar/extraction,
+and fixed-view morphology separately and leaves the final generated state
+visible. `?mode=candidate2d-carrier-evidence` selects the rejected first
+Candidate 2D topology carrier, `?mode=candidate2c-evidence` selects the retired
+six-facet seam, and `?mode=material` selects the oxide-material fixture.
+Success on an evidence route validates only its declared boundary.
+
+The first Candidate 2D comparison froze its camera, layout, and numeric
+envelopes before review and was rejected without retuning. Repeat that freeze
+for every source-driven candidate. Outer frame, geometric opening depth,
+ledge continuity, direction changes, irregular spacing, connectedness, swept
+volume, energy closure, and refinement remain independent gates. Explicitly
+reject a regular hexagon, a three-sided Sn-Bi pyramid, complete concentric
+rings, a shallow opening, and perfect uninterrupted symmetry. The CPU scalar
+bridge is not a product fallback; production promotion still requires
+compact-state GPU field reconstruction without recurring full-volume upload
+or readback.
 
 ## Evidence retention
 

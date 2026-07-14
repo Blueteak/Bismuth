@@ -4,103 +4,165 @@ Updated 2026-07-13.
 
 ## Status
 
-The active blocker remains Milestone 1B: replace the generic cubic regression
-hopper with a bismuth-specific one-nucleus model. Solver, extraction,
-controller, and initial material infrastructure already exist. The public root
-remains neutral, and `/__dev/material` is the only retained integrated review
-route.
+Milestone 1B is reset to Candidate 2D. The four files in
+`crystal_references/` are the visual ground truth for the product habit. They
+show bulk iridescent bismuth hopper specimens with dominant rectilinear or
+rhombohedral-pyramidal sectors, deep open recesses, many winding stepped
+ledges, uneven spacing, interruptions, asymmetry, and, in the larger examples,
+branching or intergrowth.
 
-Candidate 1 is rejected and its generic-solver support has been removed. A
-direct rhombohedral remapping selected the wrong physical construction and
-grew an extreme boundary-limited body; do not restore or retune it.
+Candidate 2C is rejected as product morphology. Its seed did not cause the
+hexagon: the carrier projected three `{1-102}` directions from a microscopic
+polycrystalline Sn-Bi pyramid study, added their opposites, assigned six equal
+supports, and advanced complete homothetic loops. That guarantees a regular
+hexagonal terrace stack and cannot express a winding step head. The Candidate
+2C conservation ledger and development WebGPU extraction proof remain useful
+evidence, but the carrier is no longer the default review surface and may not
+be promoted into the product path.
 
-Candidate 2A now has the sourced variational anisotropic phase operator,
-directional thin-interface kinetics, an explicit stiffness/stability bound,
-and a volume-constrained surface-attached seed. Flux/energy differentiation,
-strong ellipticity, seed energy/volume behavior, and rotated planar grid/time
-refinement pass deterministic checks.
+The source audit found two directly relevant bulk elemental-bismuth anchors.
+Frawley, Maurer, and Childs report `99.999+%` Bi changing from prismatic to
+hopper, triplanar, and branched growth as supercooling increased, with many
+hopper dendrites twinned. Steger and Price grew and sectioned macroscopic
+three-dimensional bismuth hoppers from the upper melt surface. Pure-Bi thin-
+film observations support stepwise faceted advance, and high-purity melt work
+supports a conditional local twin-plane source. No matching primary study yet
+proves that the target winding bands are screw-dislocation spirals.
 
-Candidate 2B now isolates Albani et al.'s quasi-stationary surface-adatom
-incorporation mechanism on an unfolded side-top-side surface. Borrowing Figure
-9's dimensionless `tau_side / tau_top = 10` and `F = 0.5` while deliberately
-making supply uniform, tangential surface diffusion raises top-perimeter
-velocity `120.40%` above the top core.
-Supply balance closes to `1.18e-13`, the equation residual is `5.72e-13`, the
-signal reverses with the directional contrast, and aligned grid refinement
-stays inside its predeclared `1%` envelope. This establishes a nonlocal
-rim-feeding mechanism; it does not calibrate bismuth or couple that mechanism
-to Candidate 2A. Direct bismuth evidence instead favors interface-reaction and
-layer/step growth, so Candidate 2B is retained but no longer the active path.
+All generic, alloy, thin-film, vapor-grown, or other-material papers are now
+mechanism or numerical evidence only unless they pass the specimen-match gate
+in `docs/references.md`. They cannot define Candidate 2D geometry, facet
+families, calibration, or morphology acceptance.
 
-Candidate 2C now owns the reduced faceted path end to end. A closed 3D
-cell-centered heat field supplies full thermal capacity without a fitted
-effective depth. The phase-specific solid-air/liquid-air flux jump selects the
-outer source, the actual contact and step-front temperatures drive layer birth
-and motion, and the same exact swept prisms return latent heat once. Equal
-surface coefficients remove the excess source, reversal reverses it, and the
-conservation, strict-topology, event-clock, and independent refinement gates
-pass.
+## Candidate 2D representation checkpoint
 
-The Candidate 2C observational scalar carrier reconstructs one closed base and
-the authoritative completed/active faceted layers on a fixed extraction grid.
-It preserves analytic volume, all six facet supports, connectedness,
-watertight genus-zero topology, capacity, and resolution convergence. The
-scalar never feeds back into the thermal-step state and does not reuse
-Candidate 2A as a morphology carrier.
+The first executable slice is complete as a representation and extraction
+proof, not as morphology:
 
-The fixed Candidate 2C scalar/GPU screen and its half-time-step arm pass the
-predeclared screen-level temporal envelope. Both remain
-`hopper-mechanism-candidate`; all discrete terrace states match at the 17
-aligned physical checkpoints, and the refined GPU extractions remain finite,
-overflow-free, and error-free. This advances the active blocker from temporal
-to spatial robustness. Candidate 2C remains uncalibrated and is not accepted
-product morphology; the durable measurements are recorded in
-`docs/simulation-model.md`.
+- Four independent support planes produce one asymmetric quadrilateral sector;
+  no Miller indices or Candidate 2C facets are imported.
+- Each side advances as one exact trapezoidal front. Its reported head lies on
+  the actual partial-patch boundary, completed transverse fronts join the next
+  side, and the open route has no self-contact.
+- Area, volume, and latent return accumulate independently from the partial
+  polygons and close per ledge and globally. Event splitting is invariant to
+  elapsed-time partitioning.
+- The scalar carrier has one connected solid and an opening connected to the
+  exterior. Its topology survives a two-to-one extraction refinement and the
+  finer mesh improves volume error.
+- Five fixed checkpoints produce five valid production WebGPU meshes, four
+  visible mesh changes, no overflow, and no browser or GPU errors.
 
-Candidate 2A's first predeclared 3D screen is complete and classified
-`non-hopper`. Its coupled fields stayed finite, the solid remained
-single-component and surface-attached, and it stayed clear of the five far
-boundaries. Diffuse maturity reached `1.1259`, but normalized opening depth was
-exactly zero at every 100-step checkpoint. At the final checkpoint the central
-height was `10.6472` while the rim was `8.2587`: the core grew ahead of the
-rim, which is the opposite of the required recession. GPU marching cubes
-extracted all 17 review checkpoints without overflow or uncaptured WebGPU
-errors. No Candidate 2 morphology is accepted.
+The fixed-view comparison rejects the generated habit. It is approximately
+`15.2 x 13.9 x 2.5`, has only four visible elevations and about two winding
+cycles, and reads as a broad shallow terrace stack over a flat central floor.
+It does not reproduce the deep recess, many persistent bands, or strong
+rim-over-core structure in references 1 and 2. `acceptedMorphology` remains
+false.
 
-The exact relaxed 3D seed now also has a frozen-phase thermal discriminator
-and a resolved opening-force projection. The solid/liquid surface-flux sign is
-implemented correctly, but the selected contrast does not localize cooling at
-the surface rim. At the actual solid/liquid interface its opening component
-does point in the intended direction, yet the smooth Candidate 2A variational
-term heals a two-interface-width terrace orders of magnitude faster than the
-thermal term amplifies it. This closes another smooth Candidate 2A retune as
-the generation path. The injected terrace is a stability probe only and must
-never enter the morphology screen or GPU review route.
+## Twin-plane source checkpoint
 
-## Next implementation slice
+The first source discriminator is complete and remains isolated from the
+rejected carrier:
 
-1. Freeze the successful `1600`-step screen as the base and predeclare the
-   screen-level spatial comparison envelope before inspecting another result.
-2. Run the existing independent spatial arm at shape `[160, 96, 160]` and
-   spacing `0.1875` for the same `1.5` physical duration, `0.0009375` time step,
-   and 17 checkpoint times. Keep physical domain extent, initial state,
-   coefficients, step height, source closure, observational carrier grid,
-   extraction isovalue, camera, and GPU capacity fixed.
-3. Compare authoritative state first, including source geometry resolution,
-   birth/completion ordering, terrace counts, opening depth, swept/latent
-   volume, energy residual, finiteness, and crossings. Require both arms to
-   remain `hopper-mechanism-candidate` inside the frozen envelope before the 17
-   fixed-carrier GPU extractions are interpreted.
-4. A pass promotes to several internal deterministic seeds. A failure returns
-   to the spatial thermal-step coupling boundary, not coefficient tuning or
-   scalar carving. If explaining a failure would require additional chemical,
-   defect, or orientation state, stop for an explicit fidelity-versus-GPU-
-   realtime decision before adding it.
+- An actual twin segment must lie inside the solid and terminate at the shared
+  vertex of two faceted-interface rays. The computed solid angle must be
+  re-entrant, and the continued growth ray must enter liquid; a declared label
+  alone cannot activate the source.
+- Positive signed thermal driving emits one local front at that intersection.
+  It advances parallel to the twin. Its travel times an independent
+  out-of-section twin/facet length gives the swept local facet strip, which
+  pays volume and latent heat exactly once.
+- No-twin, non-terminating, twin-outside-solid, growth-into-solid,
+  non-re-entrant, non-faceted, zero-driving, and reversed-driving arms emit no
+  step and sweep no volume. A signed reversal also stalls an already emitted
+  front. Thermal, volume, and latent ledgers close across arbitrary
+  elapsed-time partitions.
+- The accessible primary record supplies no bismuth rate coefficient,
+  recurrence rule, facet frame, or winding law. The dimensionless local
+  mobility is explicitly an isolation closure, not a calibration.
 
-Keep twins, dislocations, and multiple orientations deferred until the
-single-domain outer-step path fails or evidence requires them. Keep material
-calibration, public lifecycle work, clustering, performance selection, and
-deployment paused until bismuth morphology passes.
+The local twin mechanism passes its scoped eligibility test. The implementation
+deliberately emits exactly one straight front because the accessible source
+supplies no recurrence law. It therefore does not test recurring or multi-twin
+supply, turns, a deep many-elevation sector, or the target winding topology.
+Persistent twin-driven winding remains unresolved, and the current evidence
+is insufficient for target-source promotion; this does not disprove
+twin-plane re-entrant growth. `acceptedMorphology` and
+`acceptedAsTargetSource` remain false.
+
+The mandatory 3D closeout is complete on `/__dev/material`. The review maps
+only the swept one-front state into an oriented rectangular prism, runs the
+source-null, initially reversed, growing, and post-emission-reversal arms
+through the production WebGPU extraction path, and leaves the final positive
+state visible beside all four ground-truth images. The null arms remain empty,
+the reversed emitted front remains stalled, and the positive checkpoints
+produce changing valid meshes without overflow or GPU errors.
+
+The fixed-view comparison rejects the generated shape. It is one thin local
+strip with no hopper opening, recurring elevations, winding ledges,
+rhombohedral-pyramidal sector assembly, or branching intergrowth. This closes
+the twin slice as local mechanism evidence only; it does not promote the
+source or connect it to the rejected winding carrier. `acceptedMorphology` and
+`acceptedAsTargetSource` remain false.
+
+## Milestone 1B and Candidate 2D direction review
+
+Milestone 1B still requires compact source state to visibly grow the supplied
+bulk-bismuth hopper habit at a production-plausible cadence. A valid ledger,
+connected scalar, or changing GPU mesh is necessary infrastructure evidence;
+none substitutes for morphology or source compatibility.
+
+Candidate 2D remains the correct program because it locks acceptance to the
+right specimens and separates source, morphology, and runtime claims. The
+rejected part is the current time-staggered stack of identical prescribed
+ledge prefixes. Do not tune its base height, step height, birth count, camera,
+or material into a better-looking crystal. That would turn a representation
+test into decorative target fitting.
+
+The next evidence-backed exploration is the edge/free-surface source
+discriminator, not a twin retune or carrier adapter:
+
+The source preflight sets a strict limit before implementation. Current
+evidence supports, at most, one existing heterogeneous seed at a real
+solid-liquid-free-surface contact line advancing one local front under a
+signed Stefan heat balance. It does not supply spontaneous edge nucleation, a
+second birth, recurrence, turns, or winding. The edge slice may test that one
+front as eligibility and conservation evidence, but it may not describe the
+result as persistent supply or morphology progress. If its mandatory 3D
+closeout is another local ribbon, close the mechanism honestly and review the
+remaining source strategy instead of adding births or retuning geometry.
+
+1. Re-audit the exact primary claim before importing an equation. Steger and
+   Price support wire-seeded macroscopic bismuth-hopper growth from the upper
+   melt surface; generic triple-line papers may support only an isolated
+   boundary mechanism.
+2. Declare the smallest local thermal or transport state that can emit a front
+   from the edge/free-surface region. Do not prescribe its route, elevations,
+   terrace widths, target mask, or complete-ring births.
+3. Freeze source-removed and reversed-driving outcomes first. Failed supply
+   must remain a model failure, not trigger a fallback source or decorative
+   geometry.
+4. Keep `persistentSupplyDemonstrated` and `routeSelectionDemonstrated` false
+   for the one-front isolation. They may become true only after a separately
+   sourced recurrence and path-selection law creates a deep, many-elevation
+   winding sector matching references 1 and 2.
+5. Retain the one-front twin result as unresolved mechanism evidence; do not
+   blend it into the edge hypothesis. Keep screw-dislocation supply on hold.
+   Add connected branching or intergrowth only after one sector passes;
+   references 3 and 4 remain the later boundary.
+6. End the edge/free-surface slice with the same mandatory closeout: map only
+   generated state into the model-neutral 3D bridge, run frozen checkpoints,
+   compare with all four references, and record pass or rejection without
+   retuning.
+
+`/__dev/material` now defaults to the twin-source 3D closeout beside all four
+references. `?mode=candidate2d-carrier-evidence` retains the rejected topology
+carrier, `?mode=candidate2c-evidence` retains the old Candidate 2C WebGPU seam,
+and `?mode=material` retains the oxide fixture. Do not resume direct-GPU
+reconstruction, coefficient calibration, public lifecycle work, clustering,
+performance selection, or deployment until the Candidate 2D single-sector
+habit discriminator passes.
 
 ## Working loop
 
@@ -110,11 +172,7 @@ npm.cmd run check:baseline
 review.cmd
 ```
 
-Use `check:fast` while editing and `check:baseline` before handoff. Run the
-review surface only for changes that affect GPU integration or appearance.
-The retained morphology review compares the fixed Candidate 2C screen with its
-half-time-step arm first, then promotes the refined observational scalar at the
-same 17 physical checkpoint times only if the authoritative gate passes. Use
-`?mode=material` for the retained oxide-material fixture.
-Do not create retained result transcripts; record only durable decisions or
-the next unresolved boundary in this file and `docs/simulation-model.md`.
+Use `check:fast` while editing and `check:baseline` before handoff. Use the
+review route for target comparison and visible changes. Record durable model
+decisions in `docs/simulation-model.md` and source applicability in
+`docs/references.md`; do not retain run transcripts.

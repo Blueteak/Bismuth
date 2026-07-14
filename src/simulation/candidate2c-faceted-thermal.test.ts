@@ -2,10 +2,13 @@ import { beforeAll, describe, expect, it } from 'vitest';
 import {
   CANDIDATE2C_FACETED_THERMAL_GATES,
   CANDIDATE2C_FACETED_THERMAL_ISOLATION,
+  CANDIDATE2C_FACETED_THERMAL_ROBIN_REFINEMENT,
   candidate2CFacetedThermalLedger,
   candidate2CFacetedThermalLinearCellTrace,
+  candidate2CFacetedThermalRobinFaceTrace,
   deriveCandidate2CFacetedThermalConfiguration,
   runCandidate2CFacetedThermalDiagnostic,
+  runCandidate2CFacetedThermalRobinRefinement,
   type Candidate2CFacetedThermalDiagnosticResult,
 } from './candidate2c-faceted-thermal';
 
@@ -58,6 +61,37 @@ describe('Candidate 2C cut-cell thermal trace', () => {
         ),
       ).toBeCloseTo(-2.75, 14);
     }
+  });
+});
+
+describe('Candidate 2C contact-line Robin refinement', () => {
+  it('isolates conservative first-order convergence without changing the morphology gate', () => {
+    const protocol = CANDIDATE2C_FACETED_THERMAL_ROBIN_REFINEMENT;
+    expect(protocol.spacings).toEqual([0.375, 0.1875, 0.09375]);
+    expect(protocol.screenMaximumContinuousDifference).toBe(0.15);
+    expect(protocol.minimumSuccessiveErrorReductionRatio).toBe(1.5);
+    expect(protocol.maximumRefinedPairFluxDifference).toBe(0.1);
+    expect(protocol.maximumFineContinuumFluxDifference).toBe(0.1);
+
+    const trace = candidate2CFacetedThermalRobinFaceTrace(0, 0.375, 2, -1.5);
+    expect(trace.temperature).toBeCloseTo(-0.4090909090909091, 14);
+    expect(trace.outwardHeatFlux).toBeCloseTo(2.1818181818181817, 14);
+
+    const result = runCandidate2CFacetedThermalRobinRefinement();
+    expect(result.classification).toBe('passes-first-order-isolation');
+    expect(result.coarseToMediumFluxDifference).toBeGreaterThan(
+      protocol.screenMaximumContinuousDifference,
+    );
+    expect(result.mediumToFineFluxDifference).toBeLessThanOrEqual(
+      protocol.maximumRefinedPairFluxDifference,
+    );
+    expect(result.fineContinuumFluxDifference).toBeLessThanOrEqual(
+      protocol.maximumFineContinuumFluxDifference,
+    );
+    expect(
+      result.successiveErrorReductionRatios.every((ratio) => ratio >= 1.5),
+    ).toBe(true);
+    expect(Object.values(result.gates).every(Boolean)).toBe(true);
   });
 });
 

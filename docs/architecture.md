@@ -26,19 +26,21 @@ simulation fields, GPU buffers, or per-frame uniforms.
 
 ### Visualizer controller
 
-The controller owns the canvas, renderer, scene, camera, render scheduling,
-run lifecycle, solver/extractor orchestration, resize, and disposal. Public UI
+The controller owns the canvas, renderer, scene, orbital camera, render
+scheduling, run lifecycle, solver/extractor orchestration, resize, and
+disposal. Mouse orbit/zoom and camera transforms stay imperative. Public UI
 events call coarse controller methods; high-frequency state stays imperative.
 
 ### Simulation
 
 The simulation layer owns equations, configuration validation, boundaries,
 initial conditions, deterministic randomness, field textures, time stepping,
-and completion checks. Candidate 2A, Candidate 2B, and Candidate 2C remain
-isolated from the generic cubic solver. Candidate 2C owns its faceted
-thermal-step state and deterministic observational scalar reconstruction. The
-scalar may be exposed to development extraction, but it never feeds back into
-simulation or acts as a production CPU fallback.
+and completion checks. Candidate 2D is the only active morphology path. It must
+own a target-matched outer carrier, explicit partial ledge paths and step heads,
+and exact swept-volume/latent accounting. The generic solver and Candidates 2A
+through 2C remain isolated evidence; none may supply active geometry, facets,
+or acceptance. A development scalar may be exposed to extraction, but it never
+feeds back into simulation or acts as a production CPU fallback.
 
 ### Extraction
 
@@ -90,13 +92,23 @@ run-scoped resources and chooses a new internal deterministic seed.
 in development builds and is not a second product UI. The public root stays
 neutral until accepted bismuth morphology and lifecycle work are integrated.
 
-The development snapshot bridge is model-neutral. In the next Candidate 2C
-review it receives each retained observational scalar checkpoint, uploads it
-through a storage buffer into a 3D storage texture, and uses the existing GPU
+The route now defaults to the current Candidate 2D twin-source closeout. One
+canvas and one model-neutral GPU snapshot controller sequentially show the
+source-null, initially reversed, growing, post-emission-reversal, and final
+one-front states, then leave the final state visible beside all four target
+images. Source isolation, scalar/extraction validity, and morphology approval
+are reported separately so a valid local mechanism cannot be mistaken for a
+target crystal. `?mode=candidate2d-carrier-evidence` retains the rejected first
+Candidate 2D topology carrier, `?mode=candidate2c-evidence` retains the retired
+Candidate 2C seam, and `?mode=material` retains the oxide fixture.
+
+The model-neutral development bridge uploads each Candidate 2D CPU scalar
+through a storage buffer into a 3D storage texture and exercises the existing
 classifier, compaction, vertex emission, last-valid promotion, and indirect
-draw path. The authoritative faceted state remains separate, and only the
-small extraction summary is read back. The bridge neither reads a full GPU
-field nor inserts the CPU solver into the production controller.
+draw path. Only a small extraction summary is read back. Recurring full-volume
+upload is allowed only on this fixed development proof. Production promotion
+still requires reconstruction from compact accepted Candidate 2D state on the
+GPU.
 
 The production server serves Vite's hashed assets and the application shell
 from absolute paths, exposes `/healthz`, and stays stateless behind trusted
