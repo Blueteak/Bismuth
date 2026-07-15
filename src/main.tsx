@@ -26,10 +26,14 @@ async function startApplication(): Promise<void> {
       const { mountCandidate2DTargetFixture } =
         await import('./dev/candidate2d-target-fixture');
       mountCandidate2DTargetFixture(applicationRoot);
-    } else {
+    } else if (mode === 'candidate2d-twin-evidence') {
       const { mountCandidate2DTwinFixture } =
         await import('./dev/candidate2d-twin-fixture');
       mountCandidate2DTwinFixture(applicationRoot);
+    } else {
+      const { mountCandidate2DEdgeFixture } =
+        await import('./dev/candidate2d-edge-fixture');
+      mountCandidate2DEdgeFixture(applicationRoot);
     }
     return;
   }

@@ -2,276 +2,158 @@
 
 ## Product boundary
 
-The product target is not a generic hopper, a hexagonal bismuth plate, or the
-three-sided pyramid observed in eutectic Sn-Bi solder. It is the family of
-bulk, iridescent bismuth hopper specimens supplied in `crystal_references/`.
-The model must visibly generate that habit during growth from one connected
-site. A connected specimen is not assumed to be one crystallographic domain;
-direct bismuth evidence and the supplied references allow twins, branching,
-and intergrown sectors.
+Target: connected growth of the bulk iridescent Bi hopper family in
+`crystal_references/`; not generic hopper, hexagonal plate, or Sn-Bi pyramid.
+Connected != single crystallographic domain; twins/branches/intergrowth allowed.
 
-Generic crystal algorithms may remain numerical or extraction scaffolding.
-They may never define product geometry, facet directions, calibration, or
-morphology acceptance. Mesh carving, stamped terraces, decorative spirals,
-noise, smooth bowls, and overlapping cosmetic crystals cannot satisfy the
-gate.
+Generic algorithms: numerical/extraction scaffolds only. Never derive product
+geometry, facets, calibration, acceptance. Reject carving, stamped terraces,
+decorative spirals/noise/bowls/intergrowth.
 
-## Ground-truth target set
+## Ground truth
 
-The user designated these four files as the visual morphology authority on
-2026-07-13. Preserve the image bytes. Their hashes make the reviewed target set
-unambiguous; changing a file requires an explicit target revision.
+User-designated morphology authority, 2026-07-13. Preserve bytes; hash change
+requires explicit target revision.
 
-| File                                                               |      Pixels | SHA-256                                                            | Primary target evidence                                  |
-| ------------------------------------------------------------------ | ----------: | ------------------------------------------------------------------ | -------------------------------------------------------- |
-| [`crystal_small_1.jpg`](../crystal_references/crystal_small_1.jpg) | 1024 x 1024 | `dbcf1b49fa3a12f8944f95bbd49183b7b560a1c5c3b716c03cdf373b6b7ab061` | One dominant deep hopper, continuous winding ledges      |
-| [`crystal_small_2.jpg`](../crystal_references/crystal_small_2.jpg) | 1024 x 1024 | `c6c70580a0ab3b57afbbf4792de6018024763265bcb6f4d3e8e988f31c0a7d7a` | Offset opening, interrupted and asymmetric bands         |
-| [`crystal_small_3.jpg`](../crystal_references/crystal_small_3.jpg) |   946 x 946 | `3608fc058f0454f387b7e3963d89e6b236a28ca6764dba407d946ce675140200` | Intergrown sectors and strongly varied ledge widths      |
-| [`crystal_small_4.jpg`](../crystal_references/crystal_small_4.jpg) | 1588 x 1588 | `719707a2cf1ebd9125fb3d2e5c356c2b5a58205b538b19180f3fe5ff2ffd09d0` | Branched connected structure and irregular nested ledges |
+| File                                                               |      Pixels | SHA-256                                                            | Trait                                                 |
+| ------------------------------------------------------------------ | ----------: | ------------------------------------------------------------------ | ----------------------------------------------------- |
+| [`crystal_small_1.jpg`](../crystal_references/crystal_small_1.jpg) | 1024 x 1024 | `dbcf1b49fa3a12f8944f95bbd49183b7b560a1c5c3b716c03cdf373b6b7ab061` | Deep dominant hopper; winding ledges                  |
+| [`crystal_small_2.jpg`](../crystal_references/crystal_small_2.jpg) | 1024 x 1024 | `c6c70580a0ab3b57afbbf4792de6018024763265bcb6f4d3e8e988f31c0a7d7a` | Offset opening; interrupted asymmetric bands          |
+| [`crystal_small_3.jpg`](../crystal_references/crystal_small_3.jpg) |   946 x 946 | `3608fc058f0454f387b7e3963d89e6b236a28ca6764dba407d946ce675140200` | Intergrown sectors; varied widths                     |
+| [`crystal_small_4.jpg`](../crystal_references/crystal_small_4.jpg) | 1588 x 1588 | `719707a2cf1ebd9125fb3d2e5c356c2b5a58205b538b19180f3fe5ff2ffd09d0` | Branched connected structure; irregular nested ledges |
 
-The photographs establish visible morphology, not crystallographic indices,
-purity, domain count, or a defect mechanism. `Rhombohedral` has two distinct
-uses here:
+Photos authorize visible morphology only; not indices, purity, domain count,
+mechanism. Distinguish rhombohedral A7 structure from visually
+rhombohedral-pyramidal macroscopic habit. Never map unit cell -> envelope or
+assign photographed-face Miller indices without matching evidence.
 
-- Ambient elemental bismuth has the rhombohedral A7 crystal structure.
-- The target has a visually rectilinear or rhombohedral-pyramidal macroscopic
-  habit.
+## Morphology contract
 
-The first fact does not derive the second. Do not map the unit cell directly
-into an outer support shape or attach Miller indices to photographed faces
-without target-matched evidence.
+Require:
 
-## Observable morphology contract
+- Dominant blocky rectilinear/visually rhombohedral-pyramidal sector; roughly
+  right-angle projected turns.
+- Deep open recess; strong rim-over-core.
+- Many elevations joined as continuous winding/spiral-like path; not 2-3 rings.
+- Uneven widths/offsets, interruptions, partial fronts, asymmetry; connected.
+- First gate: one dominant sector vs references 1-2.
+- Later: connected branching/intergrowth vs 3-4.
 
-Every accepted candidate must reproduce all of these target traits:
+`Spiral` = visible topology only. No matching source proves screw causation.
+Claim `winding ledge`; keep screw, twin, repeated nucleation, edge supply as
+separate hypotheses.
 
-- A dominant blocky, rectilinear, or visually rhombohedral-pyramidal sector;
-  projected ledges commonly make approximately right-angle turns.
-- A deep open hopper recession with a strong rim-over-core relationship.
-- Many stepped bands joined into a continuous winding or spiral-like path
-  across successive elevations, not merely two or three complete rings.
-- Uneven terrace widths, offsets, interruptions, partial fronts, and visible
-  asymmetry while the solid remains connected.
-- A single dominant sector matching references 1 and 2 at the first gate.
-- Connected branching or intergrowth matching references 3 and 4 at the later
-  multi-sector gate.
-
-The word `spiral` describes the visible winding topology only. No current
-target-matched primary source proves that a screw dislocation causes the
-macroscopic bands. Until that changes, use `winding ledge` in model claims and
-treat screw-dislocation, twin-plane, repeated-nucleation, and edge-driven
-sources as competing mechanisms.
-
-These habits are explicit rejection outcomes:
-
-- a regular six-sided or hexagonal plate;
-- a simple three-sided Sn-Bi pyramid;
-- a generic cube or six-face cubic hopper;
-- complete concentric or homothetic closed rings;
-- a shallow central dimple or smooth bowl;
-- perfect repeated symmetry used to substitute for irregular ledge growth;
-- generic dendrites, compounds, films, nanorods, or decorative intergrowths.
-
-Iridescent oxide color is a rendering target. It never supplies shape or hides
-a failed growth model.
+Reject: regular hexagon; three-sided Sn-Bi pyramid; generic cubic hopper;
+closed concentric/homothetic rings; shallow dimple/bowl; perfect repeated
+symmetry; generic dendrite/compound/film/nanorod/decorative intergrowth.
+Iridescence renders shape; never supplies/conceals it.
 
 ## Source-import gate
 
-Before a source changes an equation, facet, boundary, coefficient, or
-acceptance rule, record these fields in `docs/references.md`:
-
-1. composition and purity;
-2. growth phase and route;
-3. specimen scale and dimensional constraint;
-4. observed external habit;
-5. single-domain, twinned, polycrystalline, or unknown state;
-6. exact allowed claim and forbidden inference.
-
-Classify the result as target-shape evidence, target-process evidence,
-mechanism-only, numerical-only, or incompatible. Only target-shape evidence
-may define product geometry. A mismatch does not make a source useless, but it
-forces the imported claim into an isolated mechanism or numerical test. No
-chain of several mismatched papers can be combined to imply a target-matched
-habit.
+Before importing equation/facet/boundary/coefficient/acceptance, record in
+`docs/references.md`: composition/purity; phase/route; scale/dimensionality;
+habit; domain state; allowed claim; forbidden inference. Classify `target
+class`, `structure only`, `mechanism only`, `numerical only`, `incompatible
+habit`. Only target-shape evidence defines geometry. Several mismatches never
+sum to a target match.
 
 ## Candidate decisions
 
-### Generic cubic scaffold
+- Generic cubic: Bollada/Jimack/Mullis binary-alloy solute hopper. Regression
+  for solver/controller/extraction only; no elemental-Bi product review.
+- Candidate 1 rejected: lattice translations misused as surface-energy
+  generators; generic calibration; boundary-limited body. A7 cell does not
+  authorize macroscopic habit.
+- 2A mechanism only: conservative pure-melt enthalpy, variational anisotropy,
+  phase-specific free-surface heat boundary pass; 3D grew center before rim.
+  Smooth healing defeats opening; cannot carry discrete ledges. Rename retained
+  evidence normals to `snBiPyramidFacetNormals`; `{1-102}` comes from microscopic
+  polycrystalline Sn-Bi, never Candidate 2D.
+- 2B generic mechanism only: surface-adatom nonlocal transport can create
+  perimeter-over-core signal; wrong route/material/calibration.
+- 2C product rejected: exact volume/latent ledger, conservative reduced cold
+  content, deterministic ledges, CPU-carrier/WebGPU seam reusable. Geometry
+  invalid: three projected Sn-Bi `{1-102}` directions + opposites + equal
+  inradius -> centered hexagon; one offset -> homothetic rings; uniform whole
+  loops -> no heads/interruptions/unequal speeds/winding; scalar = polygon base
+  - annular prisms, not sloped hopper. Cancel direct GPU reconstruction. Keep
+    retired `?mode=candidate2c-evidence` label.
 
-Bollada, Jimack, and Mullis model a cubic binary-alloy hopper driven by solute
-transport. It remains regression scaffolding for solver, controller, and
-extraction behavior. Elemental bismuth has no solute-rejection field of that
-kind, and the generic cubic carrier cannot enter product morphology review.
+## Direct Bi constraints
 
-### Candidate 1 - rejected
+- Frawley/Maurer/Childs: `99.999+%` bulk melt; supercooling sequence prismatic
+  -> hopper -> triplanar -> branched; many hopper dendrites twinned. Supports
+  bulk hopper regime/branching/local twin possibility, not twin-made hopper,
+  target indices, universal thresholds.
+- Steger/Price: four macroscopic 3D hoppers from suspended steel-wire seed;
+  downward from upper melt surface; irregular/convoluted sections. Supports
+  seeded origin/direction, not contact-line motion, recurrence, route, rate.
+- Tokoro/Sugawara/Watanabe: pure-Bi melt-regrown thin-film faceted/stepwise
+  advance. Mechanism only.
+- Wagner/Brown: high-purity supercooled-melt Bi; deformation twin ending at
+  faceted interface may form re-entrant step. Qualitative prismatic result;
+  necessary conditions possibly insufficient; no recurrence/coefficient.
+  Supports one local isolation only.
+- No matching source links target macroscopic winding ledges to screw defect.
 
-The direct rhombohedral remapping used lattice translations as surface-energy
-generators, retained generic calibration, and produced a boundary-limited
-body. The rhombohedral unit cell does not authorize that macroscopic habit.
+Links/applicability: `docs/references.md`.
 
-### Candidate 2A - mechanism evidence only
+## Candidate 2D ledge model
 
-The thermal phase-field path established conservative pure-melt enthalpy,
-variational anisotropy, and a phase-specific free-surface heat boundary. Its
-first 3D screen stayed connected and finite but grew the center ahead of the
-rim, producing no hopper opening. A resolved discriminator then showed smooth
-phase-field healing overwhelming the opening drive. Candidate 2A cannot carry
-discrete target ledges.
+Observable topology first; source unresolved. Not 2C with four supports.
 
-Its former `bismuthSlowFacetNormals` name was incorrect in scope. The function
-is now `snBiPyramidFacetNormals`: its `{1-102}` family comes from microscopic,
-polycrystalline Sn-Bi pyramids and is retained only for old evidence. It must
-not define Candidate 2D.
+Required single-sector state:
 
-### Candidate 2B - generic mechanism evidence only
+- Sloped rectilinear/visually rhombohedral-pyramidal envelope; independent
+  support planes; no assumed Miller indices.
+- Ordered explicit partial-segment path; heads with position, direction,
+  elevation, birth source, deterministic local advance.
+- Approximate right-angle turns; no closed-loop requirement.
+- Interrupted/incomplete fronts; per-segment advance.
+- One connected swept solid; exact area/volume/latent ledgers.
 
-The surface-adatom isolation demonstrates that nonlocal tangential transport
-can create a perimeter-over-core signal. Its deposited-faceted-crystal source
-is neither bulk melt growth nor bismuth calibration, so it cannot set the
-target habit or active coefficients.
-
-### Candidate 2C - rejected product habit
-
-Candidate 2C successfully demonstrated exact swept-volume/latent accounting,
-a conservative reduced cold-content driver, deterministic explicit ledges,
-and a visible CPU-carrier-to-WebGPU extraction seam. Those are reusable
-patterns, not morphology approval.
-
-The carrier was incompatible with the target by construction:
-
-- three Sn-Bi `{1-102}` directions were projected into the display plane;
-- each opposite direction was added and every support was assigned the same
-  inradius, guaranteeing a centered regular hexagon;
-- every ledge used one scalar offset against all six supports, guaranteeing
-  complete concentric homothetic loops;
-- whole loops were born and advanced uniformly, so no step head, interrupted
-  front, unequal edge speed, or continuous winding path could exist;
-- the scalar carrier extruded a polygon base plus complete annular prisms, not
-  sloped rhombohedral-pyramidal hopper faces.
-
-Candidate 2C is therefore closed despite its valid numerical proof. Its direct
-GPU reconstruction task is canceled. The evidence fixture is available only
-through `?mode=candidate2c-evidence` and must remain labeled as retired.
-
-## Direct bismuth constraints for Candidate 2D
-
-The current source audit establishes a narrower set of defensible constraints:
-
-- Frawley, Maurer, and Childs used `99.999+%` bulk bismuth and reported a
-  supercooling-dependent sequence from prismatic to hopper, triplanar, and
-  branched growth. Many hopper dendrites were twinned, but their twin-plane
-  claim concerns prismatic daughter growth from a twinned hopper surface. This
-  is direct evidence for material, bulk-melt route, a hopper regime, branching,
-  and a possible local twin contribution; it does not show that a twin formed
-  the hopper or index every target face.
-- Steger and Price grew four macroscopic three-dimensional bismuth hoppers
-  downward from an upper melt-surface nucleation point. Section outlines became
-  irregular and convoluted through depth. This supports a complex connected
-  bulk carrier, not a surface step law or coefficient set.
-- Tokoro, Sugawara, and Watanabe directly observed faceted, sometimes stepwise
-  advance in pure-Bi melt-regrown thin films. This supports discrete step
-  kinetics as a mechanism, not the bulk outer habit.
-- Wagner and Brown reported high-purity bismuth crystals apparently growing
-  from a supercooled melt with the aid of a deformation twin. They proposed
-  that a twin terminating at a faceted interface can form a re-entrant step.
-  Their accessible record is qualitative, discusses prismatic products, warns
-  that the necessary conditions may be insufficient, and supplies no
-  recurrence law or coefficient. This makes one local twin-source isolation
-  credible, not a hopper or winding model.
-- No current matching primary source demonstrates that the target's winding
-  macroscopic ledges are generated by a screw dislocation.
-
-The full applicability matrix and links live in `docs/references.md`.
-
-## Candidate 2D target-habit ledge model
-
-Candidate 2D begins with observable topology and keeps its unresolved source
-mechanism explicit. It is a replacement carrier, not Candidate 2C with four
-supports.
-
-### Required state
-
-The smallest single-sector state must contain:
-
-- a sloped rectilinear or visually rhombohedral-pyramidal outer envelope with
-  independently configurable support planes and no assumed Miller indices;
-- an ordered ledge path made of explicit partial segments;
-- one or more step heads with position, direction, elevation, birth source,
-  and deterministic local advance;
-- approximately right-angle direction changes without requiring a closed loop;
-- incomplete or interrupted fronts and per-segment advancement;
-- one connected swept-solid representation and exact accumulated area, volume,
-  and latent-energy ledgers.
-
-Changing six supports to four is insufficient. Candidate 2C's loop ordinal,
-area formula, birth clock, perimeter-averaged temperature, topology checks, and
-annular scalar all assume a complete homothetic loop and must not be reused as
-Candidate 2D geometry.
-
-For step height `h` and actual newly swept planar region `Delta A`, the only
-allowed geometry-to-energy coupling is
+Never reuse 2C loop ordinal/area/birth clock/perimeter temperature/topology/
+annular scalar as geometry. For step height `h`, actual swept planar `Delta A`:
 
 ```text
 Delta V = h Delta A
 Delta Q_latent = L Delta V
 ```
 
-`Delta A` must be derived from the advanced path segments, including clipped
-corners and partial fronts. It cannot be inferred from a loop count or stamped
-profile. A reduced cold-content driver may be reused only if this same
-`Delta V` pays back latent heat exactly once.
+Derive `Delta A` from advanced segments, clipped corners, partial fronts; never
+loop count/stamp. Reduced cold-content allowed only if same `Delta V` repays
+latent heat exactly once.
 
-### Representation checkpoint and rejected carrier
+### Closed representation checkpoint
 
-The first Candidate 2D implementation uses four cyclic support planes with
-independent offsets. For active side `i`, let `O0` and `O1` be the endpoints
-of its current outer support edge and `I0` and `I1` the endpoints after moving
-only that support inward by the active terrace width. At normalized head
-progress `p`, the advancing front is
+Four cyclic supports with independent offsets. Active side `i`: outer endpoints
+`O0,O1`; endpoints after moving only active support inward by terrace width
+`I0,I1`; normalized head progress `p`:
 
 ```text
 O(p) = (1 - p) O0 + p O1
 I(p) = (1 - p) I0 + p I1
 ```
 
-and the actual new partial region is the clipped trapezoid
-`[O0, O(p), I(p), I0]`. The declared head is `O(p)`, so it lies on the same
-front that defines swept area. When the side completes, `O1 -> I1` becomes a
-forward corner connector and `I1` is the next side's start. This produces one
-continuous open route without the backtracking connectors or corner crossings
-created by projecting a full-strip tangent extreme onto the inner edge.
+Swept partial trapezoid: `[O0,O(p),I(p),I0]`; head = `O(p)`. On completion,
+`O1 -> I1` connects forward; `I1` starts next side. Result: continuous open
+route, no tangent-projection backtracking/crossing.
 
-Polygon area is evaluated directly with the shoelace formula. Each advance
-independently accumulates `Delta A`, `h Delta A`, and `L h Delta A`; global
-values are sums of the per-ledge ledgers rather than recomputed aliases. The
-development scalar unions those non-overlapping patch prisms with a closed
-four-plane sloped base. This carrier is extraction-only and does not feed back
-into ledge state.
+Shoelace area; independently accumulate per-ledge/global `Delta A`, `h Delta A`,
+`L h Delta A`. Extraction-only scalar unions nonoverlapping patch prisms +
+closed four-plane sloped base; no state feedback.
 
-The representation passes continuity, non-self-contact, partition invariance,
-per-ledge conservation, connected-solid, open-core, and extraction-refinement
-checks. It is rejected as product morphology. Time-staggered copies of one
-prescribed planar route create only four visible elevations and a broad,
-shallow terrace stack over a flat central floor. The result does not have the
-deep rim-over-core structure or many persistent bands in references 1 and 2.
-Increasing height, births, widths, camera contrast, or material response would
-only tune prescribed geometry and is forbidden as a Candidate 2D fix.
+Pass: continuity, non-contact, partition invariance, conservation, connected
+solid, open core, refinement. Fail morphology: repeated prescribed prefixes ->
+four elevations, broad shallow stack, flat floor; no deep rim/core or many
+bands. No tuning heights/births/widths/camera/material. Reusable result only:
+compact partial-front state + neutral extraction seam.
 
-The reusable result is narrower: the compact state and model-neutral
-extraction seam can represent partial fronts correctly. The next candidate
-must make a declared local source state generate the 3D ledge supply and must
-pass morphology before this carrier is considered for production residency.
+### Closed twin local-source checkpoint
 
-### Twin-plane local-source checkpoint
-
-The twin-plane discriminator represents a local two-dimensional section, not
-a target-shaped sector. Two facet rays meet at a shared interface vertex. A
-solid-interior sample selects which angular sector is solid, so the intersection
-is re-entrant only when that sector exceeds `pi`. A nondegenerate twin segment
-must lie in the solid and have exactly one endpoint at the interface vertex.
-Wagner/Brown supplies qualitative eligibility criteria; the explicit
-two-dimensional angle and segment tests below are this project's local
-operationalization:
+2D local section only. Two facet rays share interface vertex. Solid-interior
+sample selects sector; re-entrant iff solid angle `> pi`. Nondegenerate twin
+inside solid, exactly one endpoint at vertex. Project operational eligibility:
 
 ```text
 g_twin = faceted
@@ -282,8 +164,7 @@ g_twin = faceted
          and solid_angle > pi
 ```
 
-The paper supplies no kinetic equation. The isolation therefore declares the
-dimensionless project closure
+Source has no kinetics. Declared dimensionless isolation closure:
 
 ```text
 dx/dt = mu g_twin max(theta, 0)
@@ -293,124 +174,113 @@ Delta Q_latent = L Delta V
 C theta = C theta_0 + Q_removed - Q_latent
 ```
 
-Here `ell` is the independent out-of-section length of the local twin/facet
-intersection. The eligibility rays live only in the perpendicular section;
-`Delta A` is the facet strip swept by extruding front travel along `ell`, not a
-same-section rectangle crossing the solid sector. `theta` is signed local
-thermal driving and `mu` is not a measured bismuth mobility. Signed
-heat-removal impulses provide the external term, and the reduced ODE is
-integrated in closed form between an impulse and front completion. Reversed
-driving stops the growth-only front; no unsupported dissolution law is
-implied.
+`ell`: independent out-of-section twin/facet length; `theta`: signed thermal
+drive; `mu`: not measured Bi mobility. `Delta A`: front travel extruded along
+`ell`, not same-section rectangle. Signed heat impulses; closed-form integration
+between impulse/completion. Reversal arrests; no dissolution claim.
 
-The frozen positive arm emits exactly one front at the computed twin/facet
-intersection, advances it parallel to the twin through the local facet strip,
-and closes swept-area, volume, latent, and cold-content ledgers independently.
-Removing the twin, moving it off the interface, placing it outside the solid,
-pointing its continuation back into solid, changing the solid sector to a
-non-re-entrant corner, removing faceting, setting zero driving, or reversing
-thermal driving yields no event and no swept volume. Arbitrary elapsed-time
-partitioning preserves the same physical and ledger state, and a signed
-heat-addition reversal stalls an already emitted front without changing its
-accumulated volume.
+Positive arm: exactly one front at twin/facet intersection, parallel to twin;
+area/volume/latent/cold-content close independently. Nulls: missing/misplaced
+twin, twin outside solid, growth into solid, non-re-entrant/non-faceted, zero/
+reversed driving. Partition invariant; post-emission reversal preserves volume.
 
-For the mandatory 3D closeout, the extraction-only carrier is exactly the
-swept strip. With source point `p`, unit growth direction `g`, observational
-in-section perpendicular `n = (-g_y, g_x)`, and out-of-section axis `e_z`, its
-solid set is
+3D extraction-only strip, source `p`, unit growth `g`, observational
+perpendicular `n=(-g_y,g_x)`, out-of-section `e_z`:
 
 ```text
 p + u g + v n + w e_z
 0 <= u <= x, |v| <= h/2, |w| <= ell/2
 ```
 
-The perpendicular `n` only embeds the two-dimensional isolation in the fixed
-review volume; it is not a sourced crystallographic normal. The carrier adds
-no base, hopper body, ledge recurrence, or target-shaped mask. Its analytic
-volume is therefore exactly `x h ell`, the same volume already paid by the
-source ledger. Source-null, zero-driving, and initially reversed states map to
-an empty scalar. A post-emission reversal maps to the unchanged accumulated
-strip because the model declares growth arrest rather than dissolution.
+`n` is embedding, not crystal normal. No base/body/recurrence/mask. Volume =
+`x h ell`, already paid. Null/initial reversal -> empty; later reversal ->
+unchanged strip.
 
-This passes the local eligibility and null/reversal isolation only. The
-accessible evidence provides no self-perpetuation law, so the implementation
-deliberately emits one event and cannot test recurring or multi-twin supply.
-Persistent winding from a twin source remains unresolved, and target-source
-promotion is unsupported at the current evidence boundary. This does not
-physically falsify twin-mediated growth. The one-front state must not be
-connected to the rejected winding carrier or promoted as target geometry. Its
-diagnostic 3D closeout passes source-state, scalar, and WebGPU extraction
-checks but visibly fails all four references: one strip contains no hopper
-opening, recurring elevations, winding ledges, or intergrowth.
-Edge/free-surface supply is the next evidence-backed exploration;
-screw-dislocation supply remains on hold.
+Pass: eligibility, null/reversal, ledger, scalar, WebGPU extraction. Unresolved:
+self-perpetuation/multi-twin/winding. One event by design; no target promotion,
+carrier connection, or physical falsification of twin growth. Shape fails all
+references. Next: edge/free-surface isolation. Screw on hold.
 
-### Competing source mechanisms
+### Closed edge/free-surface local-source checkpoint
 
-Candidate 2D must isolate these alternatives before combining any of them:
+2D contact section only. Free-surface line + melt-interior direction; existing
+seed segment must end at their contact, approach from non-liquid, and continue
+into liquid. Operational eligibility:
 
-| Hypothesis                           | Current evidence                                                                                        | Required discriminator                                                                                                                              |
-| ------------------------------------ | ------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Twin-plane re-entrant source         | One local source passes; recurring or multi-twin supply remains unresolved                              | Promotion remains unsupported without target-matched persistent winding dynamics                                                                    |
-| Screw-dislocation source             | Generic hopper/spiral literature and different-regime Bi evidence only                                  | A target-matched source or result must link one persistent step head to the macroscopic winding ledge                                               |
-| Repeated two-dimensional nucleation  | Generic step-flow and different-specimen Sn-Bi evidence                                                 | Independent births must still form one connected winding sequence rather than complete rings                                                        |
-| Edge/free-surface-driven step supply | Wire-seeded bulk-Bi growth from an upper surface plus generic finite-wedge reasoning; no recurrence law | Active next isolation: one real seeded contact line may emit one conservative local front; persistent births and route selection remain unsupported |
+```text
+g_edge = seed_present
+         and contact_on_free_surface
+         and seed_terminates_at_contact
+         and seed_approaches_from_nonliquid
+         and growth_direction_enters_liquid
+```
 
-Failure of one hypothesis is evidence about that mechanism, not permission to
-blend the others until the result looks right.
+No Bi kinetics. One front uses only declared local Stefan balance:
 
-## Candidate 2D acceptance gates
+```text
+A_f = ell h
+dx/dt = max(Qdot, 0) / (L A_f)
+Delta V = A_f Delta x
+Delta Q_latent = L Delta V = Qdot Delta t
+```
 
-The first fixed-view carrier comparison was rejected without changing its
-predeclared thresholds. Freeze a new numeric schedule before inspecting each
-source-driven candidate.
+`ell`: contact-line length; `h`: observational local front thickness; `Qdot`:
+signed heat removal assigned to this front. Frozen dimensionless isolation;
+not Bi rate/calibration. Negative driving arrests; no dissolution. Exactly one
+event; no contact-line motion, second birth, recurrence, turn, route, ring.
 
-Every scientific slice concludes with a deterministic 3D generation and
-fixed-view comparison beside all four target images, including slices rejected
-by a source, conservation, topology, or morphology gate. References 1 and 2
-remain the formal single-sector acceptance pair. References 3 and 4 are
-mandatory regression context until branching/intergrowth becomes active, at
-which point their traits become formal acceptance gates.
+3D extraction-only ribbon uses source point, generated travel, thickness, and
+contact-line length. No seed body/base/hopper/carrier/mask. Source removed,
+off-surface/misplaced seed, seed into liquid, zero/reversed driving -> empty;
+later reversal -> unchanged ribbon.
 
-Every single-sector proof against references 1 and 2 must test:
+Pass: geometry, null/reversal, Stefan/volume/latent ledger, scalar, WebGPU
+extraction. Fail target source/morphology: one ribbon; no persistent supply,
+route selection, opening, elevations, winding. Next: strategy review; never
+blend closed local mechanisms into target fitting.
 
-- projected outer-frame classification and explicit rejection of stable
-  sixfold or three-sided symmetry;
-- normalized opening depth and rim-over-core height;
-- ledge-path continuity across elevations, non-self-intersection, and number of
-  direction changes;
-- distribution of terrace widths and offsets, including at least one partial
-  or interrupted front;
-- connected solid, monotonic swept volume, exact latent-energy closure, and
-  adequate domain clearance;
-- time/grid refinement of the actual path state and extraction carrier;
-- a fixed-view image comparison in which appearance cannot override failed
-  topology or conservation.
+### Competing sources
 
-Only after that gate passes may Candidate 2D add connected sector branching or
-intergrowth and compare it with references 3 and 4. Multiple orientations need
-a documented domain or twin representation with shared transport; they cannot
-be overlapping cosmetic meshes.
+| Hypothesis             | Evidence                                                          | Promotion discriminator                                                   |
+| ---------------------- | ----------------------------------------------------------------- | ------------------------------------------------------------------------- |
+| Twin re-entrant        | One local source passes; recurrence/multi-twin unresolved         | Target-matched persistent winding dynamics                                |
+| Screw dislocation      | Generic hopper/spiral + mismatched Bi only                        | Target-matched source/result links persistent head to macroscopic winding |
+| Repeated 2D nucleation | Generic step flow + mismatched Sn-Bi                              | Independent births form one connected winding sequence, not rings         |
+| Edge/free surface      | One seeded local Stefan front passes; recurrence/route unresolved | Target-matched persistent supply and path selection                       |
 
-## Reusable runtime boundary
+One failure never permits blending mechanisms to fit appearance.
 
-The GPU marching-cubes classifier, compaction, vertex emission, normals,
-surface age, capacity handling, indirect drawing, imperative controller, and
-model-neutral development snapshot bridge remain valid infrastructure. The
-public root stays neutral. Candidate 2D may use the CPU snapshot bridge for one
-fixed development proof, but production still requires compact GPU-resident
-state and no recurring full-volume upload or readback.
+## Acceptance
 
-## Numerical rules
+Freeze numeric schedule before viewing. Every scientific slice -> deterministic
+3D + fixed view beside all targets, including source/conservation/topology/
+morphology failures. References 1-2: formal single-sector gate. References 3-4:
+mandatory context, later multi-sector gate.
 
-- Treat grid spacing and time step together and reject unstable explicit
-  configurations before dispatch.
-- Keep internal randomness seeded and deterministic.
-- Do not hide instability with unreviewed clamping, smoothing, remeshing, or
-  artistic post-processing.
-- Keep scientific failure separate from harness, extraction, or WebGPU
-  failure.
-- Record deliberate departures from a compatible source near the equations
-  they affect; do not preserve run transcripts as documentation.
-- Repeat the source audit whenever an equation, coefficient, facet, boundary,
-  domain assumption, or morphology claim changes.
+Single-sector checks:
+
+- Outer-frame class; reject stable sixfold/three-sided symmetry.
+- Normalized opening depth; rim/core height.
+- Ledge continuity across elevations; nonintersection; direction-change count.
+- Terrace width/offset distribution; partial/interrupted front.
+- Connected solid; monotonic exact volume/latent ledger; domain clearance.
+- Time/grid refinement of path + extraction carrier.
+- Fixed view; appearance cannot override topology/conservation.
+
+Only then add connected branching/intergrowth. Multiple orientations require
+documented shared-transport domain/twin model; no cosmetic overlap.
+
+## Runtime/numerical boundary
+
+Reusable: GPU classifier, compaction, emission, normals, age, capacity,
+indirect draw, controller, model-neutral dev bridge. Public root neutral. One
+fixed CPU snapshot proof allowed; production requires compact GPU-resident state,
+no recurring full-volume upload/readback.
+
+- Treat grid spacing/time step jointly; reject unstable explicit configs.
+- Seed RNG deterministically.
+- No unreviewed clamp/smooth/remesh/art to hide instability.
+- Separate scientific failure from harness/extraction/WebGPU failure.
+- Record deliberate source departures near equations; no run transcripts.
+- Repeat source audit for changed equation, coefficient, facet, boundary,
+  domain assumption, morphology claim.

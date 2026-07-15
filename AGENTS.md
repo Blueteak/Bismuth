@@ -2,79 +2,76 @@
 
 ## Goal
 
-Build a browser-based, real-time visualizer for physically motivated bismuth
-hopper-crystal growth. The growth process matters as much as the final shape.
+Browser, real-time, physically motivated bismuth hopper growth; growth and final
+shape both matter.
 
-Work only from the current source tree and `docs/`. Do not inspect deleted
-branches, Git history, caches, or earlier implementations unless asked.
+- Use only current tree + `docs/`. Ignore deleted branches, history, caches,
+  earlier implementations unless asked.
 
-## Sources of truth
+## Document ownership
 
-- `README.md`: product contract, setup, and commands.
-- `PLAN.md`: milestone order and gates.
-- `current_tasks.md`: current blocker and next action.
-- `docs/architecture.md`: ownership and runtime flow.
-- `docs/simulation-model.md`: equations and scientific boundaries.
-- `docs/testing-and-validation.md`: proportionate validation policy.
-- `docs/references.md`: scientific and technical sources.
+- `README.md`: public contract, setup, commands, map.
+- `PLAN.md`: milestones, order, gates.
+- `current_tasks.md`: current result, blocker, next action.
+- `docs/architecture.md`: ownership/runtime flow.
+- `docs/simulation-model.md`: equations/scientific boundaries.
+- `docs/testing-and-validation.md`: proportionate checks.
+- `docs/references.md`: sources/applicability.
 
-Keep each fact in its owning document. Do not copy status, command catalogs,
-test transcripts, or completed evidence between files.
+Keep facts only in their owner. Never duplicate status, command catalogs, run
+transcripts, or completed evidence.
+
+## Documentation rule
+
+Minimum tokens. Use terse directives/fragments; full sentences only when needed
+for precision. Keep only decision-changing facts, constraints, equations,
+commands, evidence boundaries, and next actions. Delete repetition/history;
+link to the owner instead.
 
 ## Fixed direction
 
-- Windows and PowerShell locally; Node.js and Express on Ubuntu EC2 later.
-- React, TypeScript, Vite, and exactly `three@0.185.0`.
-- `WebGPURenderer` and TSL on current desktop Chrome or Edge. No silent WebGL
-  or CPU product fallback.
-- GPU marching cubes with GPU-resident buffers and indirect drawing.
-- Metallic PBR with surface-age-driven thin-film iridescence.
-- Preserve the repository-root `hdri.jpg` unchanged.
+- Local: Windows/PowerShell. Later host: Node/Express on Ubuntu EC2.
+- React + TypeScript + Vite + exact `three@0.185.0`.
+- Current desktop Chrome/Edge; `WebGPURenderer` + TSL; no silent WebGL/CPU
+  product fallback.
+- GPU marching cubes; GPU-resident buffers; indirect draw.
+- Metallic PBR; surface-age thin-film iridescence.
+- Preserve root `hdri.jpg` bytes.
+- React: DOM state only. Controller: loop, camera, GPU, lifecycle.
+- Keep simulation/extraction/materials separate; materials never mutate
+  simulation. No per-frame React or full production field/mesh readback.
 
-React owns DOM state. The imperative controller owns the render loop, camera,
-GPU resources, and run lifecycle. Simulation, extraction, and materials remain
-separate; materials never alter simulation state. Never move per-frame work
-through React or read back full production fields/meshes.
+## Scientific/product rules
 
-## Scientific and product guardrails
+- Copy equations/constants from cited sources, never memory.
+- Morphology authority: all four `crystal_references/` images. Target: bulk
+  rectilinear/rhombohedral-pyramidal hoppers; deep recesses; winding ledges.
+  Active direction: Candidate 2D.
+- End every Candidate 2D scientific slice, including failure/mechanism-only,
+  with deterministic integrated 3D output + fixed-camera screenshot beside all
+  four references. Inspect rendered pixels; record explicit visual morphology
+  verdict. Show actual sparse/stalled/empty state; no fallback/decorative shape.
+- Generic cubic + Candidates 2A-2C: evidence/regression only. Generic or
+  mismatched-specimen work cannot set target geometry, facets, or acceptance.
+- Before importing a claim, classify composition, growth route, scale, habit,
+  domain. Mismatch permits isolated mechanism evidence only.
+- Never conceal failure with hollows, terraces, spirals, noise, or overlapping
+  crystals.
+- Deterministic internal randomness. Grid spacing/time step are numerics, not
+  quality controls.
+- Public UI: automatic first run; one bottom-center `Stop`/`Regenerate`; no
+  resume.
+- Ask before public controls, export, persistence, sharing, time scrubbing,
+  mobile, frameworks, services, or product abstractions.
 
-- Transcribe model equations and constants from cited sources, not memory.
-- The four files in `crystal_references/` are the visual morphology authority:
-  bulk bismuth hopper specimens with rectilinear or rhombohedral-pyramidal
-  sectors, deep recesses, and winding stepped ledges. Candidate 2D is the
-  active direction.
-- Every Candidate 2D scientific slice, including a failed or mechanism-only
-  slice, ends with an honest deterministic 3D generation on the integrated
-  review route and a fixed-camera comparison beside all four files in
-  `crystal_references/`. Render the state the slice actually produced,
-  including sparse, stalled, or empty outcomes; never add fallback or
-  decorative geometry to make the review presentable.
-- The generic cubic hopper and Candidates 2A through 2C are evidence or
-  regression scaffolding, not product habits. No generic crystal algorithm or
-  different-specimen paper may set target geometry, facets, or acceptance.
-- Classify every scientific source by composition, growth route, scale,
-  specimen habit, and domain state before importing a claim. A mismatch may
-  support an isolated mechanism only; it cannot validate product morphology.
-- Do not add decorative hollows, terraces, spirals, noise, or overlapping
-  crystals to conceal a model failure.
-- Keep randomness deterministic internally. Grid spacing and time step are
-  numerical parameters, not quality sliders.
-- Public behavior stays minimal: automatic first run and one bottom-center
-  `Stop`/`Regenerate` action. Stop cannot resume.
-- Ask before adding public controls, export, persistence, sharing, time
-  scrubbing, mobile support, frameworks, services, or product abstractions.
+## Work/validation
 
-## Working style
-
-Only write tests when they protect critical math, state transitions, data
-layout, or a reproduced bug. Routine hardware matrices are not required, but
-one local WebGPU 3D review is required to close every Candidate 2D scientific
-slice. Use the smallest relevant checks from
-`docs/testing-and-validation.md`; use screenshots only for visual changes.
-
-Keep patches scoped, preserve unrelated user changes, and update only the
-document that owns changed information. Keep agent-facing Markdown ASCII-only
-and verify it with:
+- Tests only for critical math, state transitions, layouts, reproduced bugs.
+- Close every Candidate 2D slice with one local WebGPU 3D review + screenshot +
+  explicit all-four visual verdict. Fixture/GPU metrics alone never close it.
+  Otherwise use smallest checks in `docs/testing-and-validation.md`.
+- Scope patches; preserve user changes; edit only owning docs.
+- Agent Markdown: ASCII only. Verify:
 
 ```powershell
 rg -n --pcre2 "[^\x00-\x7F]" AGENTS.md PLAN.md current_tasks.md README.md docs
