@@ -44,14 +44,17 @@ link to the owner instead.
 ## Scientific/product rules
 
 - Copy equations/constants from cited sources, never memory.
-- Morphology authority: all four `crystal_references/` images. Target: bulk
-  rectilinear/rhombohedral-pyramidal hoppers; deep recesses; winding ledges.
-  Active direction: Candidate 2D.
-- End every Candidate 2D scientific slice, including failure/mechanism-only,
+- Morphology authority: five `crystal_references/` images. References 1-2 gate
+  one hopper; 3-5 gate later branching, orientation, and intergrowth. Active:
+  Candidate 2E orientation-aware 3D cellular growth.
+- Candidate 2E: shared GPU 3D storage grid; per-seed owner + local morphology
+  frame; shared supply; synchronous deterministic capture/impingement. Grid
+  alignment never defines seed orientation. No prepainted routes/special cells.
+- End every Candidate 2E scientific slice, including failure/mechanism-only,
   with deterministic integrated 3D output + fixed-camera screenshot beside all
-  four references. Inspect rendered pixels; record explicit visual morphology
+  five references. Inspect rendered pixels; record explicit visual morphology
   verdict. Show actual sparse/stalled/empty state; no fallback/decorative shape.
-- Generic cubic + Candidates 2A-2C: evidence/regression only. Generic or
+- Generic cubic + Candidates 2A-2D: evidence/regression only. Generic or
   mismatched-specimen work cannot set target geometry, facets, or acceptance.
 - Before importing a claim, classify composition, growth route, scale, habit,
   domain. Mismatch permits isolated mechanism evidence only.
@@ -67,8 +70,8 @@ link to the owner instead.
 ## Work/validation
 
 - Tests only for critical math, state transitions, layouts, reproduced bugs.
-- Close every Candidate 2D slice with one local WebGPU 3D review + screenshot +
-  explicit all-four visual verdict. Fixture/GPU metrics alone never close it.
+- Close every Candidate 2E slice with one local WebGPU 3D review + screenshot +
+  explicit all-five visual verdict. Fixture/GPU metrics alone never close it.
   Otherwise use smallest checks in `docs/testing-and-validation.md`.
 - Scope patches; preserve user changes; edit only owning docs.
 - Agent Markdown: ASCII only. Verify:

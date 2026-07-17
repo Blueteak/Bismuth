@@ -1,137 +1,109 @@
 # Current Tasks
 
-Updated 2026-07-14.
+Updated 2026-07-15.
 
-## Status
+## Handoff
 
-Milestone 1B / Candidate 2D. Morphology authority: four
-`crystal_references/` images: bulk iridescent Bi; dominant
-rectilinear/rhombohedral-pyramidal sectors; deep openings; many winding,
-uneven, interrupted ledges; asymmetry; later branching/intergrowth.
+Milestone 1B / Candidate 2E active. Sparse edge-source Test 1 closed:
+finite-depth mechanism pass; sparsity/scaling/target-morphology fail. Stop; do
+not tune the schedule or add transport.
 
-Candidate 2C: product-rejected. Three Sn-Bi `{1-102}` directions + opposites +
-equal supports + homothetic loops guarantee a regular hexagonal stack without
-a winding head. Keep ledger/WebGPU extraction evidence only; never promote.
+Read next: `PLAN.md`; `docs/simulation-model.md` for the rule boundary;
+`docs/testing-and-validation.md` for closure; `docs/references.md` before any
+physical claim.
 
-Source boundary:
+## Closed 2E.1 lateral-facet handoff Test 2
 
-- Frawley/Maurer/Childs: `99.999+%` bulk Bi; rising supercooling -> prismatic,
-  hopper, triplanar, branched; many hopper dendrites twinned.
-- Steger/Price: macroscopic 3D Bi hoppers from upper melt-surface wire.
-- Pure-Bi thin film: stepwise faceted advance.
-- High-purity melt: conditional local twin-plane source.
-- No matching primary evidence that target bands are screw spirals.
-- Generic/alloy/film/vapor/other-material work: mechanism/numerics only unless
-  it passes `docs/references.md`; never geometry, facets, calibration,
-  acceptance.
+Rule: Test 1 plus opening-orthogonal lateral-facet identity and same-source
+handoff across local perpendicular facets at equal layer. No new source, layer
+advance, nucleation, transport, route, mask, or coefficient change.
 
-## Closed checkpoint: representation carrier
+Isolation: `41^3`; centered `5^3` seed; 72 steps. One source produced 416
+front cells across four connected lateral planes; 541 solid cells total;
+center above seed liquid. Exact ledger; connected; boundary clear;
+forward/reverse arrays identical. Mechanism/topology gate passed.
 
-Passes as representation/extraction only:
+Integrated frozen run: `65^3`; centered `11^3` seed; identity frame;
+checkpoints `12/36/72`.
 
-- Four independent supports; asymmetric quadrilateral; no imported facets.
-- Exact trapezoidal partial fronts; real boundary head; joined open route; no
-  self-contact.
-- Independent per-ledge/global area, volume, latent ledgers; partition invariant.
-- Connected scalar + exterior-connected opening; 2:1 extraction refinement;
-  finer volume error improves.
-- Five checkpoints -> five valid production WebGPU meshes; four visible
-  changes; no overflow/browser/GPU errors.
+| Step | Cells | Front cells | Planes | Triangles |
+| ---: | ----: | ----------: | -----: | --------: |
+|   12 | 1,348 |          17 |      2 |     1,496 |
+|   36 | 1,582 |         251 |      3 |     1,672 |
+|   72 | 2,174 |         843 |      4 |     3,120 |
 
-Morphology fails: about `15.2 x 13.9 x 2.5`; four elevations/about two cycles;
-broad shallow stack + flat floor, not references 1-2. `acceptedMorphology:
-false`.
+All checkpoints: one source, exact ledger, connected, boundary clear, no
+overflow or browser/WebGPU error. Fixed and alternate pixel inspection confirms
+four rising walls and a deep open center. The walls are a thin rectangular
+tube, not connected bulk planes.
 
-## Closed checkpoint: twin source
+Visual verdict:
 
-Passes local mechanism isolation only:
+- Reference 1 fail: box opening; no stepped bulk hopper, winding ledges, or
+  terrace elevations.
+- Reference 2 fail: centered regular tube; no offset opening, interrupted
+  bands, or asymmetry.
+- References 3-5 fail context: no intergrown sectors, varied widths, branching,
+  arbitrary frames, or impingement.
 
-- Actual twin inside solid; terminates where two faceted rays meet; solid angle
-  re-entrant; growth continuation enters liquid. Labels alone cannot activate.
-- Positive signed driving emits one front parallel to twin. Travel x independent
-  out-of-section length -> local strip; volume/latent paid once.
-- No twin, wrong termination/location/direction/angle/faceting, zero or reversed
-  driving -> no event/volume. Reversal stalls emitted front. Thermal/volume/
-  latent ledgers partition invariant.
-- Source gives no Bi rate, recurrence, facet frame, winding law. Dimensionless
-  mobility = isolation closure, not calibration.
+Do not call this hopper growth. The discriminator proves local facet handoff
+can preserve one source, turn four corners, and leave an open center. Surface
+occupancy alone cannot carry a finite-volume hopper body.
 
-Exactly one straight front by design. Recurring/multi-twin supply, turns, deep
-sector, winding remain untested. This neither disproves twin growth nor supports
-target promotion. `acceptedMorphology: false`; `acceptedAsTargetSource: false`.
+## Closed 2E.2 sparse edge-source Test 1
 
-3D closeout on `/__dev/material`: swept one-front prism only; null, initially
-reversed, growing, post-emission-reversed states through production WebGPU
-extraction. Empty nulls; stalled reversal; changing valid positive meshes; no
-overflow/GPU errors. Final thin strip fails all targets: no opening, recurring
-elevations, winding, sector assembly, branching. Keep isolated from rejected
-carrier.
+Rule: Test 2 plus deterministic source-birth trials every 12 steps. Each
+locally eligible outer lateral edge used the frozen hash with probability
+`1/4`; one solid face, Moore support `4..6`, outward support aligned to its
+seed-local lateral facet. No inward-cavity birth, completion trigger, global
+chooser, one-per-layer rule, transport, route, mask, or rate change.
 
-## Closed checkpoint: edge/free-surface source
+Isolation: `41^3`; centered `5^3` seed; 96 steps. 293 sources, 419
+source/facet/layer planes, 6,742 solid cells; finite radial depth; center open.
+Exact ledger; connected; boundary clear; forward/reverse arrays identical.
+Local state transition passed; sparse-source premise failed.
 
-Source audit: Steger/Price proves suspended-wire nucleation + downward growth
-from upper melt surface only. Generic triple-line papers constrain local heat
-transfer; no Bi contact-line law, birth, recurrence, path, rate, facet frame.
+Integrated frozen run: `65^3`; centered `11^3` seed; identity frame;
+checkpoints `24/60/96`.
 
-Passes local mechanism isolation only:
+| Step |  Cells | Sources | Planes | Triangles |
+| ---: | -----: | ------: | -----: | --------: |
+|   24 |  1,859 |      42 |     61 |     2,316 |
+|   60 |  5,796 |     229 |    328 |     6,200 |
+|   96 | 14,239 |     563 |    765 |    11,296 |
 
-- Actual seed terminates at a real solid-liquid-free-surface contact, approaches
-  from non-liquid, continues into liquid. Labels alone cannot activate.
-- Positive signed heat removal advances exactly one local front by Stefan
-  balance; no fitted mobility. Area, volume, latent, removed heat close and are
-  partition invariant.
-- No seed, nonterminating seed, off-surface contact, seed into liquid, zero or
-  reversed driving -> no event/volume. Reversal stalls an emitted front.
-- Exactly one event by evidence boundary; no spontaneous birth, recurrence,
-  contact-line motion, turn, route, complete ring.
+All checkpoints: exact ledger, connected, boundary clear, no overflow or
+browser/WebGPU error. Repeated births make finite-depth walls and retain a deep
+opening, but source count scales with exposed area. Planes merge into a smooth,
+bulky centered block; no three distinct terrace elevations.
 
-3D closeout on `/__dev/material`: fixed-camera screenshot; generated ribbon
-only; source-removed,
-initially reversed, growing, post-emission-reversed states through production
-WebGPU extraction. Empty controls; stalled reversal; three changing valid mesh
-promotions; final 7,096 triangles; no overflow/browser/GPU errors; all targets
-visible.
+Visual verdict:
 
-Direct visual comparison: final rectangular ribbon fails every target: no deep
-opening, recurring elevations, winding, route selection, sector assembly,
-branching.
-`acceptedMorphology: false`; `acceptedAsTargetSource: false`;
-`persistentSupplyDemonstrated: false`; `routeSelectionDemonstrated: false`.
+- Reference 1 fail: deep opening survives, but no winding stepped ledges or
+  target bulk frame; smooth lobes dominate.
+- Reference 2 fail: centered symmetric opening; no offset, interruptions, or
+  asymmetric bands.
+- References 3-5 fail context: no intergrown sectors, branching, arbitrary
+  frames, or impingement.
 
-## Next: Candidate 2D strategy review
+Do not tune period/probability. Per-site Bernoulli birth is not sparse or
+resolution-stable; reducing its rate only delays the same area-scaling failure.
 
-Milestone still requires compact source state -> supplied bulk-Bi habit at
-production-plausible cadence. Carrier, twin, edge slices prove local machinery,
-not persistent supply or target geometry. Never blend/tune them into appearance.
+## Next action: source-population strategy review
 
-1. Seek target-matched macroscopic bulk-melt Bi evidence for recurring source +
-   route selection that can generate one deep winding sector.
-2. Keep screw, repeated nucleation, twin recurrence, edge recurrence unselected
-   until exact evidence/discriminator exists. One failure never permits mixing.
-3. If evidence remains absent, stop for explicit scope choice: pause; allow a
-   clearly phenomenological topology law; or add thermal/defect/orientation
-   state with stated fidelity/realtime cost.
-4. No branching/intergrowth until one sector passes references 1-2.
+Choose one stateful source population: conserved local nucleation precursor or
+explicit persistent imperfection hypothesis. It must define birth, persistence,
+termination, mass coupling, and refinement behavior without a global source
+chooser or target-authored layer clock. Source-audit before implementation. No
+schedule sweep, transport, multi-seed, or morphology compensation.
 
-## Review/loop
+## Review
 
-`/__dev/material`: edge/free-surface closeout default.
-
-- `?mode=candidate2d-twin-evidence`: closed twin-source slice.
-- `?mode=candidate2d-carrier-evidence`: rejected topology carrier.
-- `?mode=candidate2c-evidence`: retired Candidate 2C seam.
-- `?mode=material`: oxide fixture.
-
-Do not resume direct-GPU reconstruction, calibration, public lifecycle,
-clustering, performance, or deployment before the single-sector discriminator
-passes.
+`/__dev/material`: frozen failed sparse edge-source Test 1 beside all targets.
+Use `?checkpoint=early|middle|final`; default final. `?mode=material`: oxide.
 
 ```powershell
 npm.cmd run check:fast
 npm.cmd run check:baseline
 review.cmd
 ```
-
-Fast while editing; baseline before handoff. Review requires fixed-camera
-screenshot + explicit all-four visual verdict. Durable model/source decisions
-only in owning docs; no run transcripts.

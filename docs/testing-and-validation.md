@@ -26,11 +26,13 @@ CPU-checkable planning/layout only.
 | Refactor/docs        | Typecheck/focused check; docs ASCII scan                  |
 | Equation/config math | Focused deterministic numerical tests                     |
 | Source/facet claim   | Specimen-match audit first                                |
-| Candidate 2D path    | Continuity, turns, heads, no self-crossing                |
-| Swept geometry       | Exact area/volume/latent ledger                           |
-| Carrier              | Opening, connectedness, topology, refinement              |
+| Candidate 2E cells   | Synchronous transitions; scan/batch-order independence    |
+| CA conservation      | Exact supply loss, solid gain, latent; monotonicity       |
+| Seed/frame           | Rotation equivariance; storage-grid bias                  |
+| Facet-local front    | Terrace stall; one kink -> one lateral coherent layer     |
+| Impingement          | Seed-ID/order symmetry; owner/boundary conservation       |
 | Mechanism            | Isolated null/reversal/failure                            |
-| Scientific slice     | Frozen 3D + screenshot + explicit all-four visual verdict |
+| Scientific slice     | Frozen 3D + screenshot + explicit all-five visual verdict |
 | Extraction/layout    | Analytic CPU topology/layout tests                        |
 | Scheduler/lifecycle  | Deterministic scheduling tests                            |
 | Material/oxide       | Focused math + visual review if visible                   |
@@ -42,7 +44,7 @@ long morphology sweep, benchmark unless directly relevant.
 
 ## WebGPU review
 
-Every Candidate 2D scientific slice requires one current-desktop hardware
+Every Candidate 2E scientific slice requires one current-desktop hardware
 WebGPU run on `/__dev/material`. Confirm honest init/failure, visible mesh
 updates, last-valid retention, clean resize/disposal. Always capture the final
 fixed-camera comparison; visual morphology is part of every scientific slice.
@@ -58,7 +60,7 @@ inspection, not retuning.
    light/material, comparison layout.
 2. Render only slice-derived geometry. Capture fixed early/middle/final or
    honest stalled/empty result; save the fixed-camera screenshot.
-3. Keep all four targets visible. References 1-2: single-sector gate; 3-4:
+3. Keep all five targets visible. References 1-2: single-sector gate; 3-5:
    mandatory context, later branching/intergrowth gates.
 4. Inspect rendered pixels directly against the named target traits; record an
    explicit visual pass/fail + reasons. Fixture classification, triangle count,
@@ -68,20 +70,16 @@ inspection, not retuning.
 6. No retired carrier, fallback, target mask, camera/material retune,
    decorative fill.
 
-Default route: edge/free-surface closeout; final state beside references;
-separate source/scalar/morphology results.
+Default route: frozen failed Candidate 2E.2 sparse edge-source Test 1 beside all
+targets. `?checkpoint=early|middle|final`; default final. `?mode=material`:
+oxide fixture. Retired evidence routes removed.
 
-- `?mode=candidate2d-twin-evidence`: closed twin-source slice.
-- `?mode=candidate2d-carrier-evidence`: rejected topology carrier.
-- `?mode=candidate2c-evidence`: retired six-facet seam.
-- `?mode=material`: oxide fixture.
-
-Evidence-route success validates only its declared boundary. Freeze every new
-candidate before viewing. Independent gates: outer frame, opening depth,
-ledge continuity/turns/irregularity, connectedness, volume, energy, refinement.
+Freeze every new candidate before viewing. Independent gates: outer frame,
+opening depth, ledge continuity/turns/irregularity, connectedness, supply/mass,
+rotation equivariance, collision symmetry, time/grid refinement.
 Reject hexagon, three-sided Sn-Bi pyramid, concentric rings, shallow opening,
 perfect symmetry. Dev CPU scalar bridge is not product fallback; production
-requires compact-state GPU reconstruction without recurring full-volume
+requires authoritative GPU CA fields without recurring full-volume
 upload/readback.
 
 Collect adapter/browser/timing only for adapter diagnosis/performance choice.

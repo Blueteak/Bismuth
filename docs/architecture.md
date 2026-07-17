@@ -22,10 +22,10 @@ WebGPU required. Initialization failure -> honest UI; never hidden CPU/WebGL.
   solver/extractor orchestration, resize, disposal. UI calls coarse methods;
   high-frequency state stays imperative.
 - Simulation: equations, config validation, boundaries, initial state,
-  deterministic RNG, fields, stepping, completion. Active morphology:
-  Candidate 2D target-matched envelope, partial ledges/heads, exact swept
-  volume/latent ledger. Generic + 2A-2C remain isolated evidence. Dev scalar may
-  feed extraction only; never simulation feedback/production CPU fallback.
+  deterministic RNG, fields, stepping, completion. Candidate 2E owns the
+  authoritative GPU 3D CA fields, seed/frame table, synchronous update passes,
+  shared supply, capture/impingement, mass/latent ledger. Retired candidates
+  remain doc summary only.
 - Extraction: classify, scan/compact, emit vertices/normals/age, cap capacity,
   indirect draw. Overflow -> keep last valid mesh.
 - Rendering: WebGPU, environment, lights, material, tone/exposure, age->oxide.
@@ -36,8 +36,31 @@ WebGPU required. Initialization failure -> honest UI; never hidden CPU/WebGL.
 - Production fields/meshes GPU-resident. Small diagnostic readback only; no
   per-frame full volume/mesh readback or product exposure.
 - Allocate/reuse run resources; double-buffer fields/promotion when overlap.
+- CA ping-pong state prevents update-order dependence. Separate proposal and
+  resolution passes; seed ID is tie-break only, never scan-order ownership.
 - Dispose renderer, textures, buffers, observers, listeners, run state on
   regenerate, device loss, teardown.
+
+## Candidate 2E target flow
+
+```text
+seed table (origin, frame)
+          |
+shared phase/fill/supply/owner/age grid + interface layer/front state
+          |
+adsorb/expire -> ledge capture proposals -> resolve -> consume -> age
+          |
+production classifier/compaction/emission/indirect draw
+```
+
+Global grid = storage/transport coordinates only. Local morphology rule receives
+the owner's inverse frame transform. Same-owner fronts merge; different owners
+form boundaries on impingement; all owners deplete the same supply field. No
+per-seed mesh overlap or independent transport domain.
+
+Current code has the reusable grid/frame/ledger seam and experimental
+facet-local front/handoff state. Test 2 produces only a thin shell; it is not
+current product architecture.
 
 ## Scheduling/lifecycle
 
@@ -60,20 +83,14 @@ recreates/resets run resources + chooses new deterministic internal seed.
 `/__dev/material`: development-only integrated view, not second product UI.
 Public root stays neutral pending accepted morphology/lifecycle.
 
-Default: Candidate 2D edge-source closeout. One canvas + model-neutral snapshot
-controller sequence source-removed, initially reversed, growing, post-reversal,
-final one-front states; final beside all targets. Report source,
-scalar/extraction, morphology separately.
-
-- `?mode=candidate2d-twin-evidence`: closed twin-source slice.
-- `?mode=candidate2d-carrier-evidence`: rejected first Candidate 2D carrier.
-- `?mode=candidate2c-evidence`: retired Candidate 2C seam.
-- `?mode=material`: oxide fixture.
+Default: frozen failed Candidate 2E.2 sparse edge-source Test 1 beside all five
+targets. `?checkpoint=early|middle|final`; `?mode=material`: oxide fixture.
+Retired evidence routes are removed.
 
 Dev bridge: CPU scalar -> storage buffer -> 3D storage texture -> production
 classifier/compaction/emission/promotion/indirect draw; read back small summary.
 Recurring full-volume upload allowed only for fixed dev proof. Production:
-reconstruct from compact accepted state on GPU.
+CA state evolves and feeds extraction on GPU.
 
 Production server: absolute Vite hashed assets + app shell + `/healthz`;
 stateless behind trusted HTTPS.

@@ -6,6 +6,7 @@ import {
   Float32BufferAttribute,
   FloatType,
   Mesh,
+  MeshPhysicalNodeMaterial,
   MeshStandardNodeMaterial,
   NearestFilter,
   PerspectiveCamera,
@@ -28,6 +29,7 @@ import {
   vec4,
 } from 'three/tsl';
 import { createGpuSurfaceExtractor } from '../extraction';
+import { createBismuthPhysicalNodeMaterial } from '../rendering';
 import {
   createWebGpuSession,
   type WebGpuDiagnostics,
@@ -65,16 +67,19 @@ export interface ScalarFieldGpuSnapshotControllerOptions {
   readonly vertexCapacity?: number;
   readonly displaySpan?: number;
   readonly label?: string;
+  readonly materialMode?: 'neutral' | 'bismuth';
 }
 
 interface ScalarFieldSnapshotLabels {
   readonly phase: string;
   readonly solidificationTime: string;
   readonly source: string;
+  readonly timeSource: string;
   readonly shapeChanged: string;
   readonly invalidShape: string;
   readonly invalidVoxelCount: string;
   readonly invalidOrderParameterLength: string;
+  readonly invalidSolidificationTimeLength: string;
   readonly disposed: string;
   readonly scene: string;
   readonly camera: string;
@@ -85,7 +90,8 @@ interface ScalarFieldSnapshotBridge {
   readonly phase: Storage3DTexture;
   readonly solidificationTime: Storage3DTexture;
   readonly upload: ComputeNode;
-  readonly source: StorageBufferAttribute;
+  readonly phaseSource: StorageBufferAttribute;
+  readonly timeSource: StorageBufferAttribute;
   write(renderer: WebGPURenderer, state: ScalarFieldSnapshot): Promise<void>;
   dispose(): void;
 }
@@ -95,10 +101,12 @@ function createSnapshotLabels(label: string): ScalarFieldSnapshotLabels {
     phase: `${label} uploaded phase`,
     solidificationTime: `${label} unavailable solidification time`,
     source: `${label} CPU order-parameter upload`,
+    timeSource: `${label} CPU solidification-time upload`,
     shapeChanged: `${label} snapshot shape changed during review.`,
     invalidShape: `${label} snapshot shape must contain three integers greater than or equal to 2.`,
     invalidVoxelCount: `${label} snapshot voxelCount does not match its shape.`,
     invalidOrderParameterLength: `${label} snapshot order-parameter length does not match its shape.`,
+    invalidSolidificationTimeLength: `${label} snapshot solidification-time length does not match its shape.`,
     disposed: `${label} GPU snapshot controller disposed.`,
     scene: `${label} GPU morphology checkpoint scene`,
     camera: `${label} fixed morphology review camera`,
@@ -132,6 +140,12 @@ function assertSnapshotLayout(
   }
   if (state.orderParameter.length !== shapeProduct) {
     throw new RangeError(labels.invalidOrderParameterLength);
+  }
+  if (
+    state.solidificationTime !== undefined &&
+    state.solidificationTime.length !== shapeProduct
+  ) {
+    throw new RangeError(labels.invalidSolidificationTimeLength);
   }
 }
 
@@ -167,7 +181,18 @@ function createSnapshotBridge(
   const source = new StorageBufferAttribute(new Float32Array(voxelCount), 1);
   source.name = labels.source;
   source.setUsage(DynamicDrawUsage);
+  const timeSource = new StorageBufferAttribute(
+    new Float32Array(voxelCount).fill(-1),
+    1,
+  );
+  timeSource.name = labels.timeSource;
+  timeSource.setUsage(DynamicDrawUsage);
   const sourceStorage = storage(source, 'float', voxelCount).toReadOnly();
+  const timeSourceStorage = storage(
+    timeSource,
+    'float',
+    voxelCount,
+  ).toReadOnly();
   const upload = Fn(() => {
     const x = instanceIndex.mod(width);
     const y = instanceIndex.div(width).mod(height);
@@ -184,7 +209,7 @@ function createSnapshotBridge(
     textureStore(
       solidificationTime,
       coordinate,
-      vec4(-1, 0, 0, 1),
+      vec4(timeSourceStorage.element(instanceIndex), 0, 0, 1),
     ).toWriteOnly();
   })().compute(voxelCount, [64, 1, 1]);
 
@@ -192,11 +217,19 @@ function createSnapshotBridge(
     phase,
     solidificationTime,
     upload,
-    source,
+    phaseSource: source,
+    timeSource,
     async write(renderer, state) {
       assertSnapshotLayout(state, labels, shape);
       (source.array as Float32Array).set(state.orderParameter);
       source.needsUpdate = true;
+      const timeArray = timeSource.array as Float32Array;
+      if (state.solidificationTime) {
+        timeArray.set(state.solidificationTime);
+      } else {
+        timeArray.fill(-1);
+      }
+      timeSource.needsUpdate = true;
       await renderer.computeAsync(upload);
     },
     dispose() {
@@ -215,6 +248,7 @@ export function createScalarFieldGpuSnapshotController(
   const vertexCapacity = options.vertexCapacity ?? DEFAULT_VERTEX_CAPACITY;
   const displaySpan = options.displaySpan ?? DEFAULT_DISPLAY_SPAN;
   const label = options.label ?? DEFAULT_LABEL;
+  const materialMode = options.materialMode ?? 'neutral';
   const labels = createSnapshotLabels(label);
   assertSnapshotLayout(initial, labels);
   if (!Number.isFinite(displaySpan) || displaySpan <= 0) {
@@ -233,7 +267,7 @@ export function createScalarFieldGpuSnapshotController(
   let camera: PerspectiveCamera | undefined;
   let orbitCamera: OrbitCameraController | undefined;
   let geometry: BufferGeometry | undefined;
-  let material: MeshStandardNodeMaterial | undefined;
+  let material: MeshStandardNodeMaterial | MeshPhysicalNodeMaterial | undefined;
   let width = canvas.clientWidth;
   let height = canvas.clientHeight;
   let devicePixelRatio = window.devicePixelRatio;
@@ -311,23 +345,31 @@ export function createScalarFieldGpuSnapshotController(
       new Float32BufferAttribute(new Float32Array(3), 3),
     );
     geometry.setIndirect(extractor.lastValidMesh.indirect);
-    material = new MeshStandardNodeMaterial({
-      color: 0xc7d2d6,
-      metalness: 0.38,
-      roughness: 0.34,
-    });
-    material.positionNode = storage(
-      extractor.lastValidMesh.positions,
-      'vec4',
-      vertexCapacity,
-    ).toAttribute().xyz;
-    material.normalNode = transformNormalToView(
-      storage(
-        extractor.lastValidMesh.normalAge,
+    if (materialMode === 'bismuth') {
+      material = createBismuthPhysicalNodeMaterial({
+        positions: extractor.lastValidMesh.positions,
+        normalAge: extractor.lastValidMesh.normalAge,
+        vertexCapacity,
+      });
+    } else {
+      material = new MeshStandardNodeMaterial({
+        color: 0xc7d2d6,
+        metalness: 0.38,
+        roughness: 0.34,
+      });
+      material.positionNode = storage(
+        extractor.lastValidMesh.positions,
         'vec4',
         vertexCapacity,
-      ).toAttribute().xyz,
-    ).normalize();
+      ).toAttribute().xyz;
+      material.normalNode = transformNormalToView(
+        storage(
+          extractor.lastValidMesh.normalAge,
+          'vec4',
+          vertexCapacity,
+        ).toAttribute().xyz,
+      ).normalize();
+    }
     const mesh = new Mesh(geometry, material);
     mesh.name = labels.mesh;
     mesh.frustumCulled = false;

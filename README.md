@@ -1,12 +1,13 @@
 # Bismuth Visualizer
 
-Browser WebGPU study: physically motivated bismuth hopper growth into a
-metallic, thin-film-iridescent specimen; never reveal a prebuilt mesh.
+Browser WebGPU study: real-time bismuth hopper growth into a metallic,
+thin-film-iridescent specimen; never reveal a prebuilt mesh. Candidate 2E uses
+orientation-aware 3D cellular growth: local supply/attachment, GPU-resident
+state, per-seed morphology frames, shared transport, deterministic impingement.
 
-Public root: neutral foundation scene. Active science: Candidate 2D, locked to
-the four bulk hopper targets in `crystal_references/`. Candidate 2C's regular
-hexagonal complete-loop habit is rejected; its conservation/extraction work is
-infrastructure evidence only. See `current_tasks.md`.
+Public root: neutral foundation scene. Active science: Candidate 2E, locked to
+five bulk hopper targets in `crystal_references/`. References 1-2 gate one
+hopper; 3-5 gate later branching/intergrowth. See `current_tasks.md`.
 
 ## Product contract
 
@@ -29,16 +30,9 @@ npm.cmd run dev
 ```
 
 `review.cmd`: start dev server + open `/__dev/material`, the sole integrated
-review. Default: Candidate 2D edge/free-surface 3D closeout; honest one-front
-result beside all targets; local source/extraction pass, target source and
-morphology fail.
-
-- `?mode=candidate2d-twin-evidence`: closed twin-source slice.
-- `?mode=candidate2d-carrier-evidence`: rejected Candidate 2D topology carrier.
-- `?mode=candidate2c-evidence`: retired six-facet seam.
-- `?mode=material`: oxide fixture.
-
-No evidence route is approved product morphology.
+review. Default: frozen failed Candidate 2E.2 sparse edge-source Test 1 beside all
+five targets; verdict: `current_tasks.md`. `?checkpoint=early|middle|final`;
+`?mode=material`: oxide fixture.
 
 Production-shaped serving:
 
@@ -60,8 +54,8 @@ changes; measure hardware only for performance/adapter tasks.
 
 ## Map
 
-- `crystal_references/`: four Candidate 2D morphology targets.
-- `src/simulation/`: runtime, retired evidence, Candidate 2D.
+- `crystal_references/`: five Candidate 2E morphology targets.
+- `src/simulation/`: simulation runtime; Candidate 2E CA experiments.
 - `src/extraction/`: GPU marching cubes + CPU-checkable layouts.
 - `src/rendering/`: WebGPU, environment, material, oxide.
 - `src/visualizer/`: imperative controller/scheduling.

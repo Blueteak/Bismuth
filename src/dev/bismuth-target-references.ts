@@ -2,15 +2,16 @@ import crystalOneUrl from '../../crystal_references/crystal_small_1.jpg?url';
 import crystalTwoUrl from '../../crystal_references/crystal_small_2.jpg?url';
 import crystalThreeUrl from '../../crystal_references/crystal_small_3.jpg?url';
 import crystalFourUrl from '../../crystal_references/crystal_small_4.jpg?url';
+import crystalMultiseedUrl from '../../crystal_references/crystal_multiseed_giant.jpg?url';
 
-export interface Candidate2DTargetReference {
+export interface BismuthTargetReference {
   readonly label: string;
   readonly source: string;
   readonly alt: string;
   readonly emphasis: string;
 }
 
-export const CANDIDATE2D_TARGET_REFERENCES: readonly Candidate2DTargetReference[] =
+export const BISMUTH_TARGET_REFERENCES: readonly BismuthTargetReference[] =
   Object.freeze([
     {
       label: 'Reference 1',
@@ -35,5 +36,11 @@ export const CANDIDATE2D_TARGET_REFERENCES: readonly Candidate2DTargetReference[
       source: crystalFourUrl,
       alt: 'Large bismuth specimen with branched hopper sectors and irregular nested ledges.',
       emphasis: 'Regression context: connected branching',
+    },
+    {
+      label: 'Reference 5',
+      source: crystalMultiseedUrl,
+      alt: 'Large bismuth specimen with many visibly differently oriented intergrown hopper sectors.',
+      emphasis: 'Later: multi-seed orientation and impingement',
     },
   ]);

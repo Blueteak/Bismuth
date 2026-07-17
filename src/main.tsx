@@ -18,22 +18,10 @@ async function startApplication(): Promise<void> {
     if (mode === 'material') {
       const { mountMaterialFixture } = await import('./dev/material-fixture');
       mountMaterialFixture(applicationRoot);
-    } else if (mode === 'candidate2c-evidence') {
-      const { mountCandidate2CMorphologyFixture } =
-        await import('./dev/candidate2c-morphology-fixture');
-      mountCandidate2CMorphologyFixture(applicationRoot);
-    } else if (mode === 'candidate2d-carrier-evidence') {
-      const { mountCandidate2DTargetFixture } =
-        await import('./dev/candidate2d-target-fixture');
-      mountCandidate2DTargetFixture(applicationRoot);
-    } else if (mode === 'candidate2d-twin-evidence') {
-      const { mountCandidate2DTwinFixture } =
-        await import('./dev/candidate2d-twin-fixture');
-      mountCandidate2DTwinFixture(applicationRoot);
     } else {
-      const { mountCandidate2DEdgeFixture } =
-        await import('./dev/candidate2d-edge-fixture');
-      mountCandidate2DEdgeFixture(applicationRoot);
+      const { mountCandidate2eGeometryFixture } =
+        await import('./dev/candidate2e-geometry-fixture');
+      mountCandidate2eGeometryFixture(applicationRoot);
     }
     return;
   }

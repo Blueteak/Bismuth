@@ -8,6 +8,8 @@ export interface ScalarFieldSnapshot {
   readonly shape: GridShape;
   readonly voxelCount: number;
   readonly orderParameter: Float32Array;
+  /** Optional x-fast birth time; negative values denote unsolidified cells. */
+  readonly solidificationTime?: Float32Array;
   readonly step: number;
   readonly simulatedTime: number;
 }
